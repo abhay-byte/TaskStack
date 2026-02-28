@@ -1,44 +1,130 @@
-# TaskStack — Finished Features
+# Finished Tasks
 
-> Completed and shipped features. Move items here from ongoing-tasks.md once done.
+## ✅ Phase 0 — Initial Setup (Completed)
 
----
-
-## 📄 Documentation — Foundation (2026-02-28)
-
-- [x] Created `docs/` folder structure
-- [x] Written `problem_statement.md` — full problem domain, personas, solution overview, KPIs
-- [x] Written `srs.md` — 100+ tagged functional and non-functional requirements
-- [x] Written `sdd.md` — clean architecture, DB schema, UI design system, notification system, analytics engine
-- [x] Written `todo-tasks.md` — full feature backlog
-- [x] Written `ongoing-tasks.md` — in-progress tracker
-- [x] Written `finished-tasks.md` — completion log
-- [x] Written `ui-ux.md` — all 6 screens with wireframes, navigation flows, component inventory
-- [x] Written `design-principles.md` — M3 colour roles, typography, spacing, shape, motion, accessibility
-- [x] Copied `docs/ui/` — Material Design 3 component specs (card, nav drawer, nav rail, progress indicators)
+- Created comprehensive documentation: `problem_statement.md`, `srs.md`, `sdd.md`
+- Created `todo-tasks.md`, `ongoing-tasks.md`, `finished-tasks.md`, `ui-ux.md`, `design-principles.md`
+- Copied Material Design 3 component docs to `docs/ui/`
+- Flutter project initialized with all dependencies
+- Clean architecture folder structure scaffolded
+- Created public GitHub repo and pushed initial commit
 
 ---
 
-## 🏗️ Infrastructure & Architecture (2026-02-28)
+## ✅ Phase 1 — Data & Infrastructure (Completed)
 
-- [x] Flutter project initialised (`flutter create`, Android + iOS, com.taskstack)
-- [x] `pubspec.yaml` configured with all dependencies (Drift, Riverpod, GoRouter, fl_chart, google_fonts, etc.)
-- [x] `analysis_options.yaml` configured (flutter_lints + custom_lint + generated file exclusions)
-- [x] Clean Architecture folder structure created (all feature layers)
-- [x] Asset directories created (`assets/icons/`, `assets/images/`, `assets/animations/`)
-- [x] `main.dart` — entry point with Riverpod `ProviderScope` + notification init
-- [x] `app.dart` — `MaterialApp.router` with M3 light/dark themes and GoRouter
-- [x] `AppTheme` — full M3 theme (colour scheme, typography, shapes for all components)
-- [x] `AppColors` — seed colour + 12-colour task accent palette
-- [x] `AppSpacing` — 4dp-grid spacing constants
-- [x] `AppRouter` — GoRouter with shell route + onboarding route
-- [x] `AppShell` — `NavigationBar` shell for Stack / Analytics / Settings tabs
-- [x] `NotificationService` stub — flutter_local_notifications init + permission requests
-- [x] Placeholder screens created: Stack, Analytics, Settings, Onboarding
-- [x] `README.md` — full project overview, badges, architecture diagram, docs index, tech stack
-- [x] GitHub repo created: [abhay-byte/TaskStack](https://github.com/abhay-byte/TaskStack) (public)
-- [x] Initial commit pushed to `main` branch (115 files, 172 objects)
+### Drift Database
+- `TasksTable`, `TagsTable`, `DailySummariesTable` defined with full schema
+- `TaskDao` (watch by date, CRUD, status update, range queries)
+- `TagDao` (watch, CRUD)
+- `AnalyticsDao` (date queries, upsert)
+- `AppDatabase` with WAL mode, foreign keys, migration scaffold
+- DAO Riverpod providers exposed from `AppDatabase`
+- `build_runner` codegen ran successfully (47 outputs)
+
+### Repository + Use Cases
+- `Task` domain entity with `isInProgress()`, `startTime`, `copyWith`
+- `TaskRepository` interface (abstract)
+- `TaskRepositoryImpl` with full row↔entity mapping + JSON tag serialization
+- `CreateTaskUseCase` — inserts task + repeat-today instances + schedules notifications
+- `GetTasksForDateUseCase` — stream for date
+- `UpdateTaskUseCase` — updates + cancels/reschedules notification
+- `DeleteTaskUseCase` — deletes single or whole recurring family
+- `CompleteTaskUseCase` — marks done + undo support
+- `DuplicateTaskUseCase` — creates copy with new UUID
 
 ---
 
-*Last updated: 2026-02-28*
+## ✅ Phase 2 — Providers & Settings (Completed)
+
+### Riverpod Providers
+- `selectedStackDateProvider` (date nav state)
+- `tasksForDateProvider` (stream family)
+- `sortedTasksProvider`, `scheduledTasksProvider`, `unscheduledTasksProvider`
+- Use case providers (create/update/delete/complete/duplicate)
+- `TaskFormState` + `TaskFormNotifier` (autoDispose, full field coverage + save)
+
+### Settings
+- `AppSettings` model: themeMode, accentColor, weekStart, 24h, notifOffset, firstLaunch
+- `SettingsNotifier` with SharedPreferences-backed persistence
+- `sharedPreferencesProvider` injected in ProviderScope from main.dart
+
+### Notifications
+- `NotificationService` with `initialise()`, permission requests, deep-link callback
+- `NotificationScheduler` with timezone-aware `scheduleFor()`, `cancelFor()`, `rescheduleAll()`
+- `UILocalNotificationDateInterpretation.absoluteTime` + `DateTimeComponents.dateAndTime`
+
+### Router
+- Full `GoRouter` with onboarding redirect, shell for 3 tabs, task detail/form modal routes
+- Notification deep-link wired via `onNotificationTapped` callback
+
+---
+
+## ✅ Phase 3 — All UI Screens (Completed)
+
+### 🏠 TaskStackScreen (24-Hour Timeline)
+- 24-hour infinite scroll (120px/hour)
+- Auto-scroll to current time on launch (post-frame)
+- 30-second timer for real-time indicator refresh
+- 24× `_HourSlotWidget` with hour labels + grid lines
+- `_PositionedTaskCard` absolutely positioned by start/duration minutes
+- Date navigation bar (prev/next day + "Today" button)
+- Empty state with icon + instructions
+- FAB → `/task/new` with prefilled date
+
+### 🃏 TaskCardWidget
+- Dismissible swipe-right → mark as done
+- Long-press context menu (edit/duplicate/delete)
+- Animated border + glow when `isInProgress`
+- Strikethrough + muted colour when done
+- Tag pills, duration label
+
+### ⏱️ TimeIndicatorWidget
+- Red circle + horizontal line at current minute offset
+
+### 📝 TaskFormScreen
+- Title (80 chars), description (500 chars), purpose (200 chars)
+- 12-colour accent picker with selection indicator
+- Tag InputChip (max 5, add/remove)
+- Native `showTimePicker` for start time
+- Duration/interval/offset popup pickers
+- 4-option `SegmentedButton` for recurrence type
+- Conditional repeat interval field
+- Notification switch + offset chooser
+- Save → `CreateTaskUseCase` or `UpdateTaskUseCase`
+
+### 📋 TaskDetailScreen
+- Status chip (pending/done), recurrence chip
+- Time, tags, description, purpose, notification rows
+- Edit button (AppBar), Delete (OutlinedButton), Mark Done / Undo (FilledButton)
+- Done → SnackBar with Undo action
+
+### 📊 AnalyticsScreen
+- **Daily tab**: Scheduled/Completed/Rate stat cards, hourly bar chart, tag pie chart, best hour card
+- **Weekly tab**: Bar chart (done vs total with background rod), 7× productivity score bars
+- **Monthly tab**: Heat-map calendar coloured by completion %, monthly rate stat card
+- **Yearly tab**: 365-day small heat-map grid, monthly average bar chart
+
+### ⚙️ SettingsScreen
+- Theme toggle (System/Light/Dark) — SegmentedButton
+- Accent colour bottom sheet picker (12 colours + default)
+- 24h time toggle
+- Week start toggle (Sun/Mon)
+- Default reminder offset dialog
+- JSON export (writes to Documents folder)
+- Clear today's tasks (with confirmation dialog)
+- App info + Licences
+
+### 🚀 OnboardingScreen
+- 4-page PageView (Stack, Tasks, Completion, Analytics)
+- `SmoothPageIndicator` (worm effect)
+- Skip button + Next/Get Started CTA
+- Calls `NotificationService.requestPermissions()` + marks first-launch complete on exit
+
+---
+
+## ✅ Phase 4 — Build Verification (Completed)
+
+- **`flutter analyze`**: 0 errors
+- **`flutter build apk --debug`**: ✅ `app-debug.apk` built successfully
+- Android: enabled core library desugaring + `minSdk=21` + `desugar_jdk_libs:2.1.4`

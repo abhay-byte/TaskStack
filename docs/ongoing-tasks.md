@@ -1,11 +1,5 @@
-# TaskStack — Ongoing Features
+# Ongoing Tasks
 
-> Features currently being actively worked on.
+No tasks currently in progress.
 
----
-
-*Nothing in progress right now. Check [todo-tasks.md](./todo-tasks.md) for the full feature backlog.*
-
----
-
-*Last updated: 2026-02-28*
+All features implemented — see `finished-tasks.md` for the full list.

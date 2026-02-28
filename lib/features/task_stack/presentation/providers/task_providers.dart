@@ -1,0 +1,238 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:taskstack/features/task_stack/domain/entities/task.dart';
+import 'package:taskstack/features/task_stack/domain/repositories/task_repository.dart';
+import 'package:taskstack/features/task_stack/data/repositories/task_repository_impl.dart';
+import 'package:taskstack/features/task_stack/domain/usecases/task_usecases.dart';
+import 'package:taskstack/features/notifications/notification_scheduler.dart';
+
+// ── Date Providers ────────────────────────────────────────────────────────
+
+/// The currently viewed date on the stack.
+final selectedStackDateProvider = StateProvider<DateTime>((ref) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day);
+});
+
+// ── Task Stream ───────────────────────────────────────────────────────────
+
+/// Stream of tasks for a given calendar date.
+final tasksForDateProvider =
+    StreamProvider.family<List<Task>, DateTime>((ref, date) {
+  return ref.watch(taskRepositoryProvider).watchTasksForDate(date);
+});
+
+/// Sorted tasks for the currently selected date.
+final sortedTasksProvider = Provider<List<Task>>((ref) {
+  final date = ref.watch(selectedStackDateProvider);
+  final async = ref.watch(tasksForDateProvider(date));
+  final tasks = async.valueOrNull ?? [];
+  return [...tasks]..sort((a, b) {
+      if (a.startMinutes == null && b.startMinutes == null) return 0;
+      if (a.startMinutes == null) return 1;
+      if (b.startMinutes == null) return -1;
+      return a.startMinutes!.compareTo(b.startMinutes!);
+    });
+});
+
+/// Scheduled tasks only (have a start time).
+final scheduledTasksProvider = Provider<List<Task>>((ref) {
+  return ref.watch(sortedTasksProvider).where((t) => t.startMinutes != null).toList();
+});
+
+/// Unscheduled tasks (no start time).
+final unscheduledTasksProvider = Provider<List<Task>>((ref) {
+  return ref.watch(sortedTasksProvider).where((t) => t.startMinutes == null).toList();
+});
+
+// ── Use Case Providers ────────────────────────────────────────────────────
+
+final createTaskUseCaseProvider = Provider<CreateTaskUseCase>((ref) {
+  return CreateTaskUseCase(
+    ref.watch(taskRepositoryProvider),
+    ref.watch(notificationSchedulerProvider),
+  );
+});
+
+final updateTaskUseCaseProvider = Provider<UpdateTaskUseCase>((ref) {
+  return UpdateTaskUseCase(
+    ref.watch(taskRepositoryProvider),
+    ref.watch(notificationSchedulerProvider),
+  );
+});
+
+final deleteTaskUseCaseProvider = Provider<DeleteTaskUseCase>((ref) {
+  return DeleteTaskUseCase(
+    ref.watch(taskRepositoryProvider),
+    ref.watch(notificationSchedulerProvider),
+  );
+});
+
+final completeTaskUseCaseProvider = Provider<CompleteTaskUseCase>((ref) {
+  return CompleteTaskUseCase(ref.watch(taskRepositoryProvider));
+});
+
+final duplicateTaskUseCaseProvider = Provider<DuplicateTaskUseCase>((ref) {
+  return DuplicateTaskUseCase(ref.watch(taskRepositoryProvider));
+});
+
+// ── Task Form State ───────────────────────────────────────────────────────
+
+class TaskFormState {
+  const TaskFormState({
+    this.id = '',
+    this.title = '',
+    this.description = '',
+    this.purpose = '',
+    this.iconId,
+    this.colorArgb,
+    this.tags = const [],
+    this.startMinutes,
+    this.durationMinutes = 30,
+    this.recurrenceType = RecurrenceType.none,
+    this.repeatIntervalMinutes = 60,
+    this.notificationEnabled = true,
+    this.notificationOffsetMinutes = 5,
+    this.taskDate,
+    this.isSaving = false,
+    this.error,
+  });
+
+  final String id;
+  final String title;
+  final String description;
+  final String purpose;
+  final String? iconId;
+  final int? colorArgb;
+  final List<String> tags;
+  final int? startMinutes;
+  final int durationMinutes;
+  final RecurrenceType recurrenceType;
+  final int repeatIntervalMinutes;
+  final bool notificationEnabled;
+  final int notificationOffsetMinutes;
+  final DateTime? taskDate;
+  final bool isSaving;
+  final String? error;
+
+  bool get isValid => title.trim().isNotEmpty;
+
+  TaskFormState copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? purpose,
+    String? iconId,
+    int? colorArgb,
+    List<String>? tags,
+    int? startMinutes,
+    int? durationMinutes,
+    RecurrenceType? recurrenceType,
+    int? repeatIntervalMinutes,
+    bool? notificationEnabled,
+    int? notificationOffsetMinutes,
+    DateTime? taskDate,
+    bool? isSaving,
+    String? error,
+  }) {
+    return TaskFormState(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      purpose: purpose ?? this.purpose,
+      iconId: iconId ?? this.iconId,
+      colorArgb: colorArgb ?? this.colorArgb,
+      tags: tags ?? this.tags,
+      startMinutes: startMinutes ?? this.startMinutes,
+      durationMinutes: durationMinutes ?? this.durationMinutes,
+      recurrenceType: recurrenceType ?? this.recurrenceType,
+      repeatIntervalMinutes: repeatIntervalMinutes ?? this.repeatIntervalMinutes,
+      notificationEnabled: notificationEnabled ?? this.notificationEnabled,
+      notificationOffsetMinutes: notificationOffsetMinutes ?? this.notificationOffsetMinutes,
+      taskDate: taskDate ?? this.taskDate,
+      isSaving: isSaving ?? this.isSaving,
+      error: error ?? this.error,
+    );
+  }
+}
+
+class TaskFormNotifier extends StateNotifier<TaskFormState> {
+  TaskFormNotifier(this._create, this._update) : super(const TaskFormState());
+
+  final CreateTaskUseCase _create;
+  final UpdateTaskUseCase _update;
+
+  void loadTask(Task task) {
+    state = TaskFormState(
+      id: task.id,
+      title: task.title,
+      description: task.description ?? '',
+      purpose: task.purpose ?? '',
+      iconId: task.iconId,
+      colorArgb: task.colorArgb,
+      tags: task.tags,
+      startMinutes: task.startMinutes,
+      durationMinutes: task.durationMinutes ?? 30,
+      recurrenceType: task.recurrenceType,
+      repeatIntervalMinutes: task.repeatIntervalMinutes ?? 60,
+      notificationEnabled: task.notificationEnabled,
+      notificationOffsetMinutes: task.notificationOffsetMinutes,
+      taskDate: task.taskDate,
+    );
+  }
+
+  void updateTitle(String v) => state = state.copyWith(title: v);
+  void updateDescription(String v) => state = state.copyWith(description: v);
+  void updatePurpose(String v) => state = state.copyWith(purpose: v);
+  void updateIconId(String? v) => state = state.copyWith(iconId: v);
+  void updateColor(int? v) => state = state.copyWith(colorArgb: v);
+  void updateTags(List<String> v) => state = state.copyWith(tags: v);
+  void updateStartMinutes(int? v) => state = state.copyWith(startMinutes: v);
+  void updateDuration(int v) => state = state.copyWith(durationMinutes: v);
+  void updateRecurrence(RecurrenceType v) => state = state.copyWith(recurrenceType: v);
+  void updateRepeatInterval(int v) => state = state.copyWith(repeatIntervalMinutes: v);
+  void updateNotificationEnabled(bool v) => state = state.copyWith(notificationEnabled: v);
+  void updateNotificationOffset(int v) => state = state.copyWith(notificationOffsetMinutes: v);
+
+  Future<bool> save(DateTime taskDate) async {
+    if (!state.isValid) return false;
+    state = state.copyWith(isSaving: true, error: null);
+    try {
+      final task = Task(
+        id: state.id,
+        title: state.title.trim(),
+        description: state.description.isEmpty ? null : state.description,
+        purpose: state.purpose.isEmpty ? null : state.purpose,
+        iconId: state.iconId,
+        colorArgb: state.colorArgb,
+        tags: state.tags,
+        startMinutes: state.startMinutes,
+        durationMinutes: state.durationMinutes,
+        recurrenceType: state.recurrenceType,
+        repeatIntervalMinutes: state.repeatIntervalMinutes,
+        notificationEnabled: state.notificationEnabled,
+        notificationOffsetMinutes: state.notificationOffsetMinutes,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        taskDate: taskDate,
+      );
+      if (state.id.isEmpty) {
+        await _create.execute(task);
+      } else {
+        await _update.execute(task);
+      }
+      return true;
+    } catch (e) {
+      state = state.copyWith(isSaving: false, error: e.toString());
+      return false;
+    }
+  }
+}
+
+final taskFormProvider =
+    StateNotifierProvider.autoDispose<TaskFormNotifier, TaskFormState>((ref) {
+  return TaskFormNotifier(
+    ref.watch(createTaskUseCaseProvider),
+    ref.watch(updateTaskUseCaseProvider),
+  );
+});

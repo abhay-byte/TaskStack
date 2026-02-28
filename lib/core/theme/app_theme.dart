@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'app_colors.dart';
+import 'package:taskstack/core/constants/app_colors.dart';
 
 /// Material Design 3 theme for TaskStack.
 /// Strictly follows M3 colour roles, typography, and shape tokens.
@@ -36,7 +36,7 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       textTheme: textTheme,
-      cardTheme: const CardTheme(
+      cardTheme: const CardThemeData(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(12)),
         ),
@@ -56,7 +56,7 @@ class AppTheme {
         ),
         filled: false,
       ),
-      dialogTheme: const DialogTheme(
+      dialogTheme: const DialogThemeData(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(28)),
         ),
