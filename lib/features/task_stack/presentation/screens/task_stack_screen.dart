@@ -28,8 +28,8 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   // Track the currently visible day index so we don't spam state updates
   int _currentVisibleIndex = 10000;
 
-  // Height of a single full day block in pixels
-  static const double _dayBlockHeight = 24 * _kPixelsPerHour + 200;
+  // Height of a single full day block in pixels (24h + 60px divider)
+  static const double _dayBlockHeight = 24 * _kPixelsPerHour + 60;
 
   @override
   void initState() {
@@ -189,39 +189,54 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
                       // Current time indicator (only for today)
                       if (isPageToday) TimeIndicatorWidget(now: now),
 
-                      // Empty state for this day block
-                      if (scheduled.isEmpty &&
-                          unscheduled.isEmpty &&
-                          daysOffset == 0)
-                        Positioned.fill(
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.wb_sunny_outlined,
-                                  size: 64,
-                                  color: colorScheme.outline,
-                                ),
-                                const SizedBox(height: AppSpacing.md),
-                                Text(
-                                  'No tasks for this day',
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.titleMedium?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
-                                Text(
-                                  'Tap + to add your first task',
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(color: colorScheme.outline),
-                                ),
-                              ],
+                      // Date Divider at the bottom (transition to next day)
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: 60,
+                        child: Container(
+                          alignment: Alignment.center,
+                          color: colorScheme.surfaceContainerLow,
+                          child: Text(
+                            (() {
+                              final nextDate = pageDate.add(
+                                const Duration(days: 1),
+                              );
+                              const days = [
+                                'Mon',
+                                'Tue',
+                                'Wed',
+                                'Thu',
+                                'Fri',
+                                'Sat',
+                                'Sun',
+                              ];
+                              const months = [
+                                'Jan',
+                                'Feb',
+                                'Mar',
+                                'Apr',
+                                'May',
+                                'Jun',
+                                'Jul',
+                                'Aug',
+                                'Sep',
+                                'Oct',
+                                'Nov',
+                                'Dec',
+                              ];
+                              return '${days[nextDate.weekday - 1]}, ${months[nextDate.month - 1]} ${nextDate.day}';
+                            })(),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
+                      ),
                     ],
                   ),
                 );
