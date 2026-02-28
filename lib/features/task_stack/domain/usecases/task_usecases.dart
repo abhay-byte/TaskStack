@@ -33,7 +33,46 @@ class CreateTaskUseCase {
           await _scheduler.scheduleFor(inst);
         }
       }
+    } else if (newTask.recurrenceType != RecurrenceType.none &&
+        newTask.recurrenceType != RecurrenceType.repeatToday) {
+      final instances = _generateFutureInstances(newTask);
+      for (final inst in instances) {
+        await _repository.insertTask(inst);
+        if (inst.notificationEnabled) {
+          await _scheduler.scheduleFor(inst);
+        }
+      }
     }
+  }
+
+  List<Task> _generateFutureInstances(Task parent) {
+    final instances = <Task>[];
+    // Generate up to 2 years ahead or max instances limits, whichever is smaller
+    for (var i = 1; i <= 365 * 2; i++) {
+      DateTime nextDate;
+      if (parent.recurrenceType == RecurrenceType.daily) {
+        nextDate = parent.taskDate.add(Duration(days: i));
+        if (instances.length >= 365) break; // 1 year limit
+      } else if (parent.recurrenceType == RecurrenceType.weekly) {
+        nextDate = parent.taskDate.add(Duration(days: 7 * i));
+        if (instances.length >= 104) break; // 2 years limit
+      } else {
+        break;
+      }
+
+      instances.add(
+        parent.copyWith(
+          id: _uuid.v4(),
+          taskDate: nextDate,
+          parentTaskId: parent.id,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          status: TaskStatus.pending,
+          completedAt: null,
+        ),
+      );
+    }
+    return instances;
   }
 
   List<Task> _generateRepeatInstances(Task parent) {
@@ -44,15 +83,17 @@ class CreateTaskUseCase {
     var index = 1;
 
     while (nextStart + (parent.durationMinutes ?? 30) <= endOfDay) {
-      instances.add(parent.copyWith(
-        id: _uuid.v4(),
-        startMinutes: nextStart,
-        parentTaskId: parent.id,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        status: TaskStatus.pending,
-        completedAt: null,
-      ));
+      instances.add(
+        parent.copyWith(
+          id: _uuid.v4(),
+          startMinutes: nextStart,
+          parentTaskId: parent.id,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          status: TaskStatus.pending,
+          completedAt: null,
+        ),
+      );
       nextStart += interval;
       index++;
       if (index > 48) break; // safety cap

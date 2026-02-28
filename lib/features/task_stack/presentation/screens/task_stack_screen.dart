@@ -109,17 +109,11 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              'assets/images/app_icon_foreground.png',
-              width: 32,
-              height: 32,
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            const Text('TaskStack'),
-          ],
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: Image.asset(
+          'assets/images/app_icon_foreground.png',
+          width: 48,
+          height: 48,
         ),
         actions: [
           if (!isToday)
