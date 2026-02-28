@@ -109,7 +109,6 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A2E),
         title: Image.asset(
           'assets/images/app_icon_foreground.png',
           width: 48,
@@ -315,7 +314,7 @@ class _DateNavBar extends StatelessWidget {
     }
 
     return Container(
-      color: const Color(0xFF1A1A2E),
+      color: Theme.of(context).colorScheme.surface,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
         vertical: 4,
