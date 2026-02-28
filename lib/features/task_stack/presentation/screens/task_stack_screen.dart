@@ -83,11 +83,19 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   }
 
   void _scrollToNow() {
-    if (!_scrollController.hasClients) return;
+    if (!_scrollController.hasClients || _initialDate == null) return;
     final now = DateTime.now();
 
-    // Calculate scroll offset: current day block (10000) + time offset
-    final dayBaseOffset = 10000 * _dayBlockHeight;
+    // Calculate the dynamic scroll target relative to the locked _initialDate
+    final todayMidnight = DateTime.utc(now.year, now.month, now.day);
+    final initialMidnight = DateTime.utc(
+      _initialDate!.year,
+      _initialDate!.month,
+      _initialDate!.day,
+    );
+    final daysOffset = todayMidnight.difference(initialMidnight).inDays;
+
+    final dayBaseOffset = (10000 + daysOffset) * _dayBlockHeight;
     final timeOffset =
         (now.hour * 60 + now.minute) * _kMinuteHeight -
         MediaQuery.of(context).size.height * 0.35;
