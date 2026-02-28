@@ -315,7 +315,7 @@ class _DateNavBar extends StatelessWidget {
     }
 
     return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      color: const Color(0xFF1A1A2E),
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
         vertical: 4,

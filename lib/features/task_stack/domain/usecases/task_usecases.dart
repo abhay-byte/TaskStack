@@ -27,8 +27,8 @@ class CreateTaskUseCase {
         newTask.repeatIntervalMinutes != null &&
         newTask.startMinutes != null) {
       final instances = _generateRepeatInstances(newTask);
+      await _repository.insertTasks(instances);
       for (final inst in instances) {
-        await _repository.insertTask(inst);
         if (inst.notificationEnabled) {
           await _scheduler.scheduleFor(inst);
         }
@@ -36,8 +36,10 @@ class CreateTaskUseCase {
     } else if (newTask.recurrenceType != RecurrenceType.none &&
         newTask.recurrenceType != RecurrenceType.repeatToday) {
       final instances = _generateFutureInstances(newTask);
-      for (final inst in instances) {
-        await _repository.insertTask(inst);
+      await _repository.insertTasks(instances);
+      // Schedule notifications for only the first 20 instances to prevent freezing the UI
+      final notificationsToSchedule = instances.take(20);
+      for (final inst in notificationsToSchedule) {
         if (inst.notificationEnabled) {
           await _scheduler.scheduleFor(inst);
         }

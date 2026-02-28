@@ -10,8 +10,6 @@ class TaskRepositoryImpl implements TaskRepository {
   TaskRepositoryImpl(this._dao);
   final TaskDao _dao;
 
-
-
   String _dateString(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
@@ -29,12 +27,14 @@ class TaskRepositoryImpl implements TaskRepository {
   }
 
   @override
-  Future<void> insertTask(Task task) =>
-      _dao.insertTask(_taskToCompanion(task));
+  Future<void> insertTask(Task task) => _dao.insertTask(_taskToCompanion(task));
 
   @override
-  Future<void> updateTask(Task task) =>
-      _dao.updateTask(_taskToCompanion(task));
+  Future<void> insertTasks(List<Task> tasks) =>
+      _dao.insertTasks(tasks.map(_taskToCompanion).toList());
+
+  @override
+  Future<void> updateTask(Task task) => _dao.updateTask(_taskToCompanion(task));
 
   @override
   Future<void> deleteTask(String id) => _dao.deleteTaskById(id);
@@ -54,8 +54,7 @@ class TaskRepositoryImpl implements TaskRepository {
     String id, {
     required String status,
     DateTime? completedAt,
-  }) =>
-      _dao.updateStatus(id, status: status, completedAt: completedAt);
+  }) => _dao.updateStatus(id, status: status, completedAt: completedAt);
 
   // ── Mappers ──────────────────────────────────────────────────────────────
 

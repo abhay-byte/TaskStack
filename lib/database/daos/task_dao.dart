@@ -12,20 +12,26 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   Stream<List<TasksTableData>> watchTasksForDate(String date) {
     return (select(tasksTable)
           ..where((t) => t.taskDate.equals(date))
-          ..orderBy([
-            (t) => OrderingTerm.asc(t.startMinutes),
-          ]))
+          ..orderBy([(t) => OrderingTerm.asc(t.startMinutes)]))
         .watch();
   }
 
   /// Get a single task by id.
   Future<TasksTableData?> getTaskById(String id) {
-    return (select(tasksTable)..where((t) => t.id.equals(id))).getSingleOrNull();
+    return (select(tasksTable)
+      ..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   /// Insert a new task.
   Future<void> insertTask(TasksTableCompanion task) {
     return into(tasksTable).insert(task);
+  }
+
+  /// Insert multiple tasks in a batch.
+  Future<void> insertTasks(List<TasksTableCompanion> tasks) async {
+    await batch((batch) {
+      batch.insertAll(tasksTable, tasks);
+    });
   }
 
   /// Update an existing task.
@@ -40,18 +46,15 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
 
   /// Delete all instances of a recurring task (by parentTaskId OR id).
   Future<int> deleteRecurringFamily(String parentId) {
-    return (delete(tasksTable)
-          ..where(
-            (t) => t.parentTaskId.equals(parentId) | t.id.equals(parentId),
-          ))
-        .go();
+    return (delete(tasksTable)..where(
+      (t) => t.parentTaskId.equals(parentId) | t.id.equals(parentId),
+    )).go();
   }
 
   /// Get all tasks for a date range (for analytics).
   Future<List<TasksTableData>> getTasksInRange(String from, String to) {
     return (select(tasksTable)
-          ..where((t) => t.taskDate.isBetweenValues(from, to)))
-        .get();
+      ..where((t) => t.taskDate.isBetweenValues(from, to))).get();
   }
 
   /// Update status + completedAt.
