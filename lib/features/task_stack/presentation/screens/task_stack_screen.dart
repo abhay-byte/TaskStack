@@ -28,8 +28,8 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   // Track the currently visible day index so we don't spam state updates
   int _currentVisibleIndex = 10000;
 
-  // Height of a single full day block in pixels (24h + 60px divider)
-  static const double _dayBlockHeight = 24 * _kPixelsPerHour + 60;
+  // Height of a single full day block in pixels (24h + 1h for divider)
+  static const double _dayBlockHeight = 25 * _kPixelsPerHour;
 
   @override
   void initState() {
@@ -191,10 +191,10 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
 
                       // Date Divider at the bottom (transition to next day)
                       Positioned(
-                        bottom: 0,
+                        top: 24 * _kPixelsPerHour,
                         left: 0,
                         right: 0,
-                        height: 60,
+                        height: _kPixelsPerHour,
                         child: Container(
                           alignment: Alignment.center,
                           color: colorScheme.surfaceContainerLow,
