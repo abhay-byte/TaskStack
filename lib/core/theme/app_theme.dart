@@ -24,11 +24,27 @@ class AppTheme {
   }
 
   static ThemeData _buildTheme(ColorScheme colorScheme) {
-    final textTheme = GoogleFonts.interTextTheme().copyWith(
-      displaySmall: GoogleFonts.outfit(fontSize: 36, fontWeight: FontWeight.w400),
-      headlineLarge: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.w400),
-      headlineMedium: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.w400),
-      headlineSmall: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.w400),
+    final isDark = colorScheme.brightness == Brightness.dark;
+    final baseTextTheme =
+        isDark ? ThemeData.dark().textTheme : ThemeData.light().textTheme;
+
+    final textTheme = GoogleFonts.interTextTheme(baseTextTheme).copyWith(
+      displaySmall: GoogleFonts.outfit(
+        fontSize: 36,
+        fontWeight: FontWeight.w400,
+      ),
+      headlineLarge: GoogleFonts.outfit(
+        fontSize: 32,
+        fontWeight: FontWeight.w400,
+      ),
+      headlineMedium: GoogleFonts.outfit(
+        fontSize: 28,
+        fontWeight: FontWeight.w400,
+      ),
+      headlineSmall: GoogleFonts.outfit(
+        fontSize: 24,
+        fontWeight: FontWeight.w400,
+      ),
       titleLarge: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w400),
     );
 
