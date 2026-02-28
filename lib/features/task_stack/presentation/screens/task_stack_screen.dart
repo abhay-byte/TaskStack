@@ -20,22 +20,18 @@ class TaskStackScreen extends ConsumerStatefulWidget {
 
 class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   late final ScrollController _scrollController;
-  late final PageController _pageController;
   late Timer _timer;
 
+  // Start PageView at an arbitrary large index so we can scroll infinitely both ways
+  final PageController _pageController = PageController(initialPage: 10000);
+
   // Base date around which the PageView revolves
-  late DateTime _initialDate;
+  DateTime? _initialDate;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-
-    // Set initial date from provider (usually today)
-    _initialDate = ref.read(selectedStackDateProvider);
-
-    // Start PageView at an arbitrary large index so we can scroll infinitely both ways
-    _pageController = PageController(initialPage: 10000);
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToNow());
     // Update time indicator every 30s
@@ -118,15 +114,19 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
             child: PageView.builder(
               controller: _pageController,
               onPageChanged: (index) {
+                final baseDate = _initialDate ?? DateTime.now();
                 final daysOffset = index - 10000;
-                final newDate = _initialDate.add(Duration(days: daysOffset));
+                final newDate = baseDate.add(Duration(days: daysOffset));
                 ref.read(selectedStackDateProvider.notifier).state = newDate;
               },
               itemBuilder: (context, index) {
+                // Initialize _initialDate on first build if needed
+                _initialDate ??= ref.read(selectedStackDateProvider);
+
                 // Ensure we use the date for this specific page index so it paints correctly
                 // as we swipe
                 final daysOffset = index - 10000;
-                final pageDate = _initialDate.add(Duration(days: daysOffset));
+                final pageDate = _initialDate!.add(Duration(days: daysOffset));
                 final isPageToday = _isToday(pageDate);
 
                 return Stack(
