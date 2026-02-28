@@ -1,5 +1,4 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:go_router/go_router.dart';
 
 /// Central hub for flutter_local_notifications.
 class NotificationService {

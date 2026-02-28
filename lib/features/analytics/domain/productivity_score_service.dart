@@ -3,7 +3,6 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:taskstack/database/app_database.dart';
 import 'package:taskstack/database/tables/daily_summaries_table.dart';
-import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/features/task_stack/domain/repositories/task_repository.dart';
 import 'package:taskstack/features/task_stack/data/repositories/task_repository_impl.dart';
 

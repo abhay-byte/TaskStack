@@ -10,7 +10,7 @@ class TaskRepositoryImpl implements TaskRepository {
   TaskRepositoryImpl(this._dao);
   final TaskDao _dao;
 
-  static const _fmt = 'yyyy-MM-dd';
+
 
   String _dateString(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';

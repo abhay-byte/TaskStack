@@ -21,7 +21,6 @@ class TaskStackScreen extends ConsumerStatefulWidget {
 class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   late final ScrollController _scrollController;
   late Timer _timer;
-  final _timelineKey = GlobalKey();
 
   @override
   void initState() {
