@@ -22,16 +22,26 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   late final ScrollController _scrollController;
   late Timer _timer;
 
-  // Start PageView at an arbitrary large index so we can scroll infinitely both ways
-  final PageController _pageController = PageController(initialPage: 10000);
-
-  // Base date around which the PageView revolves
+  // Base date around which the infinite list revolves (Index 10000 = this date)
   DateTime? _initialDate;
+
+  // Track the currently visible day index so we don't spam state updates
+  int _currentVisibleIndex = 10000;
+
+  // Height of a single full day block in pixels
+  static const double _dayBlockHeight = 24 * _kPixelsPerHour + 200;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
+
+    // Start at a large index so we can scroll up and down infinitely
+    final initialScrollOffset = 10000 * _dayBlockHeight;
+    _scrollController = ScrollController(
+      initialScrollOffset: initialScrollOffset,
+    );
+
+    _scrollController.addListener(_onScroll);
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToNow());
     // Update time indicator every 30s
@@ -40,22 +50,47 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
     });
   }
 
+  void _onScroll() {
+    if (!_scrollController.hasClients || _initialDate == null) return;
+
+    // Determine which day index is most visible (top of the screen)
+    final scrollOffset = _scrollController.offset;
+    final visibleIndex = (scrollOffset / _dayBlockHeight).floor();
+
+    if (visibleIndex != _currentVisibleIndex) {
+      _currentVisibleIndex = visibleIndex;
+      final daysOffset = visibleIndex - 10000;
+      final newDate = _initialDate!.add(Duration(days: daysOffset));
+
+      // Update the date provider without rebuilding the whole list immediately
+      Future.microtask(() {
+        if (mounted) {
+          ref.read(selectedStackDateProvider.notifier).state = newDate;
+        }
+      });
+    }
+  }
+
   @override
   void dispose() {
     _timer.cancel();
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    _pageController.dispose();
     super.dispose();
   }
 
   void _scrollToNow() {
     if (!_scrollController.hasClients) return;
     final now = DateTime.now();
-    final offset =
+
+    // Calculate scroll offset: current day block (10000) + time offset
+    final dayBaseOffset = 10000 * _dayBlockHeight;
+    final timeOffset =
         (now.hour * 60 + now.minute) * _kMinuteHeight -
         MediaQuery.of(context).size.height * 0.35;
+
     _scrollController.animateTo(
-      offset.clamp(0, _scrollController.position.maxScrollExtent),
+      dayBaseOffset + timeOffset.clamp(0.0, _dayBlockHeight),
       duration: const Duration(milliseconds: 600),
       curve: Curves.easeOutCubic,
     );
@@ -98,110 +133,97 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
           _DateNavBar(
             selectedDate: selectedDate,
             onPrev: () {
-              _pageController.previousPage(
+              final previousOffset = _scrollController.offset - _dayBlockHeight;
+              _scrollController.animateTo(
+                previousOffset,
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
               );
             },
             onNext: () {
-              _pageController.nextPage(
+              final nextOffset = _scrollController.offset + _dayBlockHeight;
+              _scrollController.animateTo(
+                nextOffset,
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
               );
             },
           ),
           Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: (index) {
-                final baseDate = _initialDate ?? DateTime.now();
-                final daysOffset = index - 10000;
-                final newDate = baseDate.add(Duration(days: daysOffset));
-                ref.read(selectedStackDateProvider.notifier).state = newDate;
-              },
+            child: ListView.builder(
+              controller: _scrollController,
               itemBuilder: (context, index) {
                 // Initialize _initialDate on first build if needed
                 _initialDate ??= ref.read(selectedStackDateProvider);
 
-                // Ensure we use the date for this specific page index so it paints correctly
-                // as we swipe
                 final daysOffset = index - 10000;
                 final pageDate = _initialDate!.add(Duration(days: daysOffset));
                 final isPageToday = _isToday(pageDate);
 
-                return Stack(
-                  children: [
-                    // Timeline scroll view
-                    SingleChildScrollView(
-                      controller:
-                          index == _pageController.page?.round()
-                              ? _scrollController
-                              : null,
-                      child: SizedBox(
-                        height: 24 * _kPixelsPerHour + 200,
-                        child: Stack(
-                          children: [
-                            // Hour slots
-                            ...List.generate(
-                              24,
-                              (h) => _HourSlotWidget(hour: h),
-                            ),
+                return SizedBox(
+                  height: _dayBlockHeight,
+                  child: Stack(
+                    children: [
+                      // Hour slots
+                      ...List.generate(24, (h) => _HourSlotWidget(hour: h)),
 
-                            // Task cards
-                            ...scheduled.map(
-                              (task) => _PositionedTaskCard(
-                                task: task,
-                                now: now,
-                                isToday: isPageToday,
-                              ),
-                            ),
-
-                            // Unscheduled section below timeline
-                            if (unscheduled.isNotEmpty)
-                              Positioned(
-                                top: 24 * _kPixelsPerHour + 16,
-                                left: 0,
-                                right: 0,
-                                child: _UnscheduledSection(tasks: unscheduled),
-                              ),
-
-                            // Current time indicator (only for today)
-                            if (isPageToday) TimeIndicatorWidget(now: now),
-                          ],
+                      // Task cards (In a real app, query tasks specific to pageDate here)
+                      // For now, we assume scheduled items are for the selected day in state
+                      ...scheduled.map(
+                        (task) => _PositionedTaskCard(
+                          task: task,
+                          now: now,
+                          isToday: isPageToday,
                         ),
                       ),
-                    ),
 
-                    // Empty state
-                    if (scheduled.isEmpty && unscheduled.isEmpty)
-                      Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.wb_sunny_outlined,
-                              size: 64,
-                              color: colorScheme.outline,
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            Text(
-                              'No tasks for this day',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.titleMedium?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              'Tap + to add your first task',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: colorScheme.outline),
-                            ),
-                          ],
+                      // Unscheduled section below timeline
+                      if (unscheduled.isNotEmpty && daysOffset == 0)
+                        Positioned(
+                          top: 24 * _kPixelsPerHour + 16,
+                          left: 0,
+                          right: 0,
+                          child: _UnscheduledSection(tasks: unscheduled),
                         ),
-                      ),
-                  ],
+
+                      // Current time indicator (only for today)
+                      if (isPageToday) TimeIndicatorWidget(now: now),
+
+                      // Empty state for this day block
+                      if (scheduled.isEmpty &&
+                          unscheduled.isEmpty &&
+                          daysOffset == 0)
+                        Positioned.fill(
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.wb_sunny_outlined,
+                                  size: 64,
+                                  color: colorScheme.outline,
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                Text(
+                                  'No tasks for this day',
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                Text(
+                                  'Tap + to add your first task',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(color: colorScheme.outline),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 );
               },
             ),
