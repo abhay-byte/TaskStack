@@ -254,17 +254,14 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (isToday) ...[
-            FloatingActionButton.small(
-              heroTag: 'recenter',
-              backgroundColor:
-                  Theme.of(context).colorScheme.surfaceContainerHigh,
-              onPressed: _scrollToNow,
-              tooltip: 'Go to present time',
-              child: const Icon(Icons.my_location, size: 20),
-            ),
-            const SizedBox(height: 16),
-          ],
+          FloatingActionButton.small(
+            heroTag: 'recenter',
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+            onPressed: _scrollToNow,
+            tooltip: 'Go to present time',
+            child: const Icon(Icons.adjust, size: 20),
+          ),
+          const SizedBox(height: 16),
           FloatingActionButton(
             heroTag: 'add_task',
             onPressed: () => context.push('/task/new', extra: selectedDate),
