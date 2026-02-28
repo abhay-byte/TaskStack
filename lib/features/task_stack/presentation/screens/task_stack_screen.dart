@@ -289,7 +289,10 @@ class _DateNavBar extends StatelessWidget {
             child: Text(
               label,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleSmall,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
           IconButton(
