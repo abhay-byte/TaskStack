@@ -38,5 +38,13 @@ shape: const RoundedRectangleBorder(
 )
 ```
 
+### 5. Typography Fallbacks (Dark Mode Compatibility)
+Because Flutter's `showTimePicker` pushes a localized Dialog route, it natively ignores inherited `GoogleFonts` inversions if the overarching `TextTheme` overrides lack the `displayMedium` configuration required for the TimePicker's input boxes. This often results in a fallback to unstyled Roboto with awkward square containers in Dark Mode.
+
+To intercept this, we inject explicitly formatted `GoogleFonts` directly into the `TimePickerThemeData`:
+- **`hourMinuteTextStyle`**: `GoogleFonts.outfit` (60pt font size)
+- **`dialTextStyle`**: `GoogleFonts.inter` (16pt font size)
+- **`helpTextStyle`**: `GoogleFonts.inter` (12pt font size)
+
 ## Benefits of Theming at the App Level
 By lifting the `TimePickerThemeData` into the root `ThemeData`, any invocation of `showTimePicker()` across the TaskStack app will instantly and automatically render with these correct proportions, states, and text contrasts without requiring individual overrides on every call site.

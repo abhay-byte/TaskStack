@@ -32,9 +32,9 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     if (widget.taskId == null) {
       // Pre-fill start time with current if new task
       final now = DateTime.now();
-      ref.read(taskFormProvider.notifier).updateStartMinutes(
-            now.hour * 60 + now.minute,
-          );
+      ref
+          .read(taskFormProvider.notifier)
+          .updateStartMinutes(now.hour * 60 + now.minute);
       setState(() => _loaded = true);
       return;
     }
@@ -138,7 +138,8 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
           Text('Accent Color', style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: AppSpacing.sm),
           _ColorPicker(
-            selectedColor: form.colorArgb != null ? Color(form.colorArgb!) : null,
+            selectedColor:
+                form.colorArgb != null ? Color(form.colorArgb!) : null,
             onSelected: (c) => notifier.updateColor(c?.toARGB32()),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -165,17 +166,29 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
           _FormSection(
             icon: Icons.access_time,
             label: 'Start Time',
-            value: form.startMinutes != null
-                ? _minutesToLabel(form.startMinutes!)
-                : 'Not set',
+            value:
+                form.startMinutes != null
+                    ? _minutesToLabel(form.startMinutes!)
+                    : 'Not set',
             onTap: () async {
               final picked = await showTimePicker(
                 context: context,
-                initialTime: form.startMinutes != null
-                    ? TimeOfDay(
-                        hour: form.startMinutes! ~/ 60,
-                        minute: form.startMinutes! % 60)
-                    : TimeOfDay.now(),
+                initialTime:
+                    form.startMinutes != null
+                        ? TimeOfDay(
+                          hour: form.startMinutes! ~/ 60,
+                          minute: form.startMinutes! % 60,
+                        )
+                        : TimeOfDay.now(),
+                initialEntryMode: TimePickerEntryMode.dial,
+                builder: (context, child) {
+                  return MediaQuery(
+                    data: MediaQuery.of(
+                      context,
+                    ).copyWith(alwaysUse24HourFormat: false),
+                    child: child!,
+                  );
+                },
               );
               if (picked != null) {
                 notifier.updateStartMinutes(picked.hour * 60 + picked.minute);
@@ -200,10 +213,14 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             segments: const [
               ButtonSegment(value: RecurrenceType.none, label: Text('None')),
               ButtonSegment(
-                  value: RecurrenceType.repeatToday, label: Text('Today')),
+                value: RecurrenceType.repeatToday,
+                label: Text('Today'),
+              ),
               ButtonSegment(value: RecurrenceType.daily, label: Text('Daily')),
               ButtonSegment(
-                  value: RecurrenceType.weekly, label: Text('Weekly')),
+                value: RecurrenceType.weekly,
+                label: Text('Weekly'),
+              ),
             ],
             selected: {form.recurrenceType},
             onSelectionChanged: (s) => notifier.updateRecurrence(s.first),
@@ -243,10 +260,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
           if (form.error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Text(
-                form.error!,
-                style: TextStyle(color: cs.error),
-              ),
+              child: Text(form.error!, style: TextStyle(color: cs.error)),
             ),
         ],
       ),
@@ -273,51 +287,63 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
   }
 
   String _offsetLabel(int minutes) => switch (minutes) {
-        0 => 'At start time',
-        5 => '5 minutes before',
-        10 => '10 minutes before',
-        15 => '15 minutes before',
-        30 => '30 minutes before',
-        _ => '$minutes minutes before',
-      };
+    0 => 'At start time',
+    5 => '5 minutes before',
+    10 => '10 minutes before',
+    15 => '15 minutes before',
+    30 => '30 minutes before',
+    _ => '$minutes minutes before',
+  };
 
   void _showDurationPicker(
-      BuildContext context, TaskFormState form, TaskFormNotifier notifier) {
+    BuildContext context,
+    TaskFormState form,
+    TaskFormNotifier notifier,
+  ) {
     showDialog(
       context: context,
-      builder: (_) => _NumberPickerDialog(
-        title: 'Duration (minutes)',
-        options: [15, 30, 45, 60, 90, 120, 180, 240],
-        selected: form.durationMinutes,
-        onSelected: notifier.updateDuration,
-      ),
+      builder:
+          (_) => _NumberPickerDialog(
+            title: 'Duration (minutes)',
+            options: [15, 30, 45, 60, 90, 120, 180, 240],
+            selected: form.durationMinutes,
+            onSelected: notifier.updateDuration,
+          ),
     );
   }
 
   void _showIntervalPicker(
-      BuildContext context, TaskFormState form, TaskFormNotifier notifier) {
+    BuildContext context,
+    TaskFormState form,
+    TaskFormNotifier notifier,
+  ) {
     showDialog(
       context: context,
-      builder: (_) => _NumberPickerDialog(
-        title: 'Repeat every N minutes',
-        options: [15, 30, 60, 90, 120],
-        selected: form.repeatIntervalMinutes,
-        onSelected: notifier.updateRepeatInterval,
-      ),
+      builder:
+          (_) => _NumberPickerDialog(
+            title: 'Repeat every N minutes',
+            options: [15, 30, 60, 90, 120],
+            selected: form.repeatIntervalMinutes,
+            onSelected: notifier.updateRepeatInterval,
+          ),
     );
   }
 
   void _showOffsetPicker(
-      BuildContext context, TaskFormState form, TaskFormNotifier notifier) {
+    BuildContext context,
+    TaskFormState form,
+    TaskFormNotifier notifier,
+  ) {
     showDialog(
       context: context,
-      builder: (_) => _NumberPickerDialog(
-        title: 'Reminder',
-        options: [0, 5, 10, 15, 30],
-        selected: form.notificationOffsetMinutes,
-        onSelected: notifier.updateNotificationOffset,
-        labelBuilder: (n) => n == 0 ? 'At start time' : '$n min before',
-      ),
+      builder:
+          (_) => _NumberPickerDialog(
+            title: 'Reminder',
+            options: [0, 5, 10, 15, 30],
+            selected: form.notificationOffsetMinutes,
+            onSelected: notifier.updateNotificationOffset,
+            labelBuilder: (n) => n == 0 ? 'At start time' : '$n min before',
+          ),
     );
   }
 }
@@ -344,10 +370,9 @@ class _FormSection extends StatelessWidget {
       title: Text(label),
       trailing: Text(
         value,
-        style: Theme.of(context)
-            .textTheme
-            .bodyMedium
-            ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.primary,
+        ),
       ),
       onTap: onTap,
       contentPadding: EdgeInsets.zero,
@@ -375,9 +400,10 @@ class _ColorPicker extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: selectedColor == null
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.outline,
+                color:
+                    selectedColor == null
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.outline,
                 width: selectedColor == null ? 3 : 1,
               ),
             ),
@@ -394,9 +420,10 @@ class _ColorPicker extends StatelessWidget {
                 color: c,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: selectedColor?.toARGB32() == c.toARGB32()
-                      ? Theme.of(context).colorScheme.onSurface
-                      : Colors.transparent,
+                  color:
+                      selectedColor?.toARGB32() == c.toARGB32()
+                          ? Theme.of(context).colorScheme.onSurface
+                          : Colors.transparent,
                   width: 3,
                 ),
               ),
@@ -448,12 +475,15 @@ class _TagInput extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.sm,
-            children: tags
-                .map((tag) => InputChip(
-                      label: Text('#$tag'),
-                      onDeleted: () => onRemove(tag),
-                    ))
-                .toList(),
+            children:
+                tags
+                    .map(
+                      (tag) => InputChip(
+                        label: Text('#$tag'),
+                        onDeleted: () => onRemove(tag),
+                      ),
+                    )
+                    .toList(),
           ),
         ],
       ],
@@ -482,19 +512,22 @@ class _NumberPickerDialog extends StatelessWidget {
       title: Text(title),
       content: Column(
         mainAxisSize: MainAxisSize.min,
-        children: options
-            .map((o) => RadioListTile<int>(
-                  title: Text(labelBuilder != null ? labelBuilder!(o) : '$o'),
-                  value: o,
-                  groupValue: selected,
-                  onChanged: (v) {
-                    if (v != null) {
-                      onSelected(v);
-                      Navigator.pop(context);
-                    }
-                  },
-                ))
-            .toList(),
+        children:
+            options
+                .map(
+                  (o) => RadioListTile<int>(
+                    title: Text(labelBuilder != null ? labelBuilder!(o) : '$o'),
+                    value: o,
+                    groupValue: selected,
+                    onChanged: (v) {
+                      if (v != null) {
+                        onSelected(v);
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+                )
+                .toList(),
       ),
     );
   }
