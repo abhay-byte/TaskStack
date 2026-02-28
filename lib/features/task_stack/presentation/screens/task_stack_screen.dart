@@ -250,25 +250,10 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
           ),
         ],
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'recenter',
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-            onPressed: _scrollToNow,
-            tooltip: 'Go to present time',
-            child: const Icon(Icons.adjust, size: 20),
-          ),
-          const SizedBox(height: 16),
-          FloatingActionButton(
-            heroTag: 'add_task',
-            onPressed: () => context.push('/task/new', extra: selectedDate),
-            tooltip: 'Add Task',
-            child: const Icon(Icons.add),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.push('/task/new', extra: selectedDate),
+        tooltip: 'Add Task',
+        child: const Icon(Icons.add),
       ),
     );
   }
