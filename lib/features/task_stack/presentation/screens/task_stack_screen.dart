@@ -159,6 +159,7 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
+              itemExtent: _dayBlockHeight,
               itemBuilder: (context, index) {
                 // Initialize _initialDate on first build if needed
                 _initialDate ??= ref.read(selectedStackDateProvider);
