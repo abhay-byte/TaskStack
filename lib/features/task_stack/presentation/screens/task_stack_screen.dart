@@ -28,8 +28,8 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   // Track the currently visible day index so we don't spam state updates
   int _currentVisibleIndex = 10000;
 
-  // Height of a single full day block in pixels (24h + 1h for divider)
-  static const double _dayBlockHeight = 25 * _kPixelsPerHour;
+  // Height of a single full day block in pixels (Exactly 24 hours)
+  static const double _dayBlockHeight = 24 * _kPixelsPerHour;
 
   @override
   void initState() {
@@ -106,11 +106,21 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
     final unscheduled = ref.watch(unscheduledTasksProvider);
     final isToday = _isToday(selectedDate);
     final now = DateTime.now();
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('TaskStack'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/app_icon_foreground.png',
+              width: 32,
+              height: 32,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            const Text('TaskStack'),
+          ],
+        ),
         actions: [
           if (!isToday)
             TextButton.icon(
@@ -192,18 +202,12 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
                       // Current time indicator (only for today)
                       if (isPageToday) TimeIndicatorWidget(now: now),
 
-                      // Date Divider at the bottom (transition to next day)
+                      // Date Divider (floats exactly centered in the 50px space before 12 AM)
                       Positioned(
-                        top: 24 * _kPixelsPerHour,
+                        bottom: 40,
                         left: 0,
                         right: 0,
-                        height: _kPixelsPerHour,
-                        child: Container(
-                          alignment: Alignment.centerLeft,
-                          padding: const EdgeInsets.only(
-                            left: 64.0,
-                          ), // Align precisely with Time slots
-                          color: colorScheme.surfaceContainerLow,
+                        child: Center(
                           child: Text(
                             (() {
                               final nextDate = pageDate.add(
@@ -237,7 +241,7 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
                             style: Theme.of(
                               context,
                             ).textTheme.titleSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                              color: Theme.of(context).colorScheme.outline,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
