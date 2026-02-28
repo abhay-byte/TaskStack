@@ -20,12 +20,23 @@ class TaskStackScreen extends ConsumerStatefulWidget {
 
 class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   late final ScrollController _scrollController;
+  late final PageController _pageController;
   late Timer _timer;
+
+  // Base date around which the PageView revolves
+  late DateTime _initialDate;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+
+    // Set initial date from provider (usually today)
+    _initialDate = ref.read(selectedStackDateProvider);
+
+    // Start PageView at an arbitrary large index so we can scroll infinitely both ways
+    _pageController = PageController(initialPage: 10000);
+
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToNow());
     // Update time indicator every 30s
     _timer = Timer.periodic(const Duration(seconds: 30), (_) {
@@ -37,13 +48,15 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   void dispose() {
     _timer.cancel();
     _scrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
   void _scrollToNow() {
     if (!_scrollController.hasClients) return;
     final now = DateTime.now();
-    final offset = (now.hour * 60 + now.minute) * _kMinuteHeight -
+    final offset =
+        (now.hour * 60 + now.minute) * _kMinuteHeight -
         MediaQuery.of(context).size.height * 0.35;
     _scrollController.animateTo(
       offset.clamp(0, _scrollController.position.maxScrollExtent),
@@ -69,9 +82,14 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
             TextButton.icon(
               onPressed: () {
                 final today = DateTime.now();
-                ref.read(selectedStackDateProvider.notifier).state =
-                    DateTime(today.year, today.month, today.day);
-                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToNow());
+                ref.read(selectedStackDateProvider.notifier).state = DateTime(
+                  today.year,
+                  today.month,
+                  today.day,
+                );
+                WidgetsBinding.instance.addPostFrameCallback(
+                  (_) => _scrollToNow(),
+                );
               },
               icon: const Icon(Icons.today_outlined, size: 18),
               label: const Text('Today'),
@@ -83,76 +101,109 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
           // Date navigation bar
           _DateNavBar(
             selectedDate: selectedDate,
-            onPrev: () => ref.read(selectedStackDateProvider.notifier).state =
-                selectedDate.subtract(const Duration(days: 1)),
-            onNext: () => ref.read(selectedStackDateProvider.notifier).state =
-                selectedDate.add(const Duration(days: 1)),
+            onPrev: () {
+              _pageController.previousPage(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+            onNext: () {
+              _pageController.nextPage(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
           ),
           Expanded(
-            child: Stack(
-              children: [
-                // Timeline scroll view
-                SingleChildScrollView(
-                  controller: _scrollController,
-                  child: SizedBox(
-                    height: 24 * _kPixelsPerHour + 200,
-                    child: Stack(
-                      children: [
-                        // Hour slots
-                        ...List.generate(24, (h) => _HourSlotWidget(hour: h)),
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: (index) {
+                final daysOffset = index - 10000;
+                final newDate = _initialDate.add(Duration(days: daysOffset));
+                ref.read(selectedStackDateProvider.notifier).state = newDate;
+              },
+              itemBuilder: (context, index) {
+                // Ensure we use the date for this specific page index so it paints correctly
+                // as we swipe
+                final daysOffset = index - 10000;
+                final pageDate = _initialDate.add(Duration(days: daysOffset));
+                final isPageToday = _isToday(pageDate);
 
-                        // Task cards
-                        ...scheduled.map((task) => _PositionedTaskCard(
-                              task: task,
-                              now: now,
-                              isToday: isToday,
-                            )),
+                return Stack(
+                  children: [
+                    // Timeline scroll view
+                    SingleChildScrollView(
+                      controller:
+                          index == _pageController.page?.round()
+                              ? _scrollController
+                              : null,
+                      child: SizedBox(
+                        height: 24 * _kPixelsPerHour + 200,
+                        child: Stack(
+                          children: [
+                            // Hour slots
+                            ...List.generate(
+                              24,
+                              (h) => _HourSlotWidget(hour: h),
+                            ),
 
-                        // Unscheduled section below timeline
-                        if (unscheduled.isNotEmpty)
-                          Positioned(
-                            top: 24 * _kPixelsPerHour + 16,
-                            left: 0,
-                            right: 0,
-                            child: _UnscheduledSection(tasks: unscheduled),
-                          ),
+                            // Task cards
+                            ...scheduled.map(
+                              (task) => _PositionedTaskCard(
+                                task: task,
+                                now: now,
+                                isToday: isPageToday,
+                              ),
+                            ),
 
-                        // Current time indicator (only for today)
-                        if (isToday)
-                          TimeIndicatorWidget(now: now),
-                      ],
-                    ),
-                  ),
-                ),
+                            // Unscheduled section below timeline
+                            if (unscheduled.isNotEmpty)
+                              Positioned(
+                                top: 24 * _kPixelsPerHour + 16,
+                                left: 0,
+                                right: 0,
+                                child: _UnscheduledSection(tasks: unscheduled),
+                              ),
 
-                // Empty state
-                if (scheduled.isEmpty && unscheduled.isEmpty)
-                  Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.wb_sunny_outlined,
-                            size: 64, color: colorScheme.outline),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          'No tasks for this day',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(color: colorScheme.onSurfaceVariant),
+                            // Current time indicator (only for today)
+                            if (isPageToday) TimeIndicatorWidget(now: now),
+                          ],
                         ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          'Tap + to add your first task',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(color: colorScheme.outline),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-              ],
+
+                    // Empty state
+                    if (scheduled.isEmpty && unscheduled.isEmpty)
+                      Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.wb_sunny_outlined,
+                              size: 64,
+                              color: colorScheme.outline,
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Text(
+                              'No tasks for this day',
+                              style: Theme.of(
+                                context,
+                              ).textTheme.titleMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              'Tap + to add your first task',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: colorScheme.outline),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
         ],
@@ -186,14 +237,47 @@ class _DateNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final months = ['Jan','Feb','Mar','Apr','May','Jun',
-        'Jul','Aug','Sep','Oct','Nov','Dec'];
-    final label =
-        '${_weekday(selectedDate)}, ${months[selectedDate.month - 1]} ${selectedDate.day}';
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final current = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+    );
+    final daysDiff = current.difference(today).inDays;
+
+    late String label;
+    if (daysDiff == 0) {
+      label = 'Today';
+    } else if (daysDiff == 1) {
+      label = 'Tomorrow';
+    } else if (daysDiff == -1) {
+      label = 'Yesterday';
+    } else {
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      label =
+          '${_weekday(selectedDate)}, ${months[selectedDate.month - 1]} ${selectedDate.day}';
+    }
 
     return Container(
       color: Theme.of(context).colorScheme.surfaceContainerLow,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 4,
+      ),
       child: Row(
         children: [
           IconButton(
@@ -219,7 +303,7 @@ class _DateNavBar extends StatelessWidget {
   }
 
   String _weekday(DateTime d) {
-    const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return days[d.weekday - 1];
   }
 }
@@ -232,13 +316,14 @@ class _HourSlotWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = hour == 0
-        ? '12 AM'
-        : hour < 12
+    final label =
+        hour == 0
+            ? '12 AM'
+            : hour < 12
             ? '$hour AM'
             : hour == 12
-                ? '12 PM'
-                : '${hour - 12} PM';
+            ? '12 PM'
+            : '${hour - 12} PM';
 
     return Positioned(
       top: hour * _kPixelsPerHour,
@@ -256,8 +341,8 @@ class _HourSlotWidget extends StatelessWidget {
                 label,
                 textAlign: TextAlign.right,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
+                  color: Theme.of(context).colorScheme.outline,
+                ),
               ),
             ),
           ),
@@ -295,7 +380,10 @@ class _PositionedTaskCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final top = task.startMinutes! * _kMinuteHeight;
-    final height = ((task.durationMinutes ?? 30) * _kMinuteHeight).clamp(40.0, double.infinity);
+    final height = ((task.durationMinutes ?? 30) * _kMinuteHeight).clamp(
+      40.0,
+      double.infinity,
+    );
 
     return Positioned(
       top: top,
@@ -326,20 +414,21 @@ class _PositionedTaskCard extends ConsumerWidget {
   Future<bool> _confirmDelete(BuildContext context) async {
     return await showDialog<bool>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Delete Task'),
-            content: const Text('This task will be permanently deleted.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
+          builder:
+              (ctx) => AlertDialog(
+                title: const Text('Delete Task'),
+                content: const Text('This task will be permanently deleted.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Delete'),
+                  ),
+                ],
               ),
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Delete'),
-              ),
-            ],
-          ),
         ) ??
         false;
   }
