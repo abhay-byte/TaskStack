@@ -93,6 +93,45 @@ class AppTheme {
           borderRadius: BorderRadius.all(Radius.circular(8)),
         ),
       ),
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: colorScheme.surfaceContainerHigh,
+        hourMinuteTextColor: WidgetStateColor.resolveWith(
+          (states) =>
+              states.contains(WidgetState.selected)
+                  ? colorScheme.onPrimaryContainer
+                  : colorScheme.onSurface,
+        ),
+        hourMinuteColor: WidgetStateColor.resolveWith(
+          (states) =>
+              states.contains(WidgetState.selected)
+                  ? colorScheme.primaryContainer
+                  : colorScheme.surfaceContainerHighest,
+        ),
+        dayPeriodTextColor: WidgetStateColor.resolveWith(
+          (states) =>
+              states.contains(WidgetState.selected)
+                  ? colorScheme.onTertiaryContainer
+                  : colorScheme.onSurfaceVariant,
+        ),
+        dayPeriodColor: WidgetStateColor.resolveWith(
+          (states) =>
+              states.contains(WidgetState.selected)
+                  ? colorScheme.tertiaryContainer
+                  : Colors.transparent,
+        ),
+        dialHandColor: colorScheme.primary,
+        dialBackgroundColor: colorScheme.surfaceContainerHighest,
+        dialTextColor: WidgetStateColor.resolveWith(
+          (states) =>
+              states.contains(WidgetState.selected)
+                  ? colorScheme.onPrimary
+                  : colorScheme.onSurface,
+        ),
+        entryModeIconColor: colorScheme.onSurfaceVariant,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(28)),
+        ),
+      ),
     );
   }
 }
