@@ -128,11 +128,6 @@ class AppTheme {
                   : colorScheme.onSurface,
         ),
         entryModeIconColor: colorScheme.onSurfaceVariant,
-        hourMinuteTextStyle: GoogleFonts.outfit(
-          textStyle: baseTextTheme.displayMedium,
-          fontSize: 60,
-          fontWeight: FontWeight.w400,
-        ),
         dialTextStyle: GoogleFonts.inter(
           textStyle: baseTextTheme.bodyLarge,
           fontSize: 16,

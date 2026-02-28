@@ -197,12 +197,51 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
           ),
           const SizedBox(height: AppSpacing.sm),
 
-          // ── Duration ──────────────────────────────────────────────────────
+          // ── End Time ──────────────────────────────────────────────────────
           _FormSection(
-            icon: Icons.timer_outlined,
-            label: 'Duration',
-            value: '${form.durationMinutes} minutes',
-            onTap: () => _showDurationPicker(context, form, notifier),
+            icon: Icons.timer_off_outlined,
+            label: 'End Time',
+            value: () {
+              final start = form.startMinutes;
+              final dur = form.durationMinutes;
+              if (start == null) return 'Set start time first';
+              final endM = (start + dur) % (24 * 60);
+              final h = endM ~/ 60;
+              final min = endM % 60;
+              final period = h < 12 ? 'AM' : 'PM';
+              final displayH = h % 12 == 0 ? 12 : h % 12;
+              return '${displayH.toString().padLeft(2, '0')}:${min.toString().padLeft(2, '0')} $period';
+            }(),
+            onTap:
+                form.startMinutes == null
+                    ? null
+                    : () async {
+                      final startM = form.startMinutes!;
+                      final currentEndM = startM + form.durationMinutes;
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay(
+                          hour: (currentEndM ~/ 60) % 24,
+                          minute: currentEndM % 60,
+                        ),
+                        helpText: 'Select end time',
+                        initialEntryMode: TimePickerEntryMode.dial,
+                        builder: (context, child) {
+                          return MediaQuery(
+                            data: MediaQuery.of(
+                              context,
+                            ).copyWith(alwaysUse24HourFormat: false),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        final endM = picked.hour * 60 + picked.minute;
+                        var duration = endM - startM;
+                        if (duration <= 0) duration += 24 * 60; // next day
+                        notifier.updateDuration(duration);
+                      }
+                    },
           ),
           const SizedBox(height: AppSpacing.md),
 
@@ -295,23 +334,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     _ => '$minutes minutes before',
   };
 
-  void _showDurationPicker(
-    BuildContext context,
-    TaskFormState form,
-    TaskFormNotifier notifier,
-  ) {
-    showDialog(
-      context: context,
-      builder:
-          (_) => _NumberPickerDialog(
-            title: 'Duration (minutes)',
-            options: [15, 30, 45, 60, 90, 120, 180, 240],
-            selected: form.durationMinutes,
-            onSelected: notifier.updateDuration,
-          ),
-    );
-  }
-
   void _showIntervalPicker(
     BuildContext context,
     TaskFormState form,
@@ -361,7 +383,7 @@ class _FormSection extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
