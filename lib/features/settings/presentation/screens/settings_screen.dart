@@ -9,6 +9,7 @@ import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/core/constants/app_spacing.dart';
 import 'package:taskstack/core/constants/app_colors.dart';
 import 'package:taskstack/features/task_stack/data/repositories/task_repository_impl.dart';
+import 'package:taskstack/features/settings/data/json_import_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -252,9 +253,32 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _importData(BuildContext context, WidgetRef ref) async {
+    final importService = ref.read(jsonImportServiceProvider);
+    // Show loading indicator
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Import: select a JSON file from the exported data')),
+        const SnackBar(
+          content: Text('Opening file picker…'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
+    final count = await importService.importFromJson();
+    if (!context.mounted) return;
+    if (count == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No file selected or no tasks to import')),
+      );
+    } else if (count == -1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Import failed — invalid JSON file'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Imported $count task${count != 1 ? "s" : ""} successfully ✓')),
       );
     }
   }

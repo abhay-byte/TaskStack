@@ -1,26 +1,11 @@
 # Todo Tasks
 
-## �️ Infrastructure
-- [ ] Flavour configuration (dev / staging / production)
-- [ ] Unit test scaffold (domain + data layer)
-- [ ] Widget test scaffold
-- [ ] Integration test scaffold
-- [ ] GitHub Actions CI/CD pipeline
+All core features have been implemented. See `finished-tasks.md` for details.
 
-## 🔔 Notifications
-- [ ] Persist across restarts (boot receiver Android)
-- [ ] Next-occurrence scheduling on completion
-
-## � Repeat Today — Advanced
-- [ ] Per-instance independent completion UI
-
-## 📊 Analytics
-- [ ] Productivity score saving to DailySummaries table (background job)
-
-## ⚙️ Settings
-- [ ] Import JSON from file picker
-
-## 🔄 Final Polish
-- [ ] Release APK (signed)
-- [ ] App icon creation + assignment
-- [ ] Splash screen
+## 🔄 Future Enhancements (Post v1.0)
+- Signed release APK (requires a keystore — set up manually)
+- Flavour productFlavours in build.gradle.kts (see `docs/flavour-config.md`)
+- Persist notifications across restarts with a headless background Dart isolate (advanced)
+- Deeper analytics: streak tracking, category time breakdowns
+- Search across tasks (full-text)
+- Widget (home screen widget) for today's top 3 tasks
