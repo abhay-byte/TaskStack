@@ -55,7 +55,10 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
 
     // Determine which day index is most visible (top of the screen)
     final scrollOffset = _scrollController.offset;
-    final visibleIndex = (scrollOffset / _dayBlockHeight).floor();
+    // We add half the screen height (or ~_kPixelsPerHour * 4) so the NavBar
+    // updates as soon as the Date Divider approaches the top 1/3rd of the screen.
+    final visibleIndex =
+        ((scrollOffset + _kPixelsPerHour * 4) / _dayBlockHeight).floor();
 
     if (visibleIndex != _currentVisibleIndex) {
       _currentVisibleIndex = visibleIndex;
@@ -196,7 +199,10 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
                         right: 0,
                         height: _kPixelsPerHour,
                         child: Container(
-                          alignment: Alignment.center,
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.only(
+                            left: 64.0,
+                          ), // Align precisely with Time slots
                           color: colorScheme.surfaceContainerLow,
                           child: Text(
                             (() {
