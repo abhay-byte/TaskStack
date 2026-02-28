@@ -128,6 +128,22 @@ class AppTheme {
                   : colorScheme.onSurface,
         ),
         entryModeIconColor: colorScheme.onSurfaceVariant,
+        hourMinuteTextStyle: GoogleFonts.outfit(
+          textStyle: baseTextTheme.displayMedium,
+          fontSize: 60,
+          fontWeight: FontWeight.w400,
+        ),
+        dialTextStyle: GoogleFonts.inter(
+          textStyle: baseTextTheme.bodyLarge,
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+        ),
+        helpTextStyle: GoogleFonts.inter(
+          textStyle: baseTextTheme.labelSmall,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: colorScheme.onSurfaceVariant,
+        ),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(28)),
         ),
