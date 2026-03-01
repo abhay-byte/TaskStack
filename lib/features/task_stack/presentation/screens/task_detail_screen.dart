@@ -16,9 +16,9 @@ class TaskDetailScreen extends ConsumerWidget {
     final tasksAsync = ref.watch(tasksForDateProvider(date));
 
     return tasksAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      loading:
+          () =>
+              const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
       data: (tasks) {
         // Also search other dates if not found in selected date
@@ -74,25 +74,22 @@ class _TaskDetailView extends ConsumerWidget {
           Row(
             children: [
               CircleAvatar(
-                backgroundColor: task.colorArgb != null
-                    ? Color(task.colorArgb!).withAlpha(40)
-                    : cs.primaryContainer,
+                backgroundColor:
+                    task.colorArgb != null
+                        ? Color(task.colorArgb!).withAlpha(40)
+                        : cs.primaryContainer,
                 radius: 28,
                 child: Icon(
                   Icons.task_alt,
-                  color: task.colorArgb != null
-                      ? Color(task.colorArgb!)
-                      : cs.primary,
+                  color:
+                      task.colorArgb != null
+                          ? Color(task.colorArgb!)
+                          : cs.primary,
                   size: 28,
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Text(
-                  task.title,
-                  style: tt.headlineSmall,
-                ),
-              ),
+              Expanded(child: Text(task.title, style: tt.headlineSmall)),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -147,13 +144,15 @@ class _TaskDetailView extends ConsumerWidget {
 
           // Notification
           _InfoTile(
-            icon: task.notificationEnabled
-                ? Icons.notifications_active_outlined
-                : Icons.notifications_off_outlined,
+            icon:
+                task.notificationEnabled
+                    ? Icons.notifications_active_outlined
+                    : Icons.notifications_off_outlined,
             label: 'Notification',
-            value: task.notificationEnabled
-                ? '${task.notificationOffsetMinutes} min before'
-                : 'Off',
+            value:
+                task.notificationEnabled
+                    ? '${task.notificationOffsetMinutes} min before'
+                    : 'Off',
           ),
 
           const SizedBox(height: AppSpacing.xxl),
@@ -169,9 +168,7 @@ class _TaskDetailView extends ConsumerWidget {
                 onPressed: () async {
                   final confirm = await _confirmDelete(context);
                   if (confirm && context.mounted) {
-                    await ref
-                        .read(deleteTaskUseCaseProvider)
-                        .execute(task.id);
+                    await ref.read(deleteTaskUseCaseProvider).execute(task.id);
                     if (context.mounted) context.pop();
                   }
                 },
@@ -183,37 +180,40 @@ class _TaskDetailView extends ConsumerWidget {
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
-                child: task.isDone
-                    ? FilledButton.tonal(
-                        onPressed: () async {
-                          await ref
-                              .read(completeTaskUseCaseProvider)
-                              .undo(task.id);
-                        },
-                        child: const Text('Undo Completion'),
-                      )
-                    : FilledButton.icon(
-                        onPressed: () async {
-                          await ref
-                              .read(completeTaskUseCaseProvider)
-                              .execute(task.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Task marked as done! ✓'),
-                                action: SnackBarAction(
-                                  label: 'Undo',
-                                  onPressed: () => ref
-                                      .read(completeTaskUseCaseProvider)
-                                      .undo(task.id),
+                child:
+                    task.isDone
+                        ? FilledButton.tonal(
+                          onPressed: () async {
+                            await ref
+                                .read(completeTaskUseCaseProvider)
+                                .undo(task.id);
+                          },
+                          child: const Text('Undo Completion'),
+                        )
+                        : FilledButton.icon(
+                          onPressed: () async {
+                            await ref
+                                .read(completeTaskUseCaseProvider)
+                                .execute(task.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('Task marked as done! ✓'),
+                                  duration: const Duration(seconds: 4),
+                                  action: SnackBarAction(
+                                    label: 'Undo',
+                                    onPressed:
+                                        () => ref
+                                            .read(completeTaskUseCaseProvider)
+                                            .undo(task.id),
+                                  ),
                                 ),
-                              ),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: const Text('Mark as Done'),
-                      ),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.check_circle_outline),
+                          label: const Text('Mark as Done'),
+                        ),
               ),
             ],
           ),
@@ -225,29 +225,32 @@ class _TaskDetailView extends ConsumerWidget {
   Future<bool> _confirmDelete(BuildContext context) async {
     return await showDialog<bool>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Delete Task'),
-            content: const Text('This task will be permanently deleted.'),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Cancel')),
-              FilledButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Delete')),
-            ],
-          ),
+          builder:
+              (ctx) => AlertDialog(
+                title: const Text('Delete Task'),
+                content: const Text('This task will be permanently deleted.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Delete'),
+                  ),
+                ],
+              ),
         ) ??
         false;
   }
 
   String _recurrenceLabel(RecurrenceType r) => switch (r) {
-        RecurrenceType.none => 'None',
-        RecurrenceType.repeatToday => 'Repeat today',
-        RecurrenceType.daily => 'Daily',
-        RecurrenceType.weekly => 'Weekly',
-        RecurrenceType.custom => 'Custom',
-      };
+    RecurrenceType.none => 'None',
+    RecurrenceType.repeatToday => 'Repeat today',
+    RecurrenceType.daily => 'Daily',
+    RecurrenceType.weekly => 'Weekly',
+    RecurrenceType.custom => 'Custom',
+  };
 }
 
 class _InfoTile extends StatelessWidget {
@@ -268,17 +271,22 @@ class _InfoTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon,
-              size: 20,
-              color: Theme.of(context).colorScheme.onSurfaceVariant),
+          Icon(
+            icon,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(value, style: Theme.of(context).textTheme.bodyMedium),
               ],

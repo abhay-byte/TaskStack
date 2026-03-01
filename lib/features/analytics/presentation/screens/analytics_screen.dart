@@ -82,8 +82,9 @@ class DailyAnalyticsTab extends ConsumerWidget {
             hourly[t.startMinutes! ~/ 60]++;
           }
         }
-        final mostProductiveHour =
-            hourly.indexOf(hourly.reduce((a, b) => a > b ? a : b));
+        final mostProductiveHour = hourly.indexOf(
+          hourly.reduce((a, b) => a > b ? a : b),
+        );
 
         // Tag distribution
         final tagCounts = <String, int>{};
@@ -96,7 +97,7 @@ class DailyAnalyticsTab extends ConsumerWidget {
         final cs = Theme.of(context).colorScheme;
 
         return ListView(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
             // Stat cards row
             Row(
@@ -128,31 +129,84 @@ class DailyAnalyticsTab extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
 
-            // Most productive hour
+            // Most productive hour (Hero Banner)
             if (total > 0)
               Card(
-                child: ListTile(
-                  leading: const Icon(Icons.bolt),
-                  title: const Text('Most Active Hour'),
-                  trailing: Text(
-                    mostProductiveHour < 12
-                        ? '$mostProductiveHour AM'
-                        : '${mostProductiveHour - 12} PM',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: cs.primary,
+                elevation: 0,
+                color: cs.secondaryContainer,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: cs.onSecondaryContainer.withAlpha(25),
+                          shape: BoxShape.circle,
                         ),
+                        child: Icon(
+                          Icons.bolt,
+                          color: cs.onSecondaryContainer,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Most Active Hour',
+                              style: Theme.of(
+                                context,
+                              ).textTheme.titleMedium?.copyWith(
+                                color: cs.onSecondaryContainer,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'When you schedule the most tasks',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: cs.onSecondaryContainer),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        mostProductiveHour < 12
+                            ? (mostProductiveHour == 0
+                                ? '12 AM'
+                                : '$mostProductiveHour AM')
+                            : (mostProductiveHour == 12
+                                ? '12 PM'
+                                : '${mostProductiveHour - 12} PM'),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineSmall?.copyWith(
+                          color: cs.onSecondaryContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            const SizedBox(height: AppSpacing.lg),
+            if (total > 0) const SizedBox(height: AppSpacing.xl),
 
             // Hourly bar chart
             if (total > 0) ...[
-              Text('Hourly Activity',
-                  style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Hourly Activity',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: AppSpacing.md),
               SizedBox(
-                height: 160,
+                height: 180,
                 child: BarChart(
                   BarChartData(
                     barGroups: List.generate(
@@ -163,66 +217,103 @@ class DailyAnalyticsTab extends ConsumerWidget {
                           BarChartRodData(
                             toY: hourly[h].toDouble(),
                             color: cs.primary,
-                            width: 8,
-                            borderRadius: BorderRadius.circular(2),
+                            width: 12,
+                            borderRadius: BorderRadius.circular(4),
+                            backDrawRodData: BackgroundBarChartRodData(
+                              show: true,
+                              toY:
+                                  hourly
+                                      .reduce((a, b) => a > b ? a : b)
+                                      .toDouble() *
+                                  1.1,
+                              color: cs.surfaceContainerHighest.withAlpha(100),
+                            ),
                           ),
                         ],
                       ),
                     ),
                     titlesData: FlTitlesData(
                       leftTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false)),
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
                       topTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false)),
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
                       rightTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false)),
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          reservedSize: 20,
+                          reservedSize: 28,
                           interval: 6,
-                          getTitlesWidget: (v, _) => Text(
-                            '${v.toInt()}h',
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
+                          getTitlesWidget: (v, _) {
+                            final h = v.toInt();
+                            if (h == 0) return _ChartLabel('12 AM', context);
+                            if (h == 6) return _ChartLabel('6 AM', context);
+                            if (h == 12) return _ChartLabel('12 PM', context);
+                            if (h == 18) return _ChartLabel('6 PM', context);
+                            return const SizedBox.shrink();
+                          },
                         ),
                       ),
                     ),
-                    gridData: const FlGridData(show: false),
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      horizontalInterval: 1,
+                      getDrawingHorizontalLine:
+                          (value) => FlLine(
+                            color: cs.outlineVariant.withAlpha(50),
+                            strokeWidth: 1,
+                            dashArray: [4, 4],
+                          ),
+                    ),
                     borderData: FlBorderData(show: false),
+                    alignment: BarChartAlignment.spaceAround,
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.xl),
             ],
 
             // Tag donut
             if (tagCounts.isNotEmpty) ...[
-              Text('Tag Distribution',
-                  style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Tag Distribution',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: AppSpacing.md),
               SizedBox(
-                height: 180,
+                height: 200,
                 child: PieChart(
                   PieChartData(
-                    sections: tagCounts.entries.toList().asMap().entries.map(
-                      (e) {
-                        final colors = [
-                          cs.primary, cs.secondary,
-                          cs.tertiary, cs.error,
-                          cs.outline,
-                        ];
-                        return PieChartSectionData(
-                          value: e.value.value.toDouble(),
-                          title: e.value.key,
-                          color: colors[e.key % colors.length],
-                          radius: 60,
-                          titleStyle: const TextStyle(
-                              fontSize: 11, color: Colors.white),
-                        );
-                      },
-                    ).toList(),
-                    centerSpaceRadius: 40,
+                    sectionsSpace: 2,
+                    sections:
+                        tagCounts.entries.toList().asMap().entries.map((e) {
+                          final colors = [
+                            cs.primary,
+                            cs.secondary,
+                            cs.tertiary,
+                            cs.error,
+                            cs.outline,
+                          ];
+                          return PieChartSectionData(
+                            value: e.value.value.toDouble(),
+                            title: e.value.key,
+                            color: colors[e.key % colors.length],
+                            radius: 70,
+                            titleStyle: Theme.of(
+                              context,
+                            ).textTheme.labelSmall?.copyWith(
+                              color: cs.onPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        }).toList(),
+                    centerSpaceRadius: 50,
                   ),
                 ),
               ),
@@ -232,7 +323,7 @@ class DailyAnalyticsTab extends ConsumerWidget {
               const Center(
                 child: Padding(
                   padding: EdgeInsets.all(AppSpacing.xxl),
-                  child: Text('No tasks for this day'),
+                  child: Text('No tasks scheduled for this day.'),
                 ),
               ),
           ],
@@ -257,7 +348,8 @@ class WeeklyAnalyticsTab extends ConsumerWidget {
       error: (e, _) => Center(child: Text('$e')),
       data: (weekData) {
         final totals = weekData.map((d) => d.length).toList();
-        final dones = weekData.map((d) => d.where((t) => t.isDone).length).toList();
+        final dones =
+            weekData.map((d) => d.where((t) => t.isDone).length).toList();
         final labels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
         final scores = List.generate(
           7,
@@ -266,28 +358,77 @@ class WeeklyAnalyticsTab extends ConsumerWidget {
         final bestDay = scores.indexOf(scores.reduce((a, b) => a > b ? a : b));
 
         return ListView(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
-            // Best + worst day
+            // Best day (Hero Banner)
             Card(
-              child: ListTile(
-                leading: const Icon(Icons.star_outline),
-                title: const Text('Best Day'),
-                trailing: Text(
-                  labels[bestDay],
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: cs.primary,
+              elevation: 0,
+              color: cs.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: cs.onSecondaryContainer.withAlpha(25),
+                        shape: BoxShape.circle,
                       ),
+                      child: Icon(
+                        Icons.star_outline,
+                        color: cs.onSecondaryContainer,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Best Day',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleMedium?.copyWith(
+                              color: cs.onSecondaryContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Your most productive weekday',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: cs.onSecondaryContainer),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      labels[bestDay],
+                      style: Theme.of(
+                        context,
+                      ).textTheme.headlineSmall?.copyWith(
+                        color: cs.onSecondaryContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.xl),
 
-            Text('Tasks Completed per Day',
-                style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Tasks Completed per Day',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: AppSpacing.md),
             SizedBox(
-              height: 180,
+              height: 200,
               child: BarChart(
                 BarChartData(
                   barGroups: List.generate(
@@ -298,12 +439,12 @@ class WeeklyAnalyticsTab extends ConsumerWidget {
                         BarChartRodData(
                           toY: dones[i].toDouble(),
                           color: cs.primary,
-                          width: 22,
-                          borderRadius: BorderRadius.circular(4),
+                          width: 24,
+                          borderRadius: BorderRadius.circular(6),
                           backDrawRodData: BackgroundBarChartRodData(
                             show: true,
-                            toY: totals[i].toDouble(),
-                            color: cs.primaryContainer,
+                            toY: totals[i] > 0 ? totals[i].toDouble() : 1.0,
+                            color: cs.surfaceContainerHighest.withAlpha(100),
                           ),
                         ),
                       ],
@@ -311,54 +452,84 @@ class WeeklyAnalyticsTab extends ConsumerWidget {
                   ),
                   titlesData: FlTitlesData(
                     leftTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false)),
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                     topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false)),
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                     rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false)),
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 24,
-                        getTitlesWidget: (v, _) => Text(
-                          labels[v.toInt()],
-                          style: Theme.of(context).textTheme.labelSmall,
-                        ),
+                        reservedSize: 28,
+                        getTitlesWidget:
+                            (v, _) => _ChartLabel(labels[v.toInt()], context),
                       ),
                     ),
                   ),
-                  gridData: const FlGridData(show: false),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: 1,
+                    getDrawingHorizontalLine:
+                        (value) => FlLine(
+                          color: cs.outlineVariant.withAlpha(50),
+                          strokeWidth: 1,
+                          dashArray: [4, 4],
+                        ),
+                  ),
                   borderData: FlBorderData(show: false),
+                  alignment: BarChartAlignment.spaceAround,
                 ),
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.xl),
 
-            Text('Productivity Score (0–100)',
-                style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Productivity Score (0–100)',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: AppSpacing.md),
             ...List.generate(7, (i) {
               return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Row(
                   children: [
                     SizedBox(
-                        width: 28,
-                        child: Text(labels[i],
-                            style:
-                                Theme.of(context).textTheme.labelMedium)),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: LinearProgressIndicator(
-                        value: scores[i] / 100,
-                        minHeight: 10,
-                        borderRadius: BorderRadius.circular(5),
+                      width: 32,
+                      child: Text(
+                        labels[i],
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      '${scores[i].toInt()}',
-                      style: Theme.of(context).textTheme.labelSmall,
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: scores[i] / 100,
+                          minHeight: 12,
+                          backgroundColor: cs.surfaceContainerHighest,
+                          valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    SizedBox(
+                      width: 32,
+                      child: Text(
+                        '${scores[i].toInt()}',
+                        textAlign: TextAlign.right,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -387,18 +558,50 @@ class MonthlyAnalyticsTab extends ConsumerWidget {
       data: (monthData) {
         // Heat-map style calendar
         final now = DateTime.now();
-        final daysInMonth =
-            DateUtils.getDaysInMonth(now.year, now.month);
+        final daysInMonth = DateUtils.getDaysInMonth(now.year, now.month);
 
         return ListView(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
-            Text('This Month', style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: List.generate(daysInMonth, (i) {
+            // Monthly completion rate
+            Row(
+              children: [
+                _StatCard(
+                  label: 'Monthly Rate',
+                  value: _monthlyRate(monthData),
+                  icon: Icons.donut_large,
+                  color: cs.primaryContainer,
+                  onColor: cs.onPrimaryContainer,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                _StatCard(
+                  label: 'Days Active',
+                  value: '${monthData.keys.length}',
+                  icon: Icons.local_fire_department_outlined,
+                  color: cs.tertiaryContainer,
+                  onColor: cs.onTertiaryContainer,
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            Text(
+              'This Month',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 7,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              itemCount: daysInMonth,
+              itemBuilder: (context, i) {
                 final day = i + 1;
                 final dayTasks = monthData[day] ?? [];
                 final total = dayTasks.length;
@@ -407,37 +610,29 @@ class MonthlyAnalyticsTab extends ConsumerWidget {
                 final isToday = now.day == day;
 
                 return Container(
-                  width: 36,
-                  height: 36,
                   decoration: BoxDecoration(
-                    color: total == 0
-                        ? cs.surfaceContainerLow
-                        : cs.primary.withAlpha((score * 200 + 55).toInt()),
-                    borderRadius: BorderRadius.circular(6),
-                    border: isToday
-                        ? Border.all(color: cs.primary, width: 2)
-                        : null,
+                    color:
+                        total == 0
+                            ? cs.surfaceContainerLow
+                            : cs.primary.withAlpha((score * 200 + 55).toInt()),
+                    borderRadius: BorderRadius.circular(8),
+                    border:
+                        isToday
+                            ? Border.all(color: cs.primary, width: 2)
+                            : null,
                   ),
                   child: Center(
                     child: Text(
                       '$day',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: total == 0 ? cs.outline : Colors.white,
-                          ),
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: total == 0 ? cs.onSurfaceVariant : Colors.white,
+                        fontWeight:
+                            isToday ? FontWeight.bold : FontWeight.normal,
+                      ),
                     ),
                   ),
                 );
-              }),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Monthly completion rate
-            _StatCard(
-              label: 'Avg Completion Rate',
-              value: _monthlyRate(monthData),
-              icon: Icons.donut_large,
-              color: cs.primaryContainer,
-              onColor: cs.onPrimaryContainer,
+              },
             ),
           ],
         );
@@ -469,36 +664,46 @@ class YearlyAnalyticsTab extends ConsumerWidget {
       error: (e, _) => Center(child: Text('$e')),
       data: (yearData) {
         return ListView(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
-            Text('365-Day Overview',
-                style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: 3,
-              runSpacing: 3,
-              children: yearData.map((dayScore) {
-                final alpha = (dayScore * 200 + 55).clamp(0, 255).toInt();
-                return Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: dayScore == 0
-                        ? cs.surfaceContainerLow
-                        : cs.primary.withAlpha(alpha),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                );
-              }).toList(),
+            Text(
+              '365-Day Overview',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.md),
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children:
+                  yearData.map((dayScore) {
+                    final alpha = (dayScore * 200 + 55).clamp(0, 255).toInt();
+                    return Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color:
+                            dayScore == 0
+                                ? cs.surfaceContainerLow
+                                : cs.primary.withAlpha(alpha),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    );
+                  }).toList(),
+            ),
+            const SizedBox(height: AppSpacing.xxl),
 
             // Monthly average bar chart
-            Text('Monthly Averages',
-                style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Monthly Averages',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: AppSpacing.md),
             SizedBox(
-              height: 160,
+              height: 200,
               child: BarChart(
                 BarChartData(
                   barGroups: List.generate(
@@ -510,32 +715,63 @@ class YearlyAnalyticsTab extends ConsumerWidget {
                           toY: ref.watch(monthlyAvgProvider(m + 1)),
                           color: cs.primary,
                           width: 16,
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: BorderRadius.circular(4),
+                          backDrawRodData: BackgroundBarChartRodData(
+                            show: true,
+                            toY: 100, // percentage base
+                            color: cs.surfaceContainerHighest.withAlpha(100),
+                          ),
                         ),
                       ],
                     ),
                   ),
                   titlesData: FlTitlesData(
                     leftTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false)),
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                     topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false)),
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                     rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false)),
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 24,
+                        reservedSize: 28,
                         getTitlesWidget: (v, _) {
-                          const months = ['J','F','M','A','M','J','J','A','S','O','N','D'];
-                          return Text(months[v.toInt()],
-                              style: Theme.of(context).textTheme.labelSmall);
+                          const months = [
+                            'Jan',
+                            'Feb',
+                            'Mar',
+                            'Apr',
+                            'May',
+                            'Jun',
+                            'Jul',
+                            'Aug',
+                            'Sep',
+                            'Oct',
+                            'Nov',
+                            'Dec',
+                          ];
+                          return _ChartLabel(months[v.toInt()], context);
                         },
                       ),
                     ),
                   ),
-                  gridData: const FlGridData(show: false),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: 25,
+                    getDrawingHorizontalLine:
+                        (value) => FlLine(
+                          color: cs.outlineVariant.withAlpha(50),
+                          strokeWidth: 1,
+                          dashArray: [4, 4],
+                        ),
+                  ),
                   borderData: FlBorderData(show: false),
+                  alignment: BarChartAlignment.spaceAround,
                 ),
               ),
             ),
@@ -567,27 +803,57 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Card(
+        elevation: 0,
         color: color,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.lg,
+            horizontal: AppSpacing.sm,
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: onColor, size: 20),
-              const SizedBox(height: AppSpacing.sm),
-              Text(value,
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(color: onColor)),
-              Text(label,
-                  style: Theme.of(context)
-                      .textTheme
-                      .labelSmall
-                      ?.copyWith(color: onColor)),
+              Icon(icon, color: onColor, size: 24),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: onColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: onColor.withAlpha(200),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChartLabel extends StatelessWidget {
+  const _ChartLabel(this.text, this.context);
+  final String text;
+  final BuildContext context;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
     );

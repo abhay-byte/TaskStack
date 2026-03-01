@@ -82,11 +82,17 @@ class AppTheme {
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
-      snackBarTheme: const SnackBarThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(4)),
+      snackBarTheme: SnackBarThemeData(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
         ),
         behavior: SnackBarBehavior.floating,
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        contentTextStyle: GoogleFonts.inter(
+          color: colorScheme.onSurface,
+          fontSize: 14,
+        ),
+        actionTextColor: colorScheme.primary,
       ),
       chipTheme: const ChipThemeData(
         shape: RoundedRectangleBorder(
