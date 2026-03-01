@@ -29,10 +29,10 @@ dependencies:
   timezone: ^0.10.0
 
   # ── Charts (Analytics) ────────────────────────────────────────────────────
-  fl_chart: ^0.70.2
+  fl_chart: ^1.1.1
 
   # ── Typography (Google Fonts) ─────────────────────────────────────────────
-  google_fonts: ^6.2.1
+  google_fonts: ^8.0.2
 
   # ── Utilities ─────────────────────────────────────────────────────────────
   uuid: ^4.5.1

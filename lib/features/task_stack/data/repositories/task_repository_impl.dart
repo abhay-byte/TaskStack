@@ -76,6 +76,7 @@ class TaskRepositoryImpl implements TaskRepository {
       description: row.description,
       purpose: row.purpose,
       iconId: row.iconId,
+      graphicImage: row.graphicImage,
       colorArgb: row.colorArgb,
       tags: (jsonDecode(row.tagsJson) as List).cast<String>(),
       startMinutes: row.startMinutes,

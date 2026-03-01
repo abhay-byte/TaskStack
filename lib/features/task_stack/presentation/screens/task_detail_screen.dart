@@ -414,7 +414,7 @@ class _GraphicWebViewState extends State<_GraphicWebView> {
   </style>
 </head>
 <body>
-  \$svgString
+  $svgString
   <script>
     const svg = document.querySelector('svg');
     if (svg) {
