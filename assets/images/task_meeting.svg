@@ -1,0 +1,65 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        @keyframes flip {
+            0%, 20% { transform: scaleY(1); opacity: 1; }
+            30%, 50% { transform: scaleY(0); opacity: 0; }
+            60%, 100% { transform: scaleY(1); opacity: 1; }
+        }
+        @keyframes pop {
+            0%, 50% { transform: scale(0); opacity: 0; }
+            60%, 100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .anim-flip { animation: flip 4s ease-in-out infinite; transform-origin: top; }
+        .anim-pop { animation: pop 4s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite; transform-origin: center; }
+        .anim-float { animation: float 6s ease-in-out infinite; transform-origin: center; }
+    </style>
+
+    <!-- Background -->
+    <rect width="400" height="300" rx="20" fill="#F8FAFC"/>
+    
+    <!-- Blobs -->
+    <circle cx="200" cy="150" r="120" fill="#FEF3C7" filter="blur(40px)"/>
+
+    <!-- Central Glass Card -->
+    <g class="anim-float" filter="drop-shadow(0px 10px 20px rgba(0,0,0,0.05))">
+        <rect x="120" y="50" width="160" height="200" rx="24" fill="white" fill-opacity="0.9" stroke="white" stroke-width="2"/>
+        
+        <!-- Calendar Base -->
+        <path d="M140 100 Q140 80 160 80 H240 Q260 80 260 100 V220 Q260 240 240 240 H160 Q140 240 140 220 Z" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="4"/>
+        <rect x="140" y="80" width="120" height="40" rx="0" fill="#EF4444"/>
+        
+        <!-- Rings -->
+        <rect x="160" y="65" width="10" height="30" rx="5" fill="#94A3B8"/>
+        <rect x="230" y="65" width="10" height="30" rx="5" fill="#94A3B8"/>
+        
+        <!-- Today label -->
+        <text x="200" y="110" font-family="sans-serif" font-weight="bold" font-size="20" fill="white" text-anchor="middle">MEET</text>
+        
+        <!-- Grid -->
+        <g stroke="#CBD5E1" stroke-width="2" stroke-linecap="round">
+            <line x1="160" y1="150" x2="240" y2="150"/>
+            <line x1="160" y1="180" x2="240" y2="180"/>
+            <line x1="160" y1="210" x2="240" y2="210"/>
+            <line x1="186" y1="130" x2="186" y2="230"/>
+            <line x1="213" y1="130" x2="213" y2="230"/>
+        </g>
+
+        <!-- Meeting Highlight -->
+        <rect x="189" y="153" width="22" height="24" rx="4" fill="#3B82F6" class="anim-pop"/>
+        <circle cx="200" cy="165" r="3" fill="white" class="anim-pop"/>
+        
+        <!-- Page Flip effect -->
+        <rect x="140" y="120" width="120" height="120" fill="white" class="anim-flip"/>
+        <g stroke="#E2E8F0" stroke-width="2" stroke-linecap="round" class="anim-flip">
+            <line x1="160" y1="150" x2="240" y2="150"/>
+            <line x1="160" y1="180" x2="240" y2="180"/>
+            <line x1="160" y1="210" x2="240" y2="210"/>
+            <line x1="186" y1="130" x2="186" y2="230"/>
+            <line x1="213" y1="130" x2="213" y2="230"/>
+        </g>
+    </g>
+</svg>

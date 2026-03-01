@@ -11,6 +11,7 @@ class Task {
     this.description,
     this.purpose,
     this.iconId,
+    this.graphicImage,
     this.colorArgb,
     this.tags = const [],
     this.startMinutes,
@@ -33,6 +34,7 @@ class Task {
   final String? description;
   final String? purpose;
   final String? iconId;
+  final String? graphicImage;
   final int? colorArgb;
   final List<String> tags;
   final int? startMinutes; // minutes from midnight
@@ -85,6 +87,7 @@ class Task {
     String? description,
     String? purpose,
     String? iconId,
+    String? graphicImage,
     int? colorArgb,
     List<String>? tags,
     int? startMinutes,
@@ -107,6 +110,7 @@ class Task {
       description: description ?? this.description,
       purpose: purpose ?? this.purpose,
       iconId: iconId ?? this.iconId,
+      graphicImage: graphicImage ?? this.graphicImage,
       colorArgb: colorArgb ?? this.colorArgb,
       tags: tags ?? this.tags,
       startMinutes: startMinutes ?? this.startMinutes,

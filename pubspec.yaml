@@ -49,6 +49,8 @@ dependencies:
   file_picker: ^8.1.7
 
   cupertino_icons: ^1.0.8
+  flutter_svg: ^2.2.3
+  webview_flutter: ^4.13.1
 
 dev_dependencies:
   flutter_test:

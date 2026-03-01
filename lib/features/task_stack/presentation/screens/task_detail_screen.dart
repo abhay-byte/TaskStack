@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/features/task_stack/domain/usecases/task_usecases.dart';
 import 'package:taskstack/features/task_stack/presentation/providers/task_providers.dart';
 import 'package:taskstack/core/constants/app_spacing.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class TaskDetailScreen extends ConsumerWidget {
   const TaskDetailScreen({super.key, required this.taskId});
@@ -71,6 +73,21 @@ class _TaskDetailView extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
+          // Graphic Image
+          if (task.graphicImage != null) ...[
+            Container(
+              height: 200,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: _GraphicWebView(assetPath: task.graphicImage!),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+
           // Header: icon + title
           Row(
             children: [
@@ -206,23 +223,38 @@ class _TaskDetailView extends ConsumerWidget {
                         )
                         : FilledButton.icon(
                           onPressed: () async {
-                            await ref
-                                .read(completeTaskUseCaseProvider)
-                                .execute(task.id);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: const Text('Task marked as done! ✓'),
-                                  duration: const Duration(seconds: 4),
-                                  action: SnackBarAction(
-                                    label: 'Undo',
-                                    onPressed:
-                                        () => ref
-                                            .read(completeTaskUseCaseProvider)
-                                            .undo(task.id),
+                            try {
+                              await ref
+                                  .read(completeTaskUseCaseProvider)
+                                  .execute(task);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Text(
+                                      'Task marked as done! ✓',
+                                    ),
+                                    duration: const Duration(seconds: 4),
+                                    action: SnackBarAction(
+                                      label: 'Undo',
+                                      onPressed:
+                                          () => ref
+                                              .read(completeTaskUseCaseProvider)
+                                              .undo(task.id),
+                                    ),
                                   ),
-                                ),
-                              );
+                                );
+                              }
+                            } on StateError catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(e.message),
+                                    backgroundColor:
+                                        Theme.of(context).colorScheme.error,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
                             }
                           },
                           icon: const Icon(Icons.check_circle_outline),
@@ -338,5 +370,70 @@ class _InfoTile extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _GraphicWebView extends StatefulWidget {
+  const _GraphicWebView({required this.assetPath});
+  final String assetPath;
+
+  @override
+  State<_GraphicWebView> createState() => _GraphicWebViewState();
+}
+
+class _GraphicWebViewState extends State<_GraphicWebView> {
+  late final WebViewController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller =
+        WebViewController()
+          ..setJavaScriptMode(JavaScriptMode.unrestricted)
+          ..setBackgroundColor(Colors.transparent);
+    _loadSvg();
+  }
+
+  Future<void> _loadSvg() async {
+    try {
+      final svgString = await rootBundle.loadString(widget.assetPath);
+      final html = '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    body, html { 
+      margin: 0; padding: 0; width: 100%; height: 100%; 
+      overflow: hidden; background-color: transparent; 
+      display: flex; justify-content: center; align-items: center; 
+    }
+    svg { 
+      width: 100%; height: 100%; 
+    }
+  </style>
+</head>
+<body>
+  \$svgString
+  <script>
+    const svg = document.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+    }
+  </script>
+</body>
+</html>
+      ''';
+      if (mounted) {
+        _controller.loadHtmlString(html);
+      }
+    } catch (e) {
+      debugPrint('Error loading SVG for WebView: \$e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WebViewWidget(controller: _controller);
   }
 }

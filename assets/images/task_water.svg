@@ -1,0 +1,43 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        @keyframes fillUp {
+            0% { y: 140px; height: 10px; }
+            50% { y: 60px; height: 90px; }
+            100% { y: 140px; height: 10px; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes drop {
+            0% { transform: translateY(-40px); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(40px); opacity: 0; }
+        }
+        .anim-fill { animation: fillUp 8s ease-in-out infinite; fill: #60A5FA; rx: 5; }
+        .anim-float { animation: float 6s ease-in-out infinite; transform-origin: center; }
+        .anim-drop { animation: drop 3s ease-in infinite; }
+    </style>
+
+    <!-- Background -->
+    <rect width="400" height="300" rx="20" fill="#F8FAFC"/>
+    
+    <!-- Background Blob -->
+    <circle cx="200" cy="150" r="100" fill="#BFDBFE" filter="blur(30px)"/>
+
+    <!-- Central Glass Card -->
+    <g class="anim-float" filter="drop-shadow(0px 10px 20px rgba(0,0,0,0.05))">
+        <rect x="120" y="40" width="160" height="220" rx="30" fill="white" fill-opacity="0.9" stroke="white" stroke-width="2"/>
+        
+        <!-- Water Drop -->
+        <path class="anim-drop" d="M200 60 C210 75 210 85 200 90 C190 85 190 75 200 60 Z" fill="#3B82F6"/>
+
+        <!-- Glass -->
+        <g transform="translate(150, 100)">
+            <path d="M10 0 L20 160 H80 L90 0" fill="#E2E8F0" fill-opacity="0.3" stroke="#94A3B8" stroke-width="4" stroke-linejoin="round"/>
+            <rect x="25" width="50" class="anim-fill"/>
+            <!-- Glass highlight -->
+            <path d="M25 20 L30 140" stroke="white" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+        </g>
+    </g>
+</svg>

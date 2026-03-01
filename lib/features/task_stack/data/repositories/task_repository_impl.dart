@@ -107,6 +107,7 @@ class TaskRepositoryImpl implements TaskRepository {
       description: Value(task.description),
       purpose: Value(task.purpose),
       iconId: Value(task.iconId),
+      graphicImage: Value(task.graphicImage),
       colorArgb: Value(task.colorArgb),
       tagsJson: Value(jsonEncode(task.tags)),
       startMinutes: Value(task.startMinutes),

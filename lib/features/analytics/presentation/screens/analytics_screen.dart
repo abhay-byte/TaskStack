@@ -94,11 +94,98 @@ class DailyAnalyticsTab extends ConsumerWidget {
           }
         }
 
+        final completedTasks = tasks.where((t) => t.isDone).toList();
+
         final cs = Theme.of(context).colorScheme;
 
         return ListView(
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
+            // Completed tasks donut (Hero style)
+            if (completedTasks.isNotEmpty) ...[
+              Card(
+                elevation: 0,
+                color: cs.surfaceContainerLow,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  side: BorderSide(
+                    color: cs.outlineVariant.withAlpha(50),
+                    width: 1,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: cs.primary.withAlpha(25),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.stars_rounded,
+                              color: cs.primary,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Text(
+                            'Completed By You',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      SizedBox(
+                        height: 220,
+                        child: PieChart(
+                          PieChartData(
+                            sectionsSpace: 4,
+                            centerSpaceRadius: 45,
+                            sections:
+                                completedTasks.asMap().entries.map((e) {
+                                  final colors = [
+                                    cs.primary,
+                                    cs.tertiary,
+                                    cs.secondary,
+                                    cs.error,
+                                    cs.primaryContainer,
+                                  ];
+                                  final task = e.value;
+                                  final title =
+                                      task.title.length > 12
+                                          ? '${task.title.substring(0, 10)}...'
+                                          : task.title;
+                                  return PieChartSectionData(
+                                    value:
+                                        (task.durationMinutes ?? 30).toDouble(),
+                                    title: title,
+                                    color: colors[e.key % colors.length],
+                                    radius: 75,
+                                    titlePositionPercentageOffset: 0.6,
+                                    titleStyle: Theme.of(
+                                      context,
+                                    ).textTheme.labelSmall?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  );
+                                }).toList(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+            ],
+
             // Stat cards row
             Row(
               children: [

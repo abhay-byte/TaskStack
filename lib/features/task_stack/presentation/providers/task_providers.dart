@@ -91,6 +91,7 @@ class TaskFormState {
     this.description = '',
     this.purpose = '',
     this.iconId,
+    this.graphicImage,
     this.colorArgb,
     this.tags = const [],
     this.startMinutes,
@@ -112,6 +113,7 @@ class TaskFormState {
   final String description;
   final String purpose;
   final String? iconId;
+  final String? graphicImage;
   final int? colorArgb;
   final List<String> tags;
   final int? startMinutes;
@@ -135,6 +137,7 @@ class TaskFormState {
     String? description,
     String? purpose,
     String? iconId,
+    String? graphicImage,
     int? colorArgb,
     List<String>? tags,
     int? startMinutes,
@@ -156,6 +159,7 @@ class TaskFormState {
       description: description ?? this.description,
       purpose: purpose ?? this.purpose,
       iconId: iconId ?? this.iconId,
+      graphicImage: graphicImage ?? this.graphicImage,
       colorArgb: colorArgb ?? this.colorArgb,
       tags: tags ?? this.tags,
       startMinutes: startMinutes ?? this.startMinutes,
@@ -189,6 +193,7 @@ class TaskFormNotifier extends StateNotifier<TaskFormState> {
       description: task.description ?? '',
       purpose: task.purpose ?? '',
       iconId: task.iconId,
+      graphicImage: task.graphicImage,
       colorArgb: task.colorArgb,
       tags: task.tags,
       startMinutes: task.startMinutes,
@@ -208,6 +213,7 @@ class TaskFormNotifier extends StateNotifier<TaskFormState> {
   void updateDescription(String v) => state = state.copyWith(description: v);
   void updatePurpose(String v) => state = state.copyWith(purpose: v);
   void updateIconId(String? v) => state = state.copyWith(iconId: v);
+  void updateGraphicImage(String? v) => state = state.copyWith(graphicImage: v);
   void updateColor(int? v) => state = state.copyWith(colorArgb: v);
   void updateTags(List<String> v) => state = state.copyWith(tags: v);
   void updateStartMinutes(int? v) => state = state.copyWith(startMinutes: v);
@@ -245,6 +251,7 @@ class TaskFormNotifier extends StateNotifier<TaskFormState> {
         description: state.description.isEmpty ? null : state.description,
         purpose: state.purpose.isEmpty ? null : state.purpose,
         iconId: state.iconId,
+        graphicImage: state.graphicImage,
         colorArgb: state.colorArgb,
         tags: state.tags,
         startMinutes: state.startMinutes,

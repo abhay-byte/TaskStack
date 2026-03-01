@@ -11,19 +11,18 @@ class TasksTable extends Table {
   TextColumn get purpose => text().nullable()();
   TextColumn get iconId => text().nullable()();
   IntColumn get colorArgb => integer().nullable()();
+  TextColumn get graphicImage => text().nullable()();
   TextColumn get tagsJson => text().withDefault(const Constant('[]'))();
   IntColumn get startMinutes => integer().nullable()();
   IntColumn get durationMinutes => integer().nullable()();
-  TextColumn get recurrenceType =>
-      text().withDefault(const Constant('none'))();
+  TextColumn get recurrenceType => text().withDefault(const Constant('none'))();
   TextColumn get recurrenceRule => text().nullable()();
   IntColumn get repeatIntervalMinutes => integer().nullable()();
   BoolColumn get notificationEnabled =>
       boolean().withDefault(const Constant(true))();
   IntColumn get notificationOffsetMinutes =>
       integer().withDefault(const Constant(5))();
-  TextColumn get status =>
-      text().withDefault(const Constant('pending'))();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
   DateTimeColumn get completedAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();

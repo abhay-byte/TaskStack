@@ -70,6 +70,17 @@ class $TasksTableTable extends TasksTable
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _graphicImageMeta = const VerificationMeta(
+    'graphicImage',
+  );
+  @override
+  late final GeneratedColumn<String> graphicImage = GeneratedColumn<String>(
+    'graphic_image',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _tagsJsonMeta = const VerificationMeta(
     'tagsJson',
   );
@@ -236,6 +247,7 @@ class $TasksTableTable extends TasksTable
     purpose,
     iconId,
     colorArgb,
+    graphicImage,
     tagsJson,
     startMinutes,
     durationMinutes,
@@ -301,6 +313,15 @@ class $TasksTableTable extends TasksTable
       context.handle(
         _colorArgbMeta,
         colorArgb.isAcceptableOrUnknown(data['color_argb']!, _colorArgbMeta),
+      );
+    }
+    if (data.containsKey('graphic_image')) {
+      context.handle(
+        _graphicImageMeta,
+        graphicImage.isAcceptableOrUnknown(
+          data['graphic_image']!,
+          _graphicImageMeta,
+        ),
       );
     }
     if (data.containsKey('tags_json')) {
@@ -455,6 +476,10 @@ class $TasksTableTable extends TasksTable
         DriftSqlType.int,
         data['${effectivePrefix}color_argb'],
       ),
+      graphicImage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}graphic_image'],
+      ),
       tagsJson:
           attachedDatabase.typeMapping.read(
             DriftSqlType.string,
@@ -535,6 +560,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
   final String? purpose;
   final String? iconId;
   final int? colorArgb;
+  final String? graphicImage;
   final String tagsJson;
   final int? startMinutes;
   final int? durationMinutes;
@@ -556,6 +582,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
     this.purpose,
     this.iconId,
     this.colorArgb,
+    this.graphicImage,
     required this.tagsJson,
     this.startMinutes,
     this.durationMinutes,
@@ -587,6 +614,9 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
     }
     if (!nullToAbsent || colorArgb != null) {
       map['color_argb'] = Variable<int>(colorArgb);
+    }
+    if (!nullToAbsent || graphicImage != null) {
+      map['graphic_image'] = Variable<String>(graphicImage);
     }
     map['tags_json'] = Variable<String>(tagsJson);
     if (!nullToAbsent || startMinutes != null) {
@@ -637,6 +667,10 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
           colorArgb == null && nullToAbsent
               ? const Value.absent()
               : Value(colorArgb),
+      graphicImage:
+          graphicImage == null && nullToAbsent
+              ? const Value.absent()
+              : Value(graphicImage),
       tagsJson: Value(tagsJson),
       startMinutes:
           startMinutes == null && nullToAbsent
@@ -684,6 +718,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
       purpose: serializer.fromJson<String?>(json['purpose']),
       iconId: serializer.fromJson<String?>(json['iconId']),
       colorArgb: serializer.fromJson<int?>(json['colorArgb']),
+      graphicImage: serializer.fromJson<String?>(json['graphicImage']),
       tagsJson: serializer.fromJson<String>(json['tagsJson']),
       startMinutes: serializer.fromJson<int?>(json['startMinutes']),
       durationMinutes: serializer.fromJson<int?>(json['durationMinutes']),
@@ -716,6 +751,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
       'purpose': serializer.toJson<String?>(purpose),
       'iconId': serializer.toJson<String?>(iconId),
       'colorArgb': serializer.toJson<int?>(colorArgb),
+      'graphicImage': serializer.toJson<String?>(graphicImage),
       'tagsJson': serializer.toJson<String>(tagsJson),
       'startMinutes': serializer.toJson<int?>(startMinutes),
       'durationMinutes': serializer.toJson<int?>(durationMinutes),
@@ -742,6 +778,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
     Value<String?> purpose = const Value.absent(),
     Value<String?> iconId = const Value.absent(),
     Value<int?> colorArgb = const Value.absent(),
+    Value<String?> graphicImage = const Value.absent(),
     String? tagsJson,
     Value<int?> startMinutes = const Value.absent(),
     Value<int?> durationMinutes = const Value.absent(),
@@ -763,6 +800,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
     purpose: purpose.present ? purpose.value : this.purpose,
     iconId: iconId.present ? iconId.value : this.iconId,
     colorArgb: colorArgb.present ? colorArgb.value : this.colorArgb,
+    graphicImage: graphicImage.present ? graphicImage.value : this.graphicImage,
     tagsJson: tagsJson ?? this.tagsJson,
     startMinutes: startMinutes.present ? startMinutes.value : this.startMinutes,
     durationMinutes:
@@ -793,6 +831,10 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
       purpose: data.purpose.present ? data.purpose.value : this.purpose,
       iconId: data.iconId.present ? data.iconId.value : this.iconId,
       colorArgb: data.colorArgb.present ? data.colorArgb.value : this.colorArgb,
+      graphicImage:
+          data.graphicImage.present
+              ? data.graphicImage.value
+              : this.graphicImage,
       tagsJson: data.tagsJson.present ? data.tagsJson.value : this.tagsJson,
       startMinutes:
           data.startMinutes.present
@@ -844,6 +886,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
           ..write('purpose: $purpose, ')
           ..write('iconId: $iconId, ')
           ..write('colorArgb: $colorArgb, ')
+          ..write('graphicImage: $graphicImage, ')
           ..write('tagsJson: $tagsJson, ')
           ..write('startMinutes: $startMinutes, ')
           ..write('durationMinutes: $durationMinutes, ')
@@ -863,13 +906,14 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     title,
     description,
     purpose,
     iconId,
     colorArgb,
+    graphicImage,
     tagsJson,
     startMinutes,
     durationMinutes,
@@ -884,7 +928,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
     updatedAt,
     parentTaskId,
     taskDate,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -895,6 +939,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
           other.purpose == this.purpose &&
           other.iconId == this.iconId &&
           other.colorArgb == this.colorArgb &&
+          other.graphicImage == this.graphicImage &&
           other.tagsJson == this.tagsJson &&
           other.startMinutes == this.startMinutes &&
           other.durationMinutes == this.durationMinutes &&
@@ -918,6 +963,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
   final Value<String?> purpose;
   final Value<String?> iconId;
   final Value<int?> colorArgb;
+  final Value<String?> graphicImage;
   final Value<String> tagsJson;
   final Value<int?> startMinutes;
   final Value<int?> durationMinutes;
@@ -940,6 +986,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
     this.purpose = const Value.absent(),
     this.iconId = const Value.absent(),
     this.colorArgb = const Value.absent(),
+    this.graphicImage = const Value.absent(),
     this.tagsJson = const Value.absent(),
     this.startMinutes = const Value.absent(),
     this.durationMinutes = const Value.absent(),
@@ -963,6 +1010,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
     this.purpose = const Value.absent(),
     this.iconId = const Value.absent(),
     this.colorArgb = const Value.absent(),
+    this.graphicImage = const Value.absent(),
     this.tagsJson = const Value.absent(),
     this.startMinutes = const Value.absent(),
     this.durationMinutes = const Value.absent(),
@@ -990,6 +1038,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
     Expression<String>? purpose,
     Expression<String>? iconId,
     Expression<int>? colorArgb,
+    Expression<String>? graphicImage,
     Expression<String>? tagsJson,
     Expression<int>? startMinutes,
     Expression<int>? durationMinutes,
@@ -1013,6 +1062,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
       if (purpose != null) 'purpose': purpose,
       if (iconId != null) 'icon_id': iconId,
       if (colorArgb != null) 'color_argb': colorArgb,
+      if (graphicImage != null) 'graphic_image': graphicImage,
       if (tagsJson != null) 'tags_json': tagsJson,
       if (startMinutes != null) 'start_minutes': startMinutes,
       if (durationMinutes != null) 'duration_minutes': durationMinutes,
@@ -1041,6 +1091,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
     Value<String?>? purpose,
     Value<String?>? iconId,
     Value<int?>? colorArgb,
+    Value<String?>? graphicImage,
     Value<String>? tagsJson,
     Value<int?>? startMinutes,
     Value<int?>? durationMinutes,
@@ -1064,6 +1115,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
       purpose: purpose ?? this.purpose,
       iconId: iconId ?? this.iconId,
       colorArgb: colorArgb ?? this.colorArgb,
+      graphicImage: graphicImage ?? this.graphicImage,
       tagsJson: tagsJson ?? this.tagsJson,
       startMinutes: startMinutes ?? this.startMinutes,
       durationMinutes: durationMinutes ?? this.durationMinutes,
@@ -1104,6 +1156,9 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
     }
     if (colorArgb.present) {
       map['color_argb'] = Variable<int>(colorArgb.value);
+    }
+    if (graphicImage.present) {
+      map['graphic_image'] = Variable<String>(graphicImage.value);
     }
     if (tagsJson.present) {
       map['tags_json'] = Variable<String>(tagsJson.value);
@@ -1166,6 +1221,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
           ..write('purpose: $purpose, ')
           ..write('iconId: $iconId, ')
           ..write('colorArgb: $colorArgb, ')
+          ..write('graphicImage: $graphicImage, ')
           ..write('tagsJson: $tagsJson, ')
           ..write('startMinutes: $startMinutes, ')
           ..write('durationMinutes: $durationMinutes, ')
@@ -2052,6 +2108,7 @@ typedef $$TasksTableTableCreateCompanionBuilder =
       Value<String?> purpose,
       Value<String?> iconId,
       Value<int?> colorArgb,
+      Value<String?> graphicImage,
       Value<String> tagsJson,
       Value<int?> startMinutes,
       Value<int?> durationMinutes,
@@ -2076,6 +2133,7 @@ typedef $$TasksTableTableUpdateCompanionBuilder =
       Value<String?> purpose,
       Value<String?> iconId,
       Value<int?> colorArgb,
+      Value<String?> graphicImage,
       Value<String> tagsJson,
       Value<int?> startMinutes,
       Value<int?> durationMinutes,
@@ -2129,6 +2187,11 @@ class $$TasksTableTableFilterComposer
 
   ColumnFilters<int> get colorArgb => $composableBuilder(
     column: $table.colorArgb,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get graphicImage => $composableBuilder(
+    column: $table.graphicImage,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2242,6 +2305,11 @@ class $$TasksTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get graphicImage => $composableBuilder(
+    column: $table.graphicImage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get tagsJson => $composableBuilder(
     column: $table.tagsJson,
     builder: (column) => ColumnOrderings(column),
@@ -2342,6 +2410,11 @@ class $$TasksTableTableAnnotationComposer
   GeneratedColumn<int> get colorArgb =>
       $composableBuilder(column: $table.colorArgb, builder: (column) => column);
 
+  GeneratedColumn<String> get graphicImage => $composableBuilder(
+    column: $table.graphicImage,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get tagsJson =>
       $composableBuilder(column: $table.tagsJson, builder: (column) => column);
 
@@ -2440,6 +2513,7 @@ class $$TasksTableTableTableManager
                 Value<String?> purpose = const Value.absent(),
                 Value<String?> iconId = const Value.absent(),
                 Value<int?> colorArgb = const Value.absent(),
+                Value<String?> graphicImage = const Value.absent(),
                 Value<String> tagsJson = const Value.absent(),
                 Value<int?> startMinutes = const Value.absent(),
                 Value<int?> durationMinutes = const Value.absent(),
@@ -2462,6 +2536,7 @@ class $$TasksTableTableTableManager
                 purpose: purpose,
                 iconId: iconId,
                 colorArgb: colorArgb,
+                graphicImage: graphicImage,
                 tagsJson: tagsJson,
                 startMinutes: startMinutes,
                 durationMinutes: durationMinutes,
@@ -2486,6 +2561,7 @@ class $$TasksTableTableTableManager
                 Value<String?> purpose = const Value.absent(),
                 Value<String?> iconId = const Value.absent(),
                 Value<int?> colorArgb = const Value.absent(),
+                Value<String?> graphicImage = const Value.absent(),
                 Value<String> tagsJson = const Value.absent(),
                 Value<int?> startMinutes = const Value.absent(),
                 Value<int?> durationMinutes = const Value.absent(),
@@ -2508,6 +2584,7 @@ class $$TasksTableTableTableManager
                 purpose: purpose,
                 iconId: iconId,
                 colorArgb: colorArgb,
+                graphicImage: graphicImage,
                 tagsJson: tagsJson,
                 startMinutes: startMinutes,
                 durationMinutes: durationMinutes,

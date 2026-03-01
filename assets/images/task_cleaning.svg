@@ -1,0 +1,54 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+        }
+        @keyframes sweep {
+            0%, 100% { transform: rotate(-15deg); }
+            50% { transform: rotate(15deg); }
+        }
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1.2) rotate(45deg); }
+        }
+        .anim-float { animation: float 6s ease-in-out infinite; transform-origin: center; }
+        .anim-sweep { animation: sweep 2s ease-in-out infinite; transform-origin: 30% 80%; }
+        .anim-sparkle { animation: sparkle 3s ease-in-out infinite; transform-origin: center; }
+    </style>
+
+    <!-- Background -->
+    <rect width="400" height="300" rx="20" fill="#F8FAFC"/>
+    
+    <!-- Blobs -->
+    <circle cx="200" cy="150" r="120" fill="#E0F2FE" filter="blur(40px)"/>
+
+    <!-- Central Glass Card -->
+    <g class="anim-float" filter="drop-shadow(0px 10px 20px rgba(0,0,0,0.05))">
+        <rect x="100" y="50" width="200" height="200" rx="30" fill="white" fill-opacity="0.9" stroke="white" stroke-width="2"/>
+        
+        <!-- Broom (Sweeping) -->
+        <g transform="translate(170, 70)">
+        <g class="anim-sweep">
+            <!-- Stick -->
+            <rect x="26" y="0" width="8" height="80" rx="4" fill="#FCD34D"/>
+            <!-- Brush base -->
+            <polygon points="10,80 50,80 40,120 20,120" fill="#FDE68A" stroke="#D97706" stroke-width="2" stroke-linejoin="round"/>
+            <!-- Bristles -->
+            <line x1="15" y1="120" x2="10" y2="140" stroke="#F59E0B" stroke-width="4" stroke-linecap="round"/>
+            <line x1="25" y1="120" x2="25" y2="145" stroke="#F59E0B" stroke-width="4" stroke-linecap="round"/>
+            <line x1="35" y1="120" x2="35" y2="145" stroke="#F59E0B" stroke-width="4" stroke-linecap="round"/>
+            <line x1="45" y1="120" x2="50" y2="140" stroke="#F59E0B" stroke-width="4" stroke-linecap="round"/>
+        </g></g>
+
+        <!-- Sparkles -->
+        <g transform="translate(150, 180)">
+        <g class="anim-sparkle">
+            <path d="M0 10 L10 10 M5 5 L5 15 M2 2 L8 18 M8 2 L2 18" stroke="#38BDF8" stroke-width="3" stroke-linecap="round"/>
+        </g></g>
+        <g transform="translate(250, 100)">
+        <g class="anim-sparkle" style="animation-delay: 1.5s;">
+            <path d="M0 10 L10 10 M5 5 L5 15 M2 2 L8 18 M8 2 L2 18" stroke="#38BDF8" stroke-width="3" stroke-linecap="round"/>
+        </g></g>
+    </g>
+</svg>

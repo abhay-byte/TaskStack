@@ -1,0 +1,52 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        @keyframes type {
+            0% { width: 0; }
+            50%, 100% { width: 100px; }
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .anim-type { animation: type 3s steps(20) infinite; overflow: hidden; white-space: nowrap; }
+        .anim-blink { animation: blink 1s step-end infinite; }
+        .anim-float { animation: float 6s ease-in-out infinite; transform-origin: center; }
+    </style>
+
+    <!-- Background -->
+    <rect width="400" height="300" rx="20" fill="#F8FAFC"/>
+    
+    <!-- Blobs -->
+    <circle cx="200" cy="150" r="140" fill="#FEE2E2" filter="blur(40px)"/>
+
+    <!-- Central Glass Card (Laptop/Code) -->
+    <g class="anim-float" filter="drop-shadow(0px 10px 20px rgba(0,0,0,0.05))">
+        <!-- Terminal Window -->
+        <rect x="80" y="60" width="240" height="160" rx="16" fill="#1E293B"/>
+        <rect x="80" y="60" width="240" height="30" rx="16" fill="#0F172A"/>
+        
+        <!-- Window buttons -->
+        <circle cx="100" cy="75" r="6" fill="#EF4444"/>
+        <circle cx="120" cy="75" r="6" fill="#F59E0B"/>
+        <circle cx="140" cy="75" r="6" fill="#10B981"/>
+
+        <!-- Code Lines -->
+        <g font-family="monospace" font-size="14" fill="#38BDF8">
+            <text x="100" y="110"><tspan fill="#A78BFA">const</tspan> task = {</text>
+            <text x="120" y="130">name: <tspan fill="#A3E635">"Coding"</tspan>,</text>
+            <text x="120" y="150">status: <tspan fill="#34D399">"Active"</tspan></text>
+            <text x="100" y="170">};</text>
+            <!-- Animated typing line -->
+            <g transform="translate(100, 195)">
+                <text x="0" y="0" fill="#F8FAFC" class="anim-type">&gt; run code<tspan class="anim-blink">_</tspan></text>
+            </g>
+        </g>
+        
+        <path d="M70 200 H330 L350 220 H50 Z" fill="#94A3B8"/>
+        <path d="M160 210 H240" stroke="#CBD5E1" stroke-width="4" stroke-linecap="round"/>
+    </g>
+</svg>

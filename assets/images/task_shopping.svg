@@ -1,0 +1,48 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        .anim-float { animation: float 6s ease-in-out infinite; transform-origin: center; }
+        .anim-pulse { animation: pulse 6s ease-in-out infinite; transform-origin: center; }
+    </style>
+
+    <!-- Background -->
+    <rect width="400" height="300" rx="20" fill="#F8FAFC"/>
+    
+    <!-- Blobs -->
+    <circle class="anim-pulse" cx="150" cy="150" r="120" fill="#FCE7F3" filter="blur(40px)"/>
+    <circle class="anim-pulse" cx="250" cy="220" r="80" fill="#E0E7FF" filter="blur(30px)" style="animation-delay: 2s;"/>
+
+    <!-- Central Glass Card -->
+    <g class="anim-float" filter="drop-shadow(0px 10px 20px rgba(0,0,0,0.05))">
+        <rect x="100" y="50" width="200" height="200" rx="24" fill="white" fill-opacity="0.9" stroke="white" stroke-width="2"/>
+        
+        <!-- Shopping Cart -->
+        <g transform="translate(130, 90)">
+            <path d="M0 0 H20 L40 80 H110 L130 20 H30" fill="none" stroke="#F43F5E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="50" cy="110" r="12" fill="#E2E8F0" stroke="#94A3B8" stroke-width="4"/>
+            <circle cx="100" cy="110" r="12" fill="#E2E8F0" stroke="#94A3B8" stroke-width="4"/>
+            <path d="M120 40 H40" stroke="#FDA4AF" stroke-width="4" stroke-linecap="round"/>
+            <path d="M100 60 H40" stroke="#FDA4AF" stroke-width="4" stroke-linecap="round"/>
+        </g>
+        
+        <!-- Animated Items dropping in -->
+        <g transform="translate(170, 70)">
+            <rect x="0" y="0" width="20" height="30" rx="4" fill="#38BDF8">
+                <animate attributeName="y" values="-50; 25; 20" dur="2s" repeatCount="indefinite" keyTimes="0; 0.8; 1"/>
+                <animate attributeName="opacity" values="0; 1; 1" dur="2s" repeatCount="indefinite" keyTimes="0; 0.5; 1"/>
+            </rect>
+            
+            <circle cx="40" cy="15" r="12" fill="#FCD34D" style="animation-delay: 1s;">
+                <animate attributeName="cy" values="-40; 25; 20" dur="2.5s" repeatCount="indefinite" keyTimes="0; 0.8; 1"/>
+                <animate attributeName="opacity" values="0; 1; 1" dur="2.5s" repeatCount="indefinite" keyTimes="0; 0.5; 1"/>
+            </circle>
+        </g>
+    </g>
+</svg>

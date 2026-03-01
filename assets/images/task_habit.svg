@@ -1,0 +1,45 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        @keyframes fire {
+            0%, 100% { d: path("M30 60 C30 60 0 40 10 10 C20 -20 40 -10 40 10 C50 -10 60 0 50 20 C40 40 50 60 30 60 Z"); }
+            50% { d: path("M30 60 C30 60 -10 40 15 5 C25 -25 35 -15 35 15 C45 -15 65 0 55 25 C45 45 50 60 30 60 Z"); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+        }
+        @keyframes glow {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+        .anim-fire { animation: fire 1.5s ease-in-out infinite alternate; }
+        .anim-float { animation: float 6s ease-in-out infinite; transform-origin: center; }
+        .anim-glow { animation: glow 2s ease-in-out infinite; transform-origin: center; }
+    </style>
+
+    <!-- Background -->
+    <rect width="400" height="300" rx="20" fill="#F8FAFC"/>
+    
+    <!-- Blobs -->
+    <circle cx="200" cy="150" r="140" fill="#FFEDD5" filter="blur(40px)"/>
+
+    <!-- Central Glass Card -->
+    <g class="anim-float" filter="drop-shadow(0px 10px 20px rgba(0,0,0,0.05))">
+        <rect x="100" y="50" width="200" height="200" rx="30" fill="white" fill-opacity="0.9" stroke="white" stroke-width="2"/>
+        
+        <!-- Fire Glow -->
+        <circle cx="200" cy="130" r="50" fill="#FDBA74" class="anim-glow" filter="blur(20px)"/>
+
+        <!-- Flame -->
+        <g transform="translate(170, 90)">
+            <path class="anim-fire" d="M30 60 C30 60 0 40 10 10 C20 -20 40 -10 40 10 C50 -10 60 0 50 20 C40 40 50 60 30 60 Z" fill="#EF4444"/>
+            <path d="M30 50 C30 50 15 35 20 20 C25 5 35 10 35 25 C40 10 50 20 45 30 C40 40 40 50 30 50 Z" fill="#F59E0B" style="opacity:0.8"/>
+            <path d="M30 40 C30 40 20 30 25 20 C30 10 35 15 35 25 C40 15 45 25 40 30 C35 35 35 40 30 40 Z" fill="#FDE047" style="opacity:0.9"/>
+        </g>
+        
+        <!-- Streak Base -->
+        <rect x="140" y="180" width="120" height="10" rx="5" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="2"/>
+        <rect x="140" y="180" width="80" height="10" rx="5" fill="#EF4444"/>
+        <text x="200" y="215" font-family="sans-serif" font-weight="bold" font-size="20" fill="#F43F5E" text-anchor="middle">5 DAYS</text>
+    </g>
+</svg>

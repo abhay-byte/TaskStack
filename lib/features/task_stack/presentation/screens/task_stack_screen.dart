@@ -234,8 +234,12 @@ class _DayViewBlock extends ConsumerWidget {
 
           // Task cards
           ...scheduled.map(
-            (task) =>
-                _PositionedTaskCard(task: task, now: now, isToday: isPageToday),
+            (task) => _PositionedTaskCard(
+              task: task,
+              now: now,
+              isToday: isPageToday,
+              pageDate: pageDate,
+            ),
           ),
 
           // Unscheduled section below timeline
@@ -450,19 +454,41 @@ class _PositionedTaskCard extends ConsumerWidget {
     required this.task,
     required this.now,
     required this.isToday,
+    required this.pageDate,
   });
 
   final Task task;
   final DateTime now;
   final bool isToday;
+  final DateTime pageDate;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final top = task.startMinutes! * _kMinuteHeight;
-    final height = ((task.durationMinutes ?? 30) * _kMinuteHeight).clamp(
-      40.0,
-      double.infinity,
+    final tzPageDate = DateTime(pageDate.year, pageDate.month, pageDate.day);
+    final tzTaskDate = DateTime(
+      task.taskDate.year,
+      task.taskDate.month,
+      task.taskDate.day,
     );
+    final isYesterdayTask = tzPageDate.difference(tzTaskDate).inDays == 1;
+
+    double top;
+    double height;
+
+    if (isYesterdayTask) {
+      top = 0;
+      final overflowMins =
+          task.startMinutes! + (task.durationMinutes ?? 30) - 1440;
+      height = (overflowMins * _kMinuteHeight).clamp(40.0, double.infinity);
+    } else {
+      top = task.startMinutes! * _kMinuteHeight;
+      final endMins = task.startMinutes! + (task.durationMinutes ?? 30);
+      double rawHeightMins = (task.durationMinutes ?? 30).toDouble();
+      if (endMins > 1440) {
+        rawHeightMins = (1440 - task.startMinutes!).toDouble();
+      }
+      height = (rawHeightMins * _kMinuteHeight).clamp(40.0, double.infinity);
+    }
 
     return Positioned(
       top: top,
@@ -474,7 +500,19 @@ class _PositionedTaskCard extends ConsumerWidget {
         isInProgress: isToday && task.isInProgress(now),
         onTap: () => context.push('/task/${task.id}'),
         onDone: () async {
-          await ref.read(completeTaskUseCaseProvider).execute(task.id);
+          try {
+            await ref.read(completeTaskUseCaseProvider).execute(task);
+          } on StateError catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(e.message),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          }
         },
         onEdit: () => context.push('/task/${task.id}/edit'),
         onDelete: () async {

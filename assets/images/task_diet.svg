@@ -1,0 +1,45 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .anim-float { animation: float 7s ease-in-out infinite; transform-origin: center; }
+        .anim-pulse { animation: pulse 4s ease-in-out infinite; transform-origin: center; }
+    </style>
+
+    <!-- Background -->
+    <rect width="400" height="300" rx="20" fill="#F8FAFC"/>
+    
+    <!-- Blobs -->
+    <circle cx="200" cy="150" r="140" fill="#DCFCE7" filter="blur(40px)"/>
+
+    <!-- Central Glass Card -->
+    <g class="anim-float" filter="drop-shadow(0px 10px 20px rgba(0,0,0,0.05))">
+        <rect x="90" y="50" width="220" height="200" rx="30" fill="white" fill-opacity="0.9" stroke="white" stroke-width="2"/>
+        
+        <!-- Plate -->
+        <circle cx="200" cy="150" r="60" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="4"/>
+        <circle cx="200" cy="150" r="45" fill="none" stroke="#CBD5E1" stroke-width="1"/>
+
+        <!-- Avocado / Veggies -->
+        <g transform="translate(170, 120)">
+        <g class="anim-pulse">
+            <path d="M20 50 C10 40 10 20 25 10 C40 0 50 20 50 35 C50 50 30 60 20 50 Z" fill="#34D399"/>
+            <path d="M20 50 C10 40 10 20 25 10 C40 0 50 20 50 35 C50 50 30 60 20 50 Z" fill="none" stroke="#059669" stroke-width="2"/>
+            <circle cx="32" cy="28" r="10" fill="#10B981"/>
+            <circle cx="30" cy="25" r="3" fill="#A7F3D0"/>
+        </g></g>
+        
+        <!-- Apple -->
+        <g transform="translate(200, 150)">
+        <g class="anim-pulse" style="animation-delay: 1s;">
+            <path d="M15 30 C5 30 0 20 0 10 C0 -5 15 -5 20 5 C25 -5 40 -5 40 10 C40 20 35 30 25 30 C20 30 15 30 15 30 Z" fill="#F87171"/>
+            <path d="M20 5 C20 -5 30 -10 30 0" fill="none" stroke="#65A30D" stroke-width="3" stroke-linecap="round"/>
+        </g></g>
+    </g>
+</svg>

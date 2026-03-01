@@ -207,9 +207,31 @@ class CompleteTaskUseCase {
   CompleteTaskUseCase(this._repository);
   final TaskRepository _repository;
 
-  Future<void> execute(String id) async {
+  Future<void> execute(Task task) async {
+    // Validate deadline
+    if (task.startMinutes != null) {
+      final now = DateTime.now();
+
+      // Calculate start time in terms of today
+      final taskStart = DateTime(
+        task.taskDate.year,
+        task.taskDate.month,
+        task.taskDate.day,
+        task.startMinutes! ~/ 60,
+        task.startMinutes! % 60,
+      );
+
+      final taskDuration = Duration(minutes: task.durationMinutes ?? 30);
+      final deadline = taskStart.add(taskDuration);
+
+      // If we attempt to finish it early, throw StateError
+      if (now.isBefore(deadline)) {
+        throw StateError('Cannot complete a task before its deadline.');
+      }
+    }
+
     await _repository.updateStatus(
-      id,
+      task.id,
       status: TaskStatus.done.name,
       completedAt: DateTime.now(),
     );

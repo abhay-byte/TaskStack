@@ -8,10 +8,35 @@ part 'task_dao.g.dart';
 class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   TaskDao(super.db);
 
-  /// Watch all tasks for a given date (yyyy-MM-dd).
-  Stream<List<TasksTableData>> watchTasksForDate(String date) {
+  /// Watch all tasks for a given date (yyyy-MM-dd), including overnight spillovers.
+  Stream<List<TasksTableData>> watchTasksForDate(String dateStr) {
+    final date = DateTime.parse(dateStr);
+    final prevDateStr = DateTime(
+      date.year,
+      date.month,
+      date.day - 1,
+    ).toIso8601String().substring(0, 10);
+
     return (select(tasksTable)
-          ..where((t) => t.taskDate.equals(date))
+          ..where((t) {
+            final isToday = t.taskDate.equals(dateStr);
+            final isYesterday = t.taskDate.equals(prevDateStr);
+
+            // Safe addition across nullable int columns in sqlite
+            final startAndDur =
+                t.startMinutes +
+                coalesce(
+                  [
+                    t.durationMinutes,
+                    const Constant(30),
+                  ].cast<Expression<int>>(),
+                );
+            final spillsOver =
+                t.startMinutes.isNotNull() &
+                startAndDur.isBiggerThanValue(1440);
+
+            return isToday | (isYesterday & spillsOver);
+          })
           ..orderBy([(t) => OrderingTerm.asc(t.startMinutes)]))
         .watch();
   }

@@ -1,0 +1,49 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        @keyframes rise {
+            0%, 100% { transform: translateY(20px); opacity: 0.5; }
+            50% { transform: translateY(-10px); opacity: 1; }
+        }
+        @keyframes rays {
+            0%, 100% { opacity: 0.2; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .anim-rise { animation: rise 8s ease-in-out infinite; transform-origin: center; }
+        .anim-rays { animation: rays 4s ease-in-out infinite; transform-origin: center; }
+        .anim-float { animation: float 6s ease-in-out infinite; transform-origin: center; }
+    </style>
+
+    <!-- Background -->
+    <rect width="400" height="300" rx="20" fill="#F8FAFC"/>
+    
+    <!-- Blobs (Morning light) -->
+    <circle cx="200" cy="200" r="150" fill="#FFEDD5" filter="blur(40px)"/>
+    <circle class="anim-rays" cx="200" cy="120" r="100" fill="#FDBA74" filter="blur(30px)"/>
+
+    <!-- Central Glass Card -->
+    <g class="anim-float" filter="drop-shadow(0px 10px 20px rgba(0,0,0,0.05))">
+        <rect x="90" y="50" width="220" height="200" rx="24" fill="white" fill-opacity="0.8" stroke="white" stroke-width="2"/>
+        
+        <!-- Sun Rising -->
+        <g transform="translate(160, 70)">
+        <g class="anim-rise">
+            <circle cx="40" cy="40" r="30" fill="#F59E0B"/>
+            <path d="M40 -5 V5 M40 75 V85 M-5 40 H5 M75 40 H85 M8 8 L15 15 M65 65 L72 72 M72 8 L65 15 M15 65 L8 72" stroke="#FBBF24" stroke-width="4" stroke-linecap="round"/>
+        </g></g>
+
+        <!-- Alarm Clock -->
+        <g transform="translate(130, 140)">
+            <rect x="20" y="20" width="100" height="60" rx="16" fill="#F1F5F9" stroke="#94A3B8" stroke-width="2"/>
+            <!-- Screen -->
+            <rect x="35" y="32" width="70" height="36" rx="6" fill="black" fill-opacity="0.8"/>
+            <text x="50" y="58" font-family="monospace" font-weight="bold" font-size="20" fill="#34D399">06:00</text>
+            <!-- Bells -->
+            <path d="M40 20 C40 10 50 10 60 20 Z" fill="#64748B"/>
+            <path d="M80 20 C80 10 90 10 100 20 Z" fill="#64748B"/>
+        </g>
+    </g>
+</svg>

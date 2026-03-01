@@ -1,0 +1,52 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        @keyframes glow {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .anim-glow { animation: glow 3s ease-in-out infinite; transform-origin: center; }
+        .anim-spin { animation: spin 10s linear infinite; transform-origin: center; }
+        .anim-float { animation: float 6s ease-in-out infinite; transform-origin: center; }
+    </style>
+
+    <!-- Background -->
+    <rect width="400" height="300" rx="20" fill="#F8FAFC"/>
+    
+    <!-- Blobs -->
+    <circle cx="200" cy="150" r="140" fill="#FEF08A" filter="blur(50px)" opacity="0.5"/>
+
+    <!-- Central Glass Card -->
+    <g class="anim-float" filter="drop-shadow(0px 10px 20px rgba(0,0,0,0.05))">
+        <rect x="100" y="50" width="200" height="200" rx="30" fill="white" fill-opacity="0.9" stroke="white" stroke-width="2"/>
+        
+        <!-- Lightbulb Background Glow -->
+        <circle cx="200" cy="130" r="60" fill="#FDE047" class="anim-glow" filter="blur(20px)"/>
+
+        <!-- Lightbulb -->
+        <g transform="translate(170, 90)">
+            <path d="M30 0 C10 0 0 15 0 35 C0 55 15 65 20 80 H40 C45 65 60 55 60 35 C60 15 50 0 30 0 Z" fill="#FEF08A" stroke="#F59E0B" stroke-width="4"/>
+            <path d="M20 80 V90 H40 V80 Z" fill="#CBD5E1" stroke="#94A3B8" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M25 90 V100 H35 V90 Z" fill="#94A3B8"/>
+            
+            <!-- Filament -->
+            <path d="M20 80 L25 50 L30 40 L35 50 L40 80" fill="none" stroke="#D97706" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+        
+        <!-- Sparks / Ideas -->
+        <g transform="translate(200, 130)">
+        <g class="anim-spin">
+            <circle cx="0" cy="-60" r="4" fill="#F59E0B"/>
+            <circle cx="0" cy="60" r="3" fill="#F59E0B"/>
+            <circle cx="60" cy="0" r="5" fill="#F59E0B"/>
+            <circle cx="-60" cy="0" r="4" fill="#F59E0B"/>
+            <path d="M40 40 L45 45 M-40 -40 L-45 -45 M-40 40 L-45 45 M40 -40 L45 -45" stroke="#FDE047" stroke-width="3" stroke-linecap="round"/>
+        </g></g>
+    </g>
+</svg>
