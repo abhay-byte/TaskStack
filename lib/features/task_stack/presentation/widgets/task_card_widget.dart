@@ -90,19 +90,20 @@ class TaskCardWidget extends StatelessWidget {
               if (task.graphicImage != null)
                 Positioned(
                   right: 0,
-                  bottom: 0,
                   top: 0,
-                  width: 140, // Cover the right side
+                  width: 140, // Fixed width
+                  height: 140, // Fixed height pinned to top
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.horizontal(
-                      right: Radius.circular(12),
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(12),
+                      bottomRight: Radius.circular(12),
                     ),
                     child: Opacity(
                       opacity: 0.15, // Light watermark
                       child: SvgPicture.asset(
                         task.graphicImage!,
-                        fit: BoxFit.cover, // Fill the space cleanly
-                        alignment: Alignment.center,
+                        fit: BoxFit.cover, // Fill the square cleanly
+                        alignment: Alignment.topRight,
                       ),
                     ),
                   ),
