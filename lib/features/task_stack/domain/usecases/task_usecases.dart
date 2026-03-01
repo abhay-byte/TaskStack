@@ -5,6 +5,8 @@ import 'package:taskstack/features/notifications/notification_scheduler.dart';
 
 const _uuid = Uuid();
 
+enum RecurringScope { thisInstance, futureInstances }
+
 class CreateTaskUseCase {
   CreateTaskUseCase(this._repository, this._scheduler);
   final TaskRepository _repository;
@@ -26,7 +28,7 @@ class CreateTaskUseCase {
     if (newTask.recurrenceType == RecurrenceType.repeatToday &&
         newTask.repeatIntervalMinutes != null &&
         newTask.startMinutes != null) {
-      final instances = _generateRepeatInstances(newTask);
+      final instances = generateRepeatInstances(newTask);
       await _repository.insertTasks(instances);
       for (final inst in instances) {
         if (inst.notificationEnabled) {
@@ -35,7 +37,7 @@ class CreateTaskUseCase {
       }
     } else if (newTask.recurrenceType != RecurrenceType.none &&
         newTask.recurrenceType != RecurrenceType.repeatToday) {
-      final instances = _generateFutureInstances(newTask);
+      final instances = generateFutureInstances(newTask);
       await _repository.insertTasks(instances);
       // Schedule notifications for only the first 20 instances to prevent freezing the UI
       final notificationsToSchedule = instances.take(20);
@@ -47,7 +49,10 @@ class CreateTaskUseCase {
     }
   }
 
-  List<Task> _generateFutureInstances(Task parent) {
+  static List<Task> generateFutureInstances(
+    Task parent, {
+    String? forceParentId,
+  }) {
     final instances = <Task>[];
     // Generate up to 2 years ahead or max instances limits, whichever is smaller
     for (var i = 1; i <= 365 * 2; i++) {
@@ -58,6 +63,12 @@ class CreateTaskUseCase {
       } else if (parent.recurrenceType == RecurrenceType.weekly) {
         nextDate = parent.taskDate.add(Duration(days: 7 * i));
         if (instances.length >= 104) break; // 2 years limit
+      } else if (parent.recurrenceType == RecurrenceType.custom) {
+        nextDate = parent.taskDate.add(Duration(days: i));
+        if (!parent.customRecurrenceDays.contains(nextDate.weekday)) {
+          continue; // skip days that aren't selected
+        }
+        if (instances.length >= 365) break;
       } else {
         break;
       }
@@ -66,7 +77,7 @@ class CreateTaskUseCase {
         parent.copyWith(
           id: _uuid.v4(),
           taskDate: nextDate,
-          parentTaskId: parent.id,
+          parentTaskId: forceParentId ?? parent.id,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
           status: TaskStatus.pending,
@@ -77,7 +88,10 @@ class CreateTaskUseCase {
     return instances;
   }
 
-  List<Task> _generateRepeatInstances(Task parent) {
+  static List<Task> generateRepeatInstances(
+    Task parent, {
+    String? forceParentId,
+  }) {
     final instances = <Task>[];
     final interval = parent.repeatIntervalMinutes!;
     var nextStart = parent.startMinutes! + interval;
@@ -89,7 +103,7 @@ class CreateTaskUseCase {
         parent.copyWith(
           id: _uuid.v4(),
           startMinutes: nextStart,
-          parentTaskId: parent.id,
+          parentTaskId: forceParentId ?? parent.id,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
           status: TaskStatus.pending,
@@ -117,12 +131,49 @@ class UpdateTaskUseCase {
   final TaskRepository _repository;
   final NotificationScheduler _scheduler;
 
-  Future<void> execute(Task task) async {
+  Future<void> execute(
+    Task task, {
+    RecurringScope scope = RecurringScope.thisInstance,
+  }) async {
     final updated = task.copyWith(updatedAt: DateTime.now());
     await _repository.updateTask(updated);
     await _scheduler.cancelFor(task.id);
     if (updated.notificationEnabled) {
       await _scheduler.scheduleFor(updated);
+    }
+
+    if (scope == RecurringScope.futureInstances &&
+        (task.parentTaskId != null ||
+            task.recurrenceType != RecurrenceType.none)) {
+      final actualParentId = task.parentTaskId ?? task.id;
+      // Delete future instances (non-inclusive of this updated instance)
+      await _repository.deleteRecurringTasksFromDate(
+        actualParentId,
+        task.taskDate,
+        inclusive: false,
+      );
+
+      // Regenerate future instances using the updated task as a template
+      final template = updated.copyWith(parentTaskId: actualParentId);
+      final instances =
+          template.recurrenceType == RecurrenceType.repeatToday
+              ? CreateTaskUseCase.generateRepeatInstances(
+                template,
+                forceParentId: actualParentId,
+              )
+              : CreateTaskUseCase.generateFutureInstances(
+                template,
+                forceParentId: actualParentId,
+              );
+
+      if (instances.isNotEmpty) {
+        await _repository.insertTasks(instances);
+        for (final inst in instances.take(20)) {
+          if (inst.notificationEnabled) {
+            await _scheduler.scheduleFor(inst);
+          }
+        }
+      }
     }
   }
 }
@@ -132,12 +183,22 @@ class DeleteTaskUseCase {
   final TaskRepository _repository;
   final NotificationScheduler _scheduler;
 
-  Future<void> execute(String id, {bool deleteFamily = false}) async {
-    await _scheduler.cancelFor(id);
-    if (deleteFamily) {
-      await _repository.deleteRecurringFamily(id);
+  Future<void> execute(
+    Task task, {
+    RecurringScope scope = RecurringScope.thisInstance,
+  }) async {
+    await _scheduler.cancelFor(task.id);
+    if (scope == RecurringScope.futureInstances &&
+        (task.parentTaskId != null ||
+            task.recurrenceType != RecurrenceType.none)) {
+      final actualParentId = task.parentTaskId ?? task.id;
+      await _repository.deleteRecurringTasksFromDate(
+        actualParentId,
+        task.taskDate,
+        inclusive: true,
+      );
     } else {
-      await _repository.deleteTask(id);
+      await _repository.deleteTask(task.id);
     }
   }
 }

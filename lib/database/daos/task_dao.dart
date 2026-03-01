@@ -51,6 +51,21 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     )).go();
   }
 
+  /// Delete all instances of a recurring task from a specific date.
+  Future<int> deleteRecurringTasksFromDate(
+    String parentId,
+    String date, {
+    bool inclusive = true,
+  }) {
+    return (delete(tasksTable)..where(
+      (t) =>
+          (t.parentTaskId.equals(parentId) | t.id.equals(parentId)) &
+          (inclusive
+              ? t.taskDate.isBiggerOrEqualValue(date)
+              : t.taskDate.isBiggerThanValue(date)),
+    )).go();
+  }
+
   /// Get all tasks for a date range (for analytics).
   Future<List<TasksTableData>> getTasksInRange(String from, String to) {
     return (select(tasksTable)

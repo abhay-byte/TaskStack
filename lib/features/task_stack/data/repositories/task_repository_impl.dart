@@ -44,6 +44,17 @@ class TaskRepositoryImpl implements TaskRepository {
       _dao.deleteRecurringFamily(parentId);
 
   @override
+  Future<void> deleteRecurringTasksFromDate(
+    String parentId,
+    DateTime date, {
+    bool inclusive = true,
+  }) => _dao.deleteRecurringTasksFromDate(
+    parentId,
+    _dateString(date),
+    inclusive: inclusive,
+  );
+
+  @override
   Future<List<Task>> getTasksInRange(DateTime from, DateTime to) async {
     final rows = await _dao.getTasksInRange(_dateString(from), _dateString(to));
     return rows.map(_rowToTask).toList();

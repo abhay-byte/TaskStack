@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
+import 'package:taskstack/features/task_stack/domain/usecases/task_usecases.dart';
 import 'package:taskstack/features/task_stack/presentation/providers/task_providers.dart';
 import 'package:taskstack/core/constants/app_spacing.dart';
 import 'package:taskstack/core/constants/app_colors.dart';
@@ -248,22 +249,48 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
           // ── Recurrence ────────────────────────────────────────────────────
           Text('Recurrence', style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: AppSpacing.sm),
-          SegmentedButton<RecurrenceType>(
-            segments: const [
-              ButtonSegment(value: RecurrenceType.none, label: Text('None')),
-              ButtonSegment(
-                value: RecurrenceType.repeatToday,
-                label: Text('Today'),
-              ),
-              ButtonSegment(value: RecurrenceType.daily, label: Text('Daily')),
-              ButtonSegment(
-                value: RecurrenceType.weekly,
-                label: Text('Weekly'),
-              ),
-            ],
-            selected: {form.recurrenceType},
-            onSelectionChanged: (s) => notifier.updateRecurrence(s.first),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SegmentedButton<RecurrenceType>(
+              segments: const [
+                ButtonSegment(value: RecurrenceType.none, label: Text('None')),
+                ButtonSegment(
+                  value: RecurrenceType.repeatToday,
+                  label: Text('Today'),
+                ),
+                ButtonSegment(
+                  value: RecurrenceType.daily,
+                  label: Text('Daily'),
+                ),
+                ButtonSegment(
+                  value: RecurrenceType.weekly,
+                  label: Text('Weekly'),
+                ),
+                ButtonSegment(
+                  value: RecurrenceType.custom,
+                  label: Text('Custom'),
+                ),
+              ],
+              selected: {form.recurrenceType},
+              onSelectionChanged: (s) => notifier.updateRecurrence(s.first),
+            ),
           ),
+          if (form.recurrenceType == RecurrenceType.custom) ...[
+            const SizedBox(height: AppSpacing.md),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildDayChip(1, 'M', form, notifier),
+                _buildDayChip(2, 'T', form, notifier),
+                _buildDayChip(3, 'W', form, notifier),
+                _buildDayChip(4, 'T', form, notifier),
+                _buildDayChip(5, 'F', form, notifier),
+                _buildDayChip(6, 'S', form, notifier),
+                _buildDayChip(7, 'S', form, notifier),
+              ],
+            ),
+          ],
           if (form.recurrenceType == RecurrenceType.repeatToday) ...[
             const SizedBox(height: AppSpacing.sm),
             _FormSection(
@@ -313,8 +340,52 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     } else {
       date = ref.read(selectedStackDateProvider);
     }
-    final success = await ref.read(taskFormProvider.notifier).save(date);
+
+    RecurringScope scope = RecurringScope.thisInstance;
+    if (widget.taskId != null) {
+      final isRecurring =
+          form.recurrenceType != RecurrenceType.none ||
+          form.parentTaskId != null;
+      if (isRecurring) {
+        final selectedScope = await _confirmRecurringEdit(context);
+        if (selectedScope == null) return;
+        scope = selectedScope;
+      }
+    }
+
+    final success = await ref
+        .read(taskFormProvider.notifier)
+        .save(date, scope: scope);
     if (success && context.mounted) context.pop();
+  }
+
+  Future<RecurringScope?> _confirmRecurringEdit(BuildContext context) async {
+    return await showDialog<RecurringScope>(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Edit Recurring Task'),
+            content: const Text(
+              'Do you want to apply these changes to this instance only, or to all upcoming instances?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, null),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed:
+                    () => Navigator.pop(ctx, RecurringScope.thisInstance),
+                child: const Text('This instance only'),
+              ),
+              FilledButton(
+                onPressed:
+                    () => Navigator.pop(ctx, RecurringScope.futureInstances),
+                child: const Text('All upcoming'),
+              ),
+            ],
+          ),
+    );
   }
 
   String _minutesToLabel(int m) {
@@ -366,6 +437,30 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             onSelected: notifier.updateNotificationOffset,
             labelBuilder: (n) => n == 0 ? 'At start time' : '$n min before',
           ),
+    );
+  }
+
+  Widget _buildDayChip(
+    int day,
+    String label,
+    TaskFormState form,
+    TaskFormNotifier notifier,
+  ) {
+    final isSelected = form.customRecurrenceDays.contains(day);
+    final cs = Theme.of(context).colorScheme;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) => notifier.toggleCustomDay(day),
+      showCheckmark: false,
+      shape: const CircleBorder(),
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      labelStyle: TextStyle(
+        color: isSelected ? cs.onPrimary : cs.onSurfaceVariant,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+      selectedColor: cs.primary,
+      backgroundColor: cs.surfaceContainerHighest,
     );
   }
 }

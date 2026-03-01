@@ -15,8 +15,10 @@ final selectedStackDateProvider = StateProvider<DateTime>((ref) {
 // ── Task Stream ───────────────────────────────────────────────────────────
 
 /// Stream of tasks for a given calendar date.
-final tasksForDateProvider =
-    StreamProvider.family<List<Task>, DateTime>((ref, date) {
+final tasksForDateProvider = StreamProvider.family<List<Task>, DateTime>((
+  ref,
+  date,
+) {
   return ref.watch(taskRepositoryProvider).watchTasksForDate(date);
 });
 
@@ -26,21 +28,27 @@ final sortedTasksProvider = Provider<List<Task>>((ref) {
   final async = ref.watch(tasksForDateProvider(date));
   final tasks = async.valueOrNull ?? [];
   return [...tasks]..sort((a, b) {
-      if (a.startMinutes == null && b.startMinutes == null) return 0;
-      if (a.startMinutes == null) return 1;
-      if (b.startMinutes == null) return -1;
-      return a.startMinutes!.compareTo(b.startMinutes!);
-    });
+    if (a.startMinutes == null && b.startMinutes == null) return 0;
+    if (a.startMinutes == null) return 1;
+    if (b.startMinutes == null) return -1;
+    return a.startMinutes!.compareTo(b.startMinutes!);
+  });
 });
 
 /// Scheduled tasks only (have a start time).
 final scheduledTasksProvider = Provider<List<Task>>((ref) {
-  return ref.watch(sortedTasksProvider).where((t) => t.startMinutes != null).toList();
+  return ref
+      .watch(sortedTasksProvider)
+      .where((t) => t.startMinutes != null)
+      .toList();
 });
 
 /// Unscheduled tasks (no start time).
 final unscheduledTasksProvider = Provider<List<Task>>((ref) {
-  return ref.watch(sortedTasksProvider).where((t) => t.startMinutes == null).toList();
+  return ref
+      .watch(sortedTasksProvider)
+      .where((t) => t.startMinutes == null)
+      .toList();
 });
 
 // ── Use Case Providers ────────────────────────────────────────────────────
@@ -89,9 +97,12 @@ class TaskFormState {
     this.durationMinutes = 30,
     this.recurrenceType = RecurrenceType.none,
     this.repeatIntervalMinutes = 60,
+    this.customRecurrenceDays = const [],
     this.notificationEnabled = true,
     this.notificationOffsetMinutes = 5,
     this.taskDate,
+    this.parentTaskId,
+    this.createdAt,
     this.isSaving = false,
     this.error,
   });
@@ -107,9 +118,12 @@ class TaskFormState {
   final int durationMinutes;
   final RecurrenceType recurrenceType;
   final int repeatIntervalMinutes;
+  final List<int> customRecurrenceDays;
   final bool notificationEnabled;
   final int notificationOffsetMinutes;
   final DateTime? taskDate;
+  final String? parentTaskId;
+  final DateTime? createdAt;
   final bool isSaving;
   final String? error;
 
@@ -127,9 +141,12 @@ class TaskFormState {
     int? durationMinutes,
     RecurrenceType? recurrenceType,
     int? repeatIntervalMinutes,
+    List<int>? customRecurrenceDays,
     bool? notificationEnabled,
     int? notificationOffsetMinutes,
     DateTime? taskDate,
+    String? parentTaskId,
+    DateTime? createdAt,
     bool? isSaving,
     String? error,
   }) {
@@ -144,10 +161,15 @@ class TaskFormState {
       startMinutes: startMinutes ?? this.startMinutes,
       durationMinutes: durationMinutes ?? this.durationMinutes,
       recurrenceType: recurrenceType ?? this.recurrenceType,
-      repeatIntervalMinutes: repeatIntervalMinutes ?? this.repeatIntervalMinutes,
+      repeatIntervalMinutes:
+          repeatIntervalMinutes ?? this.repeatIntervalMinutes,
+      customRecurrenceDays: customRecurrenceDays ?? this.customRecurrenceDays,
       notificationEnabled: notificationEnabled ?? this.notificationEnabled,
-      notificationOffsetMinutes: notificationOffsetMinutes ?? this.notificationOffsetMinutes,
+      notificationOffsetMinutes:
+          notificationOffsetMinutes ?? this.notificationOffsetMinutes,
       taskDate: taskDate ?? this.taskDate,
+      parentTaskId: parentTaskId ?? this.parentTaskId,
+      createdAt: createdAt ?? this.createdAt,
       isSaving: isSaving ?? this.isSaving,
       error: error ?? this.error,
     );
@@ -173,9 +195,12 @@ class TaskFormNotifier extends StateNotifier<TaskFormState> {
       durationMinutes: task.durationMinutes ?? 30,
       recurrenceType: task.recurrenceType,
       repeatIntervalMinutes: task.repeatIntervalMinutes ?? 60,
+      customRecurrenceDays: task.customRecurrenceDays,
       notificationEnabled: task.notificationEnabled,
       notificationOffsetMinutes: task.notificationOffsetMinutes,
       taskDate: task.taskDate,
+      parentTaskId: task.parentTaskId,
+      createdAt: task.createdAt,
     );
   }
 
@@ -187,12 +212,30 @@ class TaskFormNotifier extends StateNotifier<TaskFormState> {
   void updateTags(List<String> v) => state = state.copyWith(tags: v);
   void updateStartMinutes(int? v) => state = state.copyWith(startMinutes: v);
   void updateDuration(int v) => state = state.copyWith(durationMinutes: v);
-  void updateRecurrence(RecurrenceType v) => state = state.copyWith(recurrenceType: v);
-  void updateRepeatInterval(int v) => state = state.copyWith(repeatIntervalMinutes: v);
-  void updateNotificationEnabled(bool v) => state = state.copyWith(notificationEnabled: v);
-  void updateNotificationOffset(int v) => state = state.copyWith(notificationOffsetMinutes: v);
+  void updateRecurrence(RecurrenceType v) =>
+      state = state.copyWith(recurrenceType: v);
+  void updateRepeatInterval(int v) =>
+      state = state.copyWith(repeatIntervalMinutes: v);
+  void toggleCustomDay(int day) {
+    final days = List<int>.from(state.customRecurrenceDays);
+    if (days.contains(day)) {
+      days.remove(day);
+    } else {
+      days.add(day);
+      days.sort();
+    }
+    state = state.copyWith(customRecurrenceDays: days);
+  }
 
-  Future<bool> save(DateTime taskDate) async {
+  void updateNotificationEnabled(bool v) =>
+      state = state.copyWith(notificationEnabled: v);
+  void updateNotificationOffset(int v) =>
+      state = state.copyWith(notificationOffsetMinutes: v);
+
+  Future<bool> save(
+    DateTime taskDate, {
+    RecurringScope scope = RecurringScope.thisInstance,
+  }) async {
     if (!state.isValid) return false;
     state = state.copyWith(isSaving: true, error: null);
     try {
@@ -207,17 +250,22 @@ class TaskFormNotifier extends StateNotifier<TaskFormState> {
         startMinutes: state.startMinutes,
         durationMinutes: state.durationMinutes,
         recurrenceType: state.recurrenceType,
+        recurrenceRule:
+            state.recurrenceType == RecurrenceType.custom
+                ? state.customRecurrenceDays.join(',')
+                : null,
         repeatIntervalMinutes: state.repeatIntervalMinutes,
         notificationEnabled: state.notificationEnabled,
         notificationOffsetMinutes: state.notificationOffsetMinutes,
-        createdAt: DateTime.now(),
+        createdAt: state.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
         taskDate: taskDate,
+        parentTaskId: state.parentTaskId,
       );
       if (state.id.isEmpty) {
         await _create.execute(task);
       } else {
-        await _update.execute(task);
+        await _update.execute(task, scope: scope);
       }
       return true;
     } catch (e) {
@@ -229,8 +277,8 @@ class TaskFormNotifier extends StateNotifier<TaskFormState> {
 
 final taskFormProvider =
     StateNotifierProvider.autoDispose<TaskFormNotifier, TaskFormState>((ref) {
-  return TaskFormNotifier(
-    ref.watch(createTaskUseCaseProvider),
-    ref.watch(updateTaskUseCaseProvider),
-  );
-});
+      return TaskFormNotifier(
+        ref.watch(createTaskUseCaseProvider),
+        ref.watch(updateTaskUseCaseProvider),
+      );
+    });

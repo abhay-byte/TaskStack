@@ -8,6 +8,11 @@ abstract class TaskRepository {
   Future<void> updateTask(Task task);
   Future<void> deleteTask(String id);
   Future<void> deleteRecurringFamily(String parentId);
+  Future<void> deleteRecurringTasksFromDate(
+    String parentId,
+    DateTime date, {
+    bool inclusive = true,
+  });
   Future<List<Task>> getTasksInRange(DateTime from, DateTime to);
   Future<void> updateStatus(
     String id, {

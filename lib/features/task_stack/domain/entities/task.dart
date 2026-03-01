@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' show TimeOfDay;
 
 enum RecurrenceType { none, repeatToday, daily, weekly, custom }
+
 enum TaskStatus { pending, done }
 
 class Task {
@@ -50,6 +51,21 @@ class Task {
 
   bool get isDone => status == TaskStatus.done;
 
+  /// Returns a list of `DateTime.weekday` integers (1=Mon, 7=Sun) if this
+  /// task repeats on custom days.
+  List<int> get customRecurrenceDays {
+    if (recurrenceType != RecurrenceType.custom ||
+        recurrenceRule == null ||
+        recurrenceRule!.isEmpty) {
+      return [];
+    }
+    return recurrenceRule!
+        .split(',')
+        .map((e) => int.tryParse(e.trim()) ?? 0)
+        .where((e) => e >= 1 && e <= 7)
+        .toList();
+  }
+
   /// Whether the task is currently within its active time window.
   bool isInProgress(DateTime now) {
     if (startMinutes == null) return false;
@@ -97,9 +113,11 @@ class Task {
       durationMinutes: durationMinutes ?? this.durationMinutes,
       recurrenceType: recurrenceType ?? this.recurrenceType,
       recurrenceRule: recurrenceRule ?? this.recurrenceRule,
-      repeatIntervalMinutes: repeatIntervalMinutes ?? this.repeatIntervalMinutes,
+      repeatIntervalMinutes:
+          repeatIntervalMinutes ?? this.repeatIntervalMinutes,
       notificationEnabled: notificationEnabled ?? this.notificationEnabled,
-      notificationOffsetMinutes: notificationOffsetMinutes ?? this.notificationOffsetMinutes,
+      notificationOffsetMinutes:
+          notificationOffsetMinutes ?? this.notificationOffsetMinutes,
       status: status ?? this.status,
       completedAt: completedAt ?? this.completedAt,
       createdAt: createdAt ?? this.createdAt,

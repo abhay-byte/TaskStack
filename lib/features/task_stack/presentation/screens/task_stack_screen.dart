@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
+import 'package:taskstack/features/task_stack/domain/usecases/task_usecases.dart';
 import 'package:taskstack/features/task_stack/presentation/providers/task_providers.dart';
 import 'package:taskstack/features/task_stack/presentation/widgets/task_card_widget.dart';
 import 'package:taskstack/features/task_stack/presentation/widgets/time_indicator_widget.dart';
@@ -10,6 +11,7 @@ import 'package:taskstack/core/constants/app_spacing.dart';
 
 const double _kPixelsPerHour = 120.0;
 const double _kMinuteHeight = _kPixelsPerHour / 60;
+const double _kDayBlockHeight = 24 * _kPixelsPerHour;
 
 class TaskStackScreen extends ConsumerStatefulWidget {
   const TaskStackScreen({super.key});
@@ -28,15 +30,12 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   // Track the currently visible day index so we don't spam state updates
   int _currentVisibleIndex = 10000;
 
-  // Height of a single full day block in pixels (Exactly 24 hours)
-  static const double _dayBlockHeight = 24 * _kPixelsPerHour;
-
   @override
   void initState() {
     super.initState();
 
     // Start at a large index so we can scroll up and down infinitely
-    final initialScrollOffset = 10000 * _dayBlockHeight;
+    const initialScrollOffset = 10000 * _kDayBlockHeight;
     _scrollController = ScrollController(
       initialScrollOffset: initialScrollOffset,
     );
@@ -58,7 +57,7 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
     // We add half the screen height (or ~_kPixelsPerHour * 4) so the NavBar
     // updates as soon as the Date Divider approaches the top 1/3rd of the screen.
     final visibleIndex =
-        ((scrollOffset + _kPixelsPerHour * 4) / _dayBlockHeight).floor();
+        ((scrollOffset + _kPixelsPerHour * 4) / _kDayBlockHeight).floor();
 
     if (visibleIndex != _currentVisibleIndex) {
       _currentVisibleIndex = visibleIndex;
@@ -95,13 +94,13 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
     );
     final daysOffset = todayMidnight.difference(initialMidnight).inDays;
 
-    final dayBaseOffset = (10000 + daysOffset) * _dayBlockHeight;
+    final dayBaseOffset = (10000 + daysOffset) * _kDayBlockHeight;
     final timeOffset =
         (now.hour * 60 + now.minute) * _kMinuteHeight -
         MediaQuery.of(context).size.height * 0.35;
 
     _scrollController.animateTo(
-      dayBaseOffset + timeOffset.clamp(0.0, _dayBlockHeight),
+      dayBaseOffset + timeOffset.clamp(0.0, _kDayBlockHeight),
       duration: const Duration(milliseconds: 600),
       curve: Curves.easeOutCubic,
     );
@@ -110,8 +109,6 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   @override
   Widget build(BuildContext context) {
     final selectedDate = ref.watch(selectedStackDateProvider);
-    final scheduled = ref.watch(scheduledTasksProvider);
-    final unscheduled = ref.watch(unscheduledTasksProvider);
     final isToday = _isToday(selectedDate);
     final now = DateTime.now();
 
@@ -147,7 +144,8 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
           _DateNavBar(
             selectedDate: selectedDate,
             onPrev: () {
-              final previousOffset = _scrollController.offset - _dayBlockHeight;
+              final previousOffset =
+                  _scrollController.offset - _kDayBlockHeight;
               _scrollController.animateTo(
                 previousOffset,
                 duration: const Duration(milliseconds: 300),
@@ -155,7 +153,7 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
               );
             },
             onNext: () {
-              final nextOffset = _scrollController.offset + _dayBlockHeight;
+              final nextOffset = _scrollController.offset + _kDayBlockHeight;
               _scrollController.animateTo(
                 nextOffset,
                 duration: const Duration(milliseconds: 300),
@@ -166,7 +164,7 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              itemExtent: _dayBlockHeight,
+              itemExtent: _kDayBlockHeight,
               itemBuilder: (context, index) {
                 // Initialize _initialDate on first build if needed
                 _initialDate ??= ref.read(selectedStackDateProvider);
@@ -175,82 +173,10 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
                 final pageDate = _initialDate!.add(Duration(days: daysOffset));
                 final isPageToday = _isToday(pageDate);
 
-                return SizedBox(
-                  height: _dayBlockHeight,
-                  child: Stack(
-                    children: [
-                      // Hour slots
-                      ...List.generate(24, (h) => _HourSlotWidget(hour: h)),
-
-                      // Task cards (In a real app, query tasks specific to pageDate here)
-                      // For now, we assume scheduled items are for the selected day in state
-                      ...scheduled.map(
-                        (task) => _PositionedTaskCard(
-                          task: task,
-                          now: now,
-                          isToday: isPageToday,
-                        ),
-                      ),
-
-                      // Unscheduled section below timeline
-                      if (unscheduled.isNotEmpty && daysOffset == 0)
-                        Positioned(
-                          top: 24 * _kPixelsPerHour + 16,
-                          left: 0,
-                          right: 0,
-                          child: _UnscheduledSection(tasks: unscheduled),
-                        ),
-
-                      // Current time indicator (only for today)
-                      if (isPageToday) TimeIndicatorWidget(now: now),
-
-                      // Date Divider (floats exactly centered in the 50px space before 12 AM)
-                      Positioned(
-                        bottom: 40,
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: Text(
-                            (() {
-                              final nextDate = pageDate.add(
-                                const Duration(days: 1),
-                              );
-                              const days = [
-                                'Mon',
-                                'Tue',
-                                'Wed',
-                                'Thu',
-                                'Fri',
-                                'Sat',
-                                'Sun',
-                              ];
-                              const months = [
-                                'Jan',
-                                'Feb',
-                                'Mar',
-                                'Apr',
-                                'May',
-                                'Jun',
-                                'Jul',
-                                'Aug',
-                                'Sep',
-                                'Oct',
-                                'Nov',
-                                'Dec',
-                              ];
-                              return '${days[nextDate.weekday - 1]}, ${months[nextDate.month - 1]} ${nextDate.day}';
-                            })(),
-                            style: Theme.of(
-                              context,
-                            ).textTheme.titleSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.outline,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                return _DayViewBlock(
+                  pageDate: pageDate,
+                  now: now,
+                  isPageToday: isPageToday,
                 );
               },
             ),
@@ -268,6 +194,107 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   bool _isToday(DateTime d) {
     final now = DateTime.now();
     return d.year == now.year && d.month == now.month && d.day == now.day;
+  }
+}
+
+class _DayViewBlock extends ConsumerWidget {
+  const _DayViewBlock({
+    required this.pageDate,
+    required this.now,
+    required this.isPageToday,
+  });
+
+  final DateTime pageDate;
+  final DateTime now;
+  final bool isPageToday;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncTasks = ref.watch(tasksForDateProvider(pageDate));
+    final tasks = asyncTasks.valueOrNull ?? [];
+
+    // Process tasks locally to sort and split
+    final sortedTasks = [...tasks]..sort((a, b) {
+      if (a.startMinutes == null && b.startMinutes == null) return 0;
+      if (a.startMinutes == null) return 1;
+      if (b.startMinutes == null) return -1;
+      return a.startMinutes!.compareTo(b.startMinutes!);
+    });
+
+    final scheduled = sortedTasks.where((t) => t.startMinutes != null).toList();
+    final unscheduled =
+        sortedTasks.where((t) => t.startMinutes == null).toList();
+
+    return SizedBox(
+      height: _kDayBlockHeight,
+      child: Stack(
+        children: [
+          // Hour slots
+          ...List.generate(24, (h) => _HourSlotWidget(hour: h)),
+
+          // Task cards
+          ...scheduled.map(
+            (task) =>
+                _PositionedTaskCard(task: task, now: now, isToday: isPageToday),
+          ),
+
+          // Unscheduled section below timeline
+          // Only show unscheduled if they exist for this specific day
+          if (unscheduled.isNotEmpty)
+            Positioned(
+              top: 24 * _kPixelsPerHour + 16,
+              left: 0,
+              right: 0,
+              child: _UnscheduledSection(tasks: unscheduled),
+            ),
+
+          // Current time indicator (only for today)
+          if (isPageToday) TimeIndicatorWidget(now: now),
+
+          // Date Divider (floats exactly centered in the 50px space before 12 AM)
+          Positioned(
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Text(
+                (() {
+                  final nextDate = pageDate.add(const Duration(days: 1));
+                  const days = [
+                    'Mon',
+                    'Tue',
+                    'Wed',
+                    'Thu',
+                    'Fri',
+                    'Sat',
+                    'Sun',
+                  ];
+                  const months = [
+                    'Jan',
+                    'Feb',
+                    'Mar',
+                    'Apr',
+                    'May',
+                    'Jun',
+                    'Jul',
+                    'Aug',
+                    'Sep',
+                    'Oct',
+                    'Nov',
+                    'Dec',
+                  ];
+                  return '${days[nextDate.weekday - 1]}, ${months[nextDate.month - 1]} ${nextDate.day}';
+                })(),
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.outline,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -451,9 +478,21 @@ class _PositionedTaskCard extends ConsumerWidget {
         },
         onEdit: () => context.push('/task/${task.id}/edit'),
         onDelete: () async {
-          final confirm = await _confirmDelete(context);
-          if (confirm) {
-            await ref.read(deleteTaskUseCaseProvider).execute(task.id);
+          final isRecurring =
+              task.recurrenceType != RecurrenceType.none ||
+              task.parentTaskId != null;
+          if (isRecurring) {
+            final scope = await _confirmRecurringDelete(context);
+            if (scope != null) {
+              await ref
+                  .read(deleteTaskUseCaseProvider)
+                  .execute(task, scope: scope);
+            }
+          } else {
+            final confirm = await _confirmDelete(context);
+            if (confirm) {
+              await ref.read(deleteTaskUseCaseProvider).execute(task);
+            }
           }
         },
         onDuplicate: () async {
@@ -483,6 +522,35 @@ class _PositionedTaskCard extends ConsumerWidget {
               ),
         ) ??
         false;
+  }
+
+  Future<RecurringScope?> _confirmRecurringDelete(BuildContext context) async {
+    return await showDialog<RecurringScope>(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Delete Recurring Task'),
+            content: const Text(
+              'Do you want to delete this instance only, or all upcoming instances as well?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, null),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed:
+                    () => Navigator.pop(ctx, RecurringScope.thisInstance),
+                child: const Text('This instance only'),
+              ),
+              FilledButton(
+                onPressed:
+                    () => Navigator.pop(ctx, RecurringScope.futureInstances),
+                child: const Text('All upcoming'),
+              ),
+            ],
+          ),
+    );
   }
 }
 

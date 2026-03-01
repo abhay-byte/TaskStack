@@ -35,7 +35,6 @@ class NextOccurrenceScheduler {
     final nextTask = completedTask.copyWith(
       id: _uuid.v4(),
       status: TaskStatus.pending,
-      completedAt: null,
       taskDate: nextDate,
       parentTaskId: completedTask.id,
       createdAt: DateTime.now(),
@@ -50,17 +49,25 @@ class NextOccurrenceScheduler {
 
   DateTime? _nextDate(Task task) {
     return switch (task.recurrenceType) {
-      RecurrenceType.daily =>
-        task.taskDate.add(const Duration(days: 1)),
-      RecurrenceType.weekly =>
-        task.taskDate.add(const Duration(days: 7)),
+      RecurrenceType.daily => task.taskDate.add(const Duration(days: 1)),
+      RecurrenceType.weekly => task.taskDate.add(const Duration(days: 7)),
+      RecurrenceType.custom => () {
+        final activeDays = task.customRecurrenceDays;
+        if (activeDays.isEmpty) return null;
+        for (var i = 1; i <= 365; i++) {
+          final testDate = task.taskDate.add(Duration(days: i));
+          if (activeDays.contains(testDate.weekday)) return testDate;
+        }
+        return null;
+      }(),
       _ => null,
     };
   }
 }
 
-final nextOccurrenceSchedulerProvider =
-    Provider<NextOccurrenceScheduler>((ref) {
+final nextOccurrenceSchedulerProvider = Provider<NextOccurrenceScheduler>((
+  ref,
+) {
   return NextOccurrenceScheduler(
     ref.watch(taskRepositoryProvider),
     ref.watch(notificationSchedulerProvider),

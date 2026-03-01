@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
+import 'package:taskstack/features/task_stack/domain/usecases/task_usecases.dart';
 import 'package:taskstack/features/task_stack/presentation/providers/task_providers.dart';
 import 'package:taskstack/core/constants/app_spacing.dart';
 
@@ -166,10 +167,23 @@ class _TaskDetailView extends ConsumerWidget {
               // Delete
               OutlinedButton.icon(
                 onPressed: () async {
-                  final confirm = await _confirmDelete(context);
-                  if (confirm && context.mounted) {
-                    await ref.read(deleteTaskUseCaseProvider).execute(task.id);
-                    if (context.mounted) context.pop();
+                  final isRecurring =
+                      task.recurrenceType != RecurrenceType.none ||
+                      task.parentTaskId != null;
+                  if (isRecurring) {
+                    final scope = await _confirmRecurringDelete(context);
+                    if (scope != null && context.mounted) {
+                      await ref
+                          .read(deleteTaskUseCaseProvider)
+                          .execute(task, scope: scope);
+                      if (context.mounted) context.pop();
+                    }
+                  } else {
+                    final confirm = await _confirmDelete(context);
+                    if (confirm && context.mounted) {
+                      await ref.read(deleteTaskUseCaseProvider).execute(task);
+                      if (context.mounted) context.pop();
+                    }
                   }
                 },
                 icon: Icon(Icons.delete_outline, color: cs.error),
@@ -242,6 +256,35 @@ class _TaskDetailView extends ConsumerWidget {
               ),
         ) ??
         false;
+  }
+
+  Future<RecurringScope?> _confirmRecurringDelete(BuildContext context) async {
+    return await showDialog<RecurringScope>(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Delete Recurring Task'),
+            content: const Text(
+              'Do you want to delete this instance only, or all upcoming instances as well?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, null),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed:
+                    () => Navigator.pop(ctx, RecurringScope.thisInstance),
+                child: const Text('This instance only'),
+              ),
+              FilledButton(
+                onPressed:
+                    () => Navigator.pop(ctx, RecurringScope.futureInstances),
+                child: const Text('All upcoming'),
+              ),
+            ],
+          ),
+    );
   }
 
   String _recurrenceLabel(RecurrenceType r) => switch (r) {

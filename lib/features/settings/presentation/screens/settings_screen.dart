@@ -39,9 +39,7 @@ class SettingsScreen extends ConsumerWidget {
               ],
               selected: {settings.themeMode},
               onSelectionChanged: (s) => notifier.setThemeMode(s.first),
-              style: const ButtonStyle(
-                visualDensity: VisualDensity.compact,
-              ),
+              style: const ButtonStyle(visualDensity: VisualDensity.compact),
             ),
           ),
 
@@ -54,9 +52,10 @@ class SettingsScreen extends ConsumerWidget {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: settings.accentColorArgb != null
-                    ? Color(settings.accentColorArgb!)
-                    : cs.primary,
+                color:
+                    settings.accentColorArgb != null
+                        ? Color(settings.accentColorArgb!)
+                        : cs.primary,
                 shape: BoxShape.circle,
                 border: Border.all(color: cs.outline),
               ),
@@ -85,9 +84,7 @@ class SettingsScreen extends ConsumerWidget {
               ],
               selected: {settings.weekStartsSunday},
               onSelectionChanged: (s) => notifier.setWeekStartsSunday(s.first),
-              style: const ButtonStyle(
-                visualDensity: VisualDensity.compact,
-              ),
+              style: const ButtonStyle(visualDensity: VisualDensity.compact),
             ),
           ),
 
@@ -97,7 +94,9 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.alarm_outlined),
             title: const Text('Default Reminder'),
-            trailing: Text('${settings.defaultNotificationOffsetMinutes} min before'),
+            trailing: Text(
+              '${settings.defaultNotificationOffsetMinutes} min before',
+            ),
             onTap: () => _showReminderPicker(context, ref, settings),
           ),
 
@@ -118,8 +117,10 @@ class SettingsScreen extends ConsumerWidget {
 
           ListTile(
             leading: Icon(Icons.delete_sweep_outlined, color: cs.error),
-            title: Text('Clear Today\'s Tasks',
-                style: TextStyle(color: cs.error)),
+            title: Text(
+              'Clear Today\'s Tasks',
+              style: TextStyle(color: cs.error),
+            ),
             onTap: () => _clearToday(context, ref),
           ),
 
@@ -135,7 +136,11 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.description_outlined),
             title: const Text('Licences'),
-            onTap: () => showLicensePage(context: context, applicationName: 'TaskStack'),
+            onTap:
+                () => showLicensePage(
+                  context: context,
+                  applicationName: 'TaskStack',
+                ),
           ),
 
           const SizedBox(height: AppSpacing.xxl),
@@ -145,109 +150,128 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showAccentPicker(
-      BuildContext context, WidgetRef ref, AppSettings settings) {
+    BuildContext context,
+    WidgetRef ref,
+    AppSettings settings,
+  ) {
     final notifier = ref.read(settingsProvider.notifier);
     showModalBottomSheet(
       context: context,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Accent Colour',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.md),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
+      builder:
+          (_) => Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Default (no override)
-                GestureDetector(
-                  onTap: () {
-                    notifier.setAccentColor(null);
-                    Navigator.pop(context);
-                  },
-                  child: CircleAvatar(
-                    child: const Icon(Icons.auto_awesome, size: 16),
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                  ),
+                Text(
+                  'Accent Colour',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
-                ...AppColors.taskAccentColors.map(
-                  (c) => GestureDetector(
-                    onTap: () {
-                      notifier.setAccentColor(c.value);
-                      Navigator.pop(context);
-                    },
-                    child: CircleAvatar(
-                      backgroundColor: c,
-                      child: settings.accentColorArgb == c.value
-                          ? const Icon(Icons.check, color: Colors.white, size: 16)
-                          : null,
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    // Default (no override)
+                    GestureDetector(
+                      onTap: () {
+                        notifier.setAccentColor(null);
+                        Navigator.pop(context);
+                      },
+                      child: CircleAvatar(
+                        child: const Icon(Icons.auto_awesome, size: 16),
+                        backgroundColor:
+                            Theme.of(context).colorScheme.primaryContainer,
+                      ),
                     ),
-                  ),
+                    ...AppColors.taskAccentColors.map(
+                      (c) => GestureDetector(
+                        onTap: () {
+                          notifier.setAccentColor(c.value);
+                          Navigator.pop(context);
+                        },
+                        child: CircleAvatar(
+                          backgroundColor: c,
+                          child:
+                              settings.accentColorArgb == c.value
+                                  ? const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 16,
+                                  )
+                                  : null,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: AppSpacing.lg),
               ],
             ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
   void _showReminderPicker(
-      BuildContext context, WidgetRef ref, AppSettings settings) {
+    BuildContext context,
+    WidgetRef ref,
+    AppSettings settings,
+  ) {
     final notifier = ref.read(settingsProvider.notifier);
     final options = [0, 5, 10, 15, 30];
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Default Reminder'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: options
-              .map(
-                (o) => RadioListTile<int>(
-                  title: Text(o == 0 ? 'At start time' : '$o min before'),
-                  value: o,
-                  groupValue: settings.defaultNotificationOffsetMinutes,
-                  onChanged: (v) {
-                    if (v != null) {
-                      notifier.setDefaultNotificationOffset(v);
-                      Navigator.pop(context);
-                    }
-                  },
-                ),
-              )
-              .toList(),
-        ),
-      ),
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Default Reminder'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children:
+                  options
+                      .map(
+                        (o) => RadioListTile<int>(
+                          title: Text(
+                            o == 0 ? 'At start time' : '$o min before',
+                          ),
+                          value: o,
+                          groupValue: settings.defaultNotificationOffsetMinutes,
+                          onChanged: (v) {
+                            if (v != null) {
+                              notifier.setDefaultNotificationOffset(v);
+                              Navigator.pop(context);
+                            }
+                          },
+                        ),
+                      )
+                      .toList(),
+            ),
+          ),
     );
   }
 
   Future<void> _exportData(BuildContext context, WidgetRef ref) async {
     try {
       final now = DateTime.now();
-      final tasks = await ref.read(taskRepositoryProvider).getTasksInRange(
-            DateTime(now.year - 5),
-            DateTime(now.year + 5),
-          );
+      final tasks = await ref
+          .read(taskRepositoryProvider)
+          .getTasksInRange(DateTime(now.year - 5), DateTime(now.year + 5));
       final json = jsonEncode(tasks.map(_taskToJson).toList());
       final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/taskstack_export_${now.millisecondsSinceEpoch}.json');
+      final file = File(
+        '${dir.path}/taskstack_export_${now.millisecondsSinceEpoch}.json',
+      );
       await file.writeAsString(json);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Exported to ${file.path}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Exported to ${file.path}')));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
       }
     }
   }
@@ -278,7 +302,11 @@ class SettingsScreen extends ConsumerWidget {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Imported $count task${count != 1 ? "s" : ""} successfully ✓')),
+        SnackBar(
+          content: Text(
+            'Imported $count task${count != 1 ? "s" : ""} successfully ✓',
+          ),
+        ),
       );
     }
   }
@@ -286,52 +314,59 @@ class SettingsScreen extends ConsumerWidget {
   Future<void> _clearToday(BuildContext context, WidgetRef ref) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Clear Today\'s Tasks'),
-        content: const Text('All tasks for today will be deleted. This cannot be undone.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Clear')),
-        ],
-      ),
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Clear Today\'s Tasks'),
+            content: const Text(
+              'All tasks for today will be deleted. This cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Clear'),
+              ),
+            ],
+          ),
     );
 
     if (confirm == true) {
       final today = DateTime.now();
-      final tasks = await ref.read(taskRepositoryProvider).getTasksInRange(
+      final tasks = await ref
+          .read(taskRepositoryProvider)
+          .getTasksInRange(
             DateTime(today.year, today.month, today.day),
             DateTime(today.year, today.month, today.day),
           );
       for (final t in tasks) {
-        await ref.read(deleteTaskUseCaseProvider).execute(t.id);
+        await ref.read(deleteTaskUseCaseProvider).execute(t);
       }
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Today\'s tasks cleared')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Today\'s tasks cleared')));
       }
     }
   }
 
   Map<String, dynamic> _taskToJson(Task t) => {
-        'id': t.id,
-        'title': t.title,
-        'description': t.description,
-        'purpose': t.purpose,
-        'iconId': t.iconId,
-        'colorArgb': t.colorArgb,
-        'tags': t.tags,
-        'startMinutes': t.startMinutes,
-        'durationMinutes': t.durationMinutes,
-        'recurrenceType': t.recurrenceType.name,
-        'status': t.status.name,
-        'taskDate': t.taskDate.toIso8601String(),
-        'completedAt': t.completedAt?.toIso8601String(),
-      };
+    'id': t.id,
+    'title': t.title,
+    'description': t.description,
+    'purpose': t.purpose,
+    'iconId': t.iconId,
+    'colorArgb': t.colorArgb,
+    'tags': t.tags,
+    'startMinutes': t.startMinutes,
+    'durationMinutes': t.durationMinutes,
+    'recurrenceType': t.recurrenceType.name,
+    'status': t.status.name,
+    'taskDate': t.taskDate.toIso8601String(),
+    'completedAt': t.completedAt?.toIso8601String(),
+  };
 }
 
 class _SectionHeader extends StatelessWidget {
@@ -342,13 +377,17 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.sm),
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              letterSpacing: 1.2,
-            ),
+          color: Theme.of(context).colorScheme.primary,
+          letterSpacing: 1.2,
+        ),
       ),
     );
   }
