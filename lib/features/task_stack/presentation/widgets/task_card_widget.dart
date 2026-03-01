@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/core/constants/app_spacing.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:taskstack/core/widgets/animated_graphic.dart'; // Ensure this import is present
 
 class TaskCardWidget extends StatelessWidget {
   const TaskCardWidget({
@@ -85,105 +85,154 @@ class TaskCardWidget extends StatelessWidget {
                     : null,
           ),
           clipBehavior: Clip.antiAlias,
-          child: Stack(
-            children: [
-              if (task.graphicImage != null)
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  width: 140, // Fixed width
-                  height: 140, // Fixed height pinned to top
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topRight: Radius.circular(12),
-                      bottomRight: Radius.circular(12),
-                    ),
-                    child: Opacity(
-                      opacity: 0.15, // Light watermark
-                      child: SvgPicture.asset(
-                        task.graphicImage!,
-                        fit: BoxFit.cover, // Fill the square cleanly
-                        alignment: Alignment.topRight,
-                      ),
-                    ),
-                  ),
-                ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                child: Row(
-                  children: [
-                    // Status icon
-                    Icon(
-                      isDone
-                          ? Icons.check_circle
-                          : isInProgress
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_unchecked,
-                      color:
-                          isDone
-                              ? cs.primary
-                              : isInProgress
-                              ? accent
-                              : cs.outline,
-                      size: 18,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            task.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.titleSmall?.copyWith(
-                              decoration:
-                                  isDone ? TextDecoration.lineThrough : null,
-                              color:
-                                  isDone ? cs.onSurfaceVariant : cs.onSurface,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final cardHeight =
+                  constraints.hasBoundedHeight ? constraints.maxHeight : 140.0;
+              final hasGraphic = task.graphicImage != null;
+              final headerHeight = cardHeight < 120 ? cardHeight : 100.0;
+
+              return Stack(
+                children: [
+                  // 1. Full-width Animated Graphic Header
+                  if (hasGraphic)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      height: headerHeight,
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(12),
+                        ),
+                        child: Opacity(
+                          opacity: 0.4, // Increased visibility
+                          child: IgnorePointer(
+                            child: AnimatedGraphic(
+                              assetPath: task.graphicImage!,
                             ),
                           ),
-                          if (task.tags.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Wrap(
-                              spacing: 4,
-                              children:
-                                  task.tags
-                                      .take(3)
-                                      .map(
-                                        (tag) => Text(
-                                          '#$tag',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .labelSmall
-                                              ?.copyWith(color: cs.primary),
-                                        ),
-                                      )
-                                      .toList(),
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
                     ),
 
-                    // Duration chip
-                    if (task.durationMinutes != null)
-                      Text(
-                        '${task.durationMinutes}m',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.labelSmall?.copyWith(color: cs.outline),
+                  // 2. Gradient Overlay for readability (Bottom-to-Top)
+                  if (hasGraphic)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      height: headerHeight,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              (isDone
+                                      ? cs.surfaceContainerLow
+                                      : cs.surfaceContainerHigh)
+                                  .withAlpha(200),
+                              isDone
+                                  ? cs.surfaceContainerLow
+                                  : cs.surfaceContainerHigh,
+                            ],
+                            stops: const [0.0, 0.7, 1.0],
+                          ),
+                        ),
                       ),
-                  ],
-                ),
-              ),
-            ],
+                    ),
+
+                  // 3. Content (Shifted down if graphic is present)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      hasGraphic
+                          ? (cardHeight < 120
+                              ? AppSpacing.sm
+                              : headerHeight - 10)
+                          : AppSpacing.sm,
+                      AppSpacing.md,
+                      AppSpacing.sm,
+                    ),
+                    child: Row(
+                      children: [
+                        // Status icon
+                        Icon(
+                          isDone
+                              ? Icons.check_circle
+                              : isInProgress
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_unchecked,
+                          color:
+                              isDone
+                                  ? cs.primary
+                                  : isInProgress
+                                  ? accent
+                                  : cs.outline,
+                          size: 18,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                task.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.titleSmall?.copyWith(
+                                  decoration:
+                                      isDone
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                  color:
+                                      isDone
+                                          ? cs.onSurfaceVariant
+                                          : cs.onSurface,
+                                ),
+                              ),
+                              if (task.tags.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Wrap(
+                                  spacing: 4,
+                                  children:
+                                      task.tags
+                                          .take(3)
+                                          .map(
+                                            (tag) => Text(
+                                              '#$tag',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .labelSmall
+                                                  ?.copyWith(color: cs.primary),
+                                            ),
+                                          )
+                                          .toList(),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+
+                        // Duration chip
+                        if (task.durationMinutes != null)
+                          Text(
+                            '${task.durationMinutes}m',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.labelSmall?.copyWith(color: cs.outline),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

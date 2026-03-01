@@ -8,8 +8,7 @@ import 'package:taskstack/core/constants/app_spacing.dart';
 import 'package:taskstack/core/constants/app_colors.dart';
 import 'package:taskstack/core/constants/task_graphics.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:taskstack/core/widgets/animated_graphic.dart';
 
 class TaskFormScreen extends ConsumerStatefulWidget {
   const TaskFormScreen({super.key, this.taskId, this.prefilledDate});
@@ -724,9 +723,7 @@ class _GraphicPicker extends StatelessWidget {
                   alignment: Alignment.center,
                   children: [
                     Positioned.fill(
-                      child: AbsorbPointer(
-                        child: _GraphicWebView(assetPath: selectedGraphic!),
-                      ),
+                      child: AnimatedGraphic(assetPath: selectedGraphic!),
                     ),
                     Positioned(
                       top: 8,
@@ -850,70 +847,5 @@ class _GraphicPicker extends StatelessWidget {
         );
       },
     );
-  }
-}
-
-class _GraphicWebView extends StatefulWidget {
-  const _GraphicWebView({required this.assetPath});
-  final String assetPath;
-
-  @override
-  State<_GraphicWebView> createState() => _GraphicWebViewState();
-}
-
-class _GraphicWebViewState extends State<_GraphicWebView> {
-  late final WebViewController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller =
-        WebViewController()
-          ..setJavaScriptMode(JavaScriptMode.unrestricted)
-          ..setBackgroundColor(Colors.transparent);
-    _loadSvg();
-  }
-
-  Future<void> _loadSvg() async {
-    try {
-      final svgString = await rootBundle.loadString(widget.assetPath);
-      final html = '''
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <style>
-    body, html { 
-      margin: 0; padding: 0; width: 100%; height: 100%; 
-      overflow: hidden; background-color: transparent; 
-      display: flex; justify-content: center; align-items: center; 
-    }
-    svg { 
-      width: 100%; height: 100%; 
-    }
-  </style>
-</head>
-<body>
-  $svgString
-  <script>
-    const svg = document.querySelector('svg');
-    if (svg) {
-      svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
-    }
-  </script>
-</body>
-</html>
-      ''';
-      if (mounted) {
-        _controller.loadHtmlString(html);
-      }
-    } catch (e) {
-      debugPrint('Error loading SVG for WebView: \$e');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return WebViewWidget(controller: _controller);
   }
 }
