@@ -52,17 +52,20 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   void _onScroll() {
     if (!_scrollController.hasClients || _initialDate == null) return;
 
-    // Determine which day index is most visible (top of the screen)
+    // Determine which day index is most visible (centered on the screen)
     final scrollOffset = _scrollController.offset;
-    // We add half the screen height (or ~_kPixelsPerHour * 4) so the NavBar
-    // updates as soon as the Date Divider approaches the top 1/3rd of the screen.
+    final viewportHeight = _scrollController.position.viewportDimension;
     final visibleIndex =
-        ((scrollOffset + _kPixelsPerHour * 4) / _kDayBlockHeight).floor();
+        ((scrollOffset + viewportHeight / 2) / _kDayBlockHeight).floor();
 
     if (visibleIndex != _currentVisibleIndex) {
       _currentVisibleIndex = visibleIndex;
       final daysOffset = visibleIndex - 10000;
-      final newDate = _initialDate!.add(Duration(days: daysOffset));
+      final newDate = DateTime(
+        _initialDate!.year,
+        _initialDate!.month,
+        _initialDate!.day + daysOffset,
+      );
 
       // Update the date provider without rebuilding the whole list immediately
       Future.microtask(() {
@@ -170,7 +173,11 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
                 _initialDate ??= ref.read(selectedStackDateProvider);
 
                 final daysOffset = index - 10000;
-                final pageDate = _initialDate!.add(Duration(days: daysOffset));
+                final pageDate = DateTime(
+                  _initialDate!.year,
+                  _initialDate!.month,
+                  _initialDate!.day + daysOffset,
+                );
                 final isPageToday = _isToday(pageDate);
 
                 return _DayViewBlock(

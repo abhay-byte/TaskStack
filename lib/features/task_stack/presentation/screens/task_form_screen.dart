@@ -367,11 +367,23 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
   }
 
   Future<void> _save(BuildContext context, TaskFormState form) async {
-    final DateTime date;
+    DateTime date;
     if (widget.prefilledDate != null) {
       date = widget.prefilledDate!;
     } else {
       date = ref.read(selectedStackDateProvider);
+    }
+    
+    // Auto-advance to tomorrow if creating a new task, task date is today, 
+    // and picked time is in the past (e.g. at 11 PM setting a 5:30 AM task).
+    if (widget.taskId == null && form.startMinutes != null) {
+      final now = DateTime.now();
+      if (date.year == now.year && date.month == now.month && date.day == now.day) {
+        final todayMinutes = now.hour * 60 + now.minute;
+        if (form.startMinutes! < todayMinutes) {
+          date = DateTime(date.year, date.month, date.day + 1);
+        }
+      }
     }
 
     RecurringScope scope = RecurringScope.thisInstance;

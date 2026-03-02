@@ -27,8 +27,8 @@ class NotificationScheduler {
       task.taskDate.year,
       task.taskDate.month,
       task.taskDate.day,
-      notifyStart ~/ 60,
-      notifyStart % 60,
+      0, // Start at midnight
+      notifyStart, // Add exact minutes (TZDateTime handles negative minutes correctly)
     );
 
     if (scheduled.isBefore(now)) return;

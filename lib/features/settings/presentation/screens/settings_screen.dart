@@ -10,6 +10,8 @@ import 'package:taskstack/core/constants/app_spacing.dart';
 import 'package:taskstack/core/constants/app_colors.dart';
 import 'package:taskstack/features/task_stack/data/repositories/task_repository_impl.dart';
 import 'package:taskstack/features/settings/data/json_import_service.dart';
+import 'package:taskstack/features/notifications/notification_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -98,6 +100,12 @@ class SettingsScreen extends ConsumerWidget {
               '${settings.defaultNotificationOffsetMinutes} min before',
             ),
             onTap: () => _showReminderPicker(context, ref, settings),
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.notifications_active_outlined),
+            title: const Text('Test Notification'),
+            onTap: () => _testNotification(context),
           ),
 
           // ── Data ──────────────────────────────────────────────────────
@@ -367,6 +375,39 @@ class SettingsScreen extends ConsumerWidget {
     'taskDate': t.taskDate.toIso8601String(),
     'completedAt': t.completedAt?.toIso8601String(),
   };
+
+  Future<void> _testNotification(BuildContext context) async {
+    const androidDetails = AndroidNotificationDetails(
+      'taskstack_test',
+      'Test Notifications',
+      channelDescription: 'Used for testing notifications',
+      importance: Importance.max,
+      priority: Priority.max,
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentSound: true,
+    );
+    try {
+      await NotificationService.plugin.show(
+        9999,
+        'Test Notification',
+        'This is a test notification from TaskStack!',
+        const NotificationDetails(android: androidDetails, iOS: iosDetails),
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Test notification sent')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send test notification: $e')),
+        );
+      }
+    }
+  }
 }
 
 class _SectionHeader extends StatelessWidget {

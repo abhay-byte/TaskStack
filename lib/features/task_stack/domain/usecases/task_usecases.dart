@@ -58,13 +58,13 @@ class CreateTaskUseCase {
     for (var i = 1; i <= 365 * 2; i++) {
       DateTime nextDate;
       if (parent.recurrenceType == RecurrenceType.daily) {
-        nextDate = parent.taskDate.add(Duration(days: i));
+        nextDate = DateTime(parent.taskDate.year, parent.taskDate.month, parent.taskDate.day + i);
         if (instances.length >= 365) break; // 1 year limit
       } else if (parent.recurrenceType == RecurrenceType.weekly) {
-        nextDate = parent.taskDate.add(Duration(days: 7 * i));
+        nextDate = DateTime(parent.taskDate.year, parent.taskDate.month, parent.taskDate.day + (7 * i));
         if (instances.length >= 104) break; // 2 years limit
       } else if (parent.recurrenceType == RecurrenceType.custom) {
-        nextDate = parent.taskDate.add(Duration(days: i));
+        nextDate = DateTime(parent.taskDate.year, parent.taskDate.month, parent.taskDate.day + i);
         if (!parent.customRecurrenceDays.contains(nextDate.weekday)) {
           continue; // skip days that aren't selected
         }
