@@ -161,170 +161,143 @@ class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
           : ListView(
               padding: const EdgeInsets.all(AppSpacing.md),
               children: [
-                // 1. Basic Info Card
-                Card(
-                  elevation: 0,
-                  color: cs.surfaceContainerLow,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(color: cs.outlineVariant, width: 1),
+                Text('Goal Details', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: cs.primary)),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: _titleCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'Goal Title *',
+                    border: const OutlineInputBorder(),
+                    filled: true,
+                    fillColor: cs.surface,
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Goal Details', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: cs.primary)),
-                        const SizedBox(height: AppSpacing.md),
-                        TextField(
-                          controller: _titleCtrl,
-                          decoration: InputDecoration(
-                            labelText: 'Goal Title *',
-                            border: const OutlineInputBorder(),
-                            filled: true,
-                            fillColor: cs.surface,
-                          ),
-                          maxLength: 80,
-                          onChanged: (_) => setState(() {}),
-                          textInputAction: TextInputAction.next,
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          'Goal Type',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        SizedBox(
-                          width: double.infinity,
-                          child: SegmentedButton<GoalType>(
-                            segments: const [
-                              ButtonSegment(
-                                value: GoalType.project,
-                                label: Text('Project'),
-                                icon: Icon(Icons.account_tree_outlined),
-                              ),
-                              ButtonSegment(
-                                value: GoalType.habit,
-                                label: Text('Habit'),
-                                icon: Icon(Icons.repeat),
-                              ),
-                              ButtonSegment(
-                                value: GoalType.noTime,
-                                label: Text('Ongoing'),
-                                icon: Icon(Icons.all_inclusive),
-                              ),
-                            ],
-                            selected: {_selectedType},
-                            onSelectionChanged: (s) => setState(() {
-                              _selectedType = s.first;
-                            }),
-                            style: SegmentedButton.styleFrom(
-                              selectedBackgroundColor: cs.primaryContainer,
-                              selectedForegroundColor: cs.onPrimaryContainer,
-                            ),
-                          ),
-                        ),
-                      ],
+                  maxLength: 80,
+                  onChanged: (_) => setState(() {}),
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                
+                Text(
+                  'Goal Type',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(color: cs.primary),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<GoalType>(
+                    segments: const [
+                      ButtonSegment(
+                        value: GoalType.project,
+                        label: Text('Project'),
+                        icon: Icon(Icons.account_tree_outlined),
+                      ),
+                      ButtonSegment(
+                        value: GoalType.habit,
+                        label: Text('Habit'),
+                        icon: Icon(Icons.repeat),
+                      ),
+                      ButtonSegment(
+                        value: GoalType.noTime,
+                        label: Text('Ongoing'),
+                        icon: Icon(Icons.all_inclusive),
+                      ),
+                    ],
+                    selected: {_selectedType},
+                    onSelectionChanged: (s) => setState(() {
+                      _selectedType = s.first;
+                    }),
+                    style: SegmentedButton.styleFrom(
+                      selectedBackgroundColor: cs.primaryContainer,
+                      selectedForegroundColor: cs.onPrimaryContainer,
                     ),
                   ),
                 ),
 
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.xl),
 
-                // 2. Duration Card (If applicable)
-                if (_selectedType != GoalType.noTime)
-                  Card(
-                    elevation: 0,
-                    color: cs.surfaceContainerLow,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: cs.outlineVariant, width: 1),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.timer_outlined, color: cs.primary, size: 20),
-                              const SizedBox(width: AppSpacing.sm),
-                              Text('Time to Complete', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: cs.primary)),
-                            ],
+                // 2. Duration Details (If applicable)
+                if (_selectedType != GoalType.noTime) ...[
+                  Row(
+                    children: [
+                      Icon(Icons.timer_outlined, color: cs.primary, size: 20),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text('Time to Complete', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: cs.primary)),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _yearsCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Years',
+                            border: const OutlineInputBorder(),
+                            filled: true,
+                            fillColor: cs.surface,
                           ),
-                          const SizedBox(height: AppSpacing.md),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _yearsCtrl,
-                                  decoration: InputDecoration(
-                                    labelText: 'Years',
-                                    border: const OutlineInputBorder(),
-                                    filled: true,
-                                    fillColor: cs.surface,
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (_) => setState(() {}),
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Expanded(
-                                child: TextField(
-                                  controller: _monthsCtrl,
-                                  decoration: InputDecoration(
-                                    labelText: 'Months',
-                                    border: const OutlineInputBorder(),
-                                    filled: true,
-                                    fillColor: cs.surface,
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (_) => setState(() {}),
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Expanded(
-                                child: TextField(
-                                  controller: _daysCtrl,
-                                  decoration: InputDecoration(
-                                    labelText: 'Days',
-                                    border: const OutlineInputBorder(),
-                                    filled: true,
-                                    fillColor: cs.surface,
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (_) => setState(() {}),
-                                ),
-                              ),
-                            ],
+                          keyboardType: TextInputType.number,
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: TextField(
+                          controller: _monthsCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Months',
+                            border: const OutlineInputBorder(),
+                            filled: true,
+                            fillColor: cs.surface,
                           ),
-                          if (_calculateDurationHours() != null) ...[
-                            const SizedBox(height: AppSpacing.md),
-                            Container(
-                              padding: const EdgeInsets.all(AppSpacing.sm),
-                              decoration: BoxDecoration(
-                                color: cs.secondaryContainer.withAlpha(50),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.info_outline, size: 16, color: cs.secondary),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Text(
-                                    'Total duration: ${_calculateDurationHours()} hours',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: cs.secondary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                          keyboardType: TextInputType.number,
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: TextField(
+                          controller: _daysCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Days',
+                            border: const OutlineInputBorder(),
+                            filled: true,
+                            fillColor: cs.surface,
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_calculateDurationHours() != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: cs.secondaryContainer.withAlpha(80),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.info_outline, size: 16, color: cs.secondary),
+                            const SizedBox(width: AppSpacing.sm),
+                            Text(
+                              'Total duration: ${_calculateDurationHours()} hours',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: cs.secondary,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
-                        ],
+                        ),
                       ),
                     ),
-                  ),
+                  ],
+                ],
 
                 if (_error != null) ...[
                   const SizedBox(height: AppSpacing.lg),
