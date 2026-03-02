@@ -59,6 +59,17 @@
 
 ---
 
+## ✅ Phase 5 — Enhancements
+- **Goal/Project Feature**:
+  - `Goal` entity and `GoalsTable` (Drift) with ID, title, type (project/habit/no_time), and durationHours.
+  - Linked Tasks to Goals via `goalId` foreign key.
+  - New `GoalFormScreen` to create long term projects with custom durations (years/months/days converted to hours).
+  - Updated `TaskFormScreen` with dropdown to select a goal or prompt goal creation.
+  - Display associated goal within `TaskCardWidget` directly on the stack timeline.
+  - Information tile for Goal in `TaskDetailScreen`.
+
+---
+
 ## 📊 Build Summary (v1.0)
 | Check | Result |
 |---|---|

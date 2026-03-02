@@ -103,6 +103,7 @@ class TaskFormState {
     this.notificationOffsetMinutes = 5,
     this.taskDate,
     this.parentTaskId,
+    this.goalId,
     this.createdAt,
     this.isSaving = false,
     this.error,
@@ -125,6 +126,7 @@ class TaskFormState {
   final int notificationOffsetMinutes;
   final DateTime? taskDate;
   final String? parentTaskId;
+  final String? goalId;
   final DateTime? createdAt;
   final bool isSaving;
   final String? error;
@@ -149,6 +151,7 @@ class TaskFormState {
     int? notificationOffsetMinutes,
     DateTime? taskDate,
     String? parentTaskId,
+    String? goalId,
     DateTime? createdAt,
     bool? isSaving,
     String? error,
@@ -173,6 +176,7 @@ class TaskFormState {
           notificationOffsetMinutes ?? this.notificationOffsetMinutes,
       taskDate: taskDate ?? this.taskDate,
       parentTaskId: parentTaskId ?? this.parentTaskId,
+      goalId: goalId ?? this.goalId,
       createdAt: createdAt ?? this.createdAt,
       isSaving: isSaving ?? this.isSaving,
       error: error ?? this.error,
@@ -205,6 +209,7 @@ class TaskFormNotifier extends StateNotifier<TaskFormState> {
       notificationOffsetMinutes: task.notificationOffsetMinutes,
       taskDate: task.taskDate,
       parentTaskId: task.parentTaskId,
+      goalId: task.goalId,
       createdAt: task.createdAt,
     );
   }
@@ -237,6 +242,7 @@ class TaskFormNotifier extends StateNotifier<TaskFormState> {
       state = state.copyWith(notificationEnabled: v);
   void updateNotificationOffset(int v) =>
       state = state.copyWith(notificationOffsetMinutes: v);
+  void updateGoalId(String? v) => state = state.copyWith(goalId: v);
 
   Future<bool> save(
     DateTime taskDate, {
@@ -268,6 +274,7 @@ class TaskFormNotifier extends StateNotifier<TaskFormState> {
         updatedAt: DateTime.now(),
         taskDate: taskDate,
         parentTaskId: state.parentTaskId,
+        goalId: state.goalId,
       );
       if (state.id.isEmpty) {
         await _create.execute(task);

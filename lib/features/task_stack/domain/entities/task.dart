@@ -26,6 +26,7 @@ class Task {
     required this.createdAt,
     required this.updatedAt,
     this.parentTaskId,
+    this.goalId,
     required this.taskDate,
   });
 
@@ -49,6 +50,7 @@ class Task {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? parentTaskId;
+  final String? goalId;
   final DateTime taskDate; // calendar day
 
   bool get isDone => status == TaskStatus.done;
@@ -102,6 +104,7 @@ class Task {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? parentTaskId,
+    String? goalId,
     DateTime? taskDate,
   }) {
     return Task(
@@ -127,6 +130,7 @@ class Task {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       parentTaskId: parentTaskId ?? this.parentTaskId,
+      goalId: goalId ?? this.goalId,
       taskDate: taskDate ?? this.taskDate,
     );
   }

@@ -228,6 +228,15 @@ class $TasksTableTable extends TasksTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _goalIdMeta = const VerificationMeta('goalId');
+  @override
+  late final GeneratedColumn<String> goalId = GeneratedColumn<String>(
+    'goal_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _taskDateMeta = const VerificationMeta(
     'taskDate',
   );
@@ -261,6 +270,7 @@ class $TasksTableTable extends TasksTable
     createdAt,
     updatedAt,
     parentTaskId,
+    goalId,
     taskDate,
   ];
   @override
@@ -433,6 +443,12 @@ class $TasksTableTable extends TasksTable
         ),
       );
     }
+    if (data.containsKey('goal_id')) {
+      context.handle(
+        _goalIdMeta,
+        goalId.isAcceptableOrUnknown(data['goal_id']!, _goalIdMeta),
+      );
+    }
     if (data.containsKey('task_date')) {
       context.handle(
         _taskDateMeta,
@@ -539,6 +555,10 @@ class $TasksTableTable extends TasksTable
         DriftSqlType.string,
         data['${effectivePrefix}parent_task_id'],
       ),
+      goalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}goal_id'],
+      ),
       taskDate:
           attachedDatabase.typeMapping.read(
             DriftSqlType.string,
@@ -574,6 +594,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? parentTaskId;
+  final String? goalId;
   final String taskDate;
   const TasksTableData({
     required this.id,
@@ -596,6 +617,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
     required this.createdAt,
     required this.updatedAt,
     this.parentTaskId,
+    this.goalId,
     required this.taskDate,
   });
   @override
@@ -644,6 +666,9 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
     map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || parentTaskId != null) {
       map['parent_task_id'] = Variable<String>(parentTaskId);
+    }
+    if (!nullToAbsent || goalId != null) {
+      map['goal_id'] = Variable<String>(goalId);
     }
     map['task_date'] = Variable<String>(taskDate);
     return map;
@@ -702,6 +727,8 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
           parentTaskId == null && nullToAbsent
               ? const Value.absent()
               : Value(parentTaskId),
+      goalId:
+          goalId == null && nullToAbsent ? const Value.absent() : Value(goalId),
       taskDate: Value(taskDate),
     );
   }
@@ -738,6 +765,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       parentTaskId: serializer.fromJson<String?>(json['parentTaskId']),
+      goalId: serializer.fromJson<String?>(json['goalId']),
       taskDate: serializer.fromJson<String>(json['taskDate']),
     );
   }
@@ -767,6 +795,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'parentTaskId': serializer.toJson<String?>(parentTaskId),
+      'goalId': serializer.toJson<String?>(goalId),
       'taskDate': serializer.toJson<String>(taskDate),
     };
   }
@@ -792,6 +821,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<String?> parentTaskId = const Value.absent(),
+    Value<String?> goalId = const Value.absent(),
     String? taskDate,
   }) => TasksTableData(
     id: id ?? this.id,
@@ -820,6 +850,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     parentTaskId: parentTaskId.present ? parentTaskId.value : this.parentTaskId,
+    goalId: goalId.present ? goalId.value : this.goalId,
     taskDate: taskDate ?? this.taskDate,
   );
   TasksTableData copyWithCompanion(TasksTableCompanion data) {
@@ -873,6 +904,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
           data.parentTaskId.present
               ? data.parentTaskId.value
               : this.parentTaskId,
+      goalId: data.goalId.present ? data.goalId.value : this.goalId,
       taskDate: data.taskDate.present ? data.taskDate.value : this.taskDate,
     );
   }
@@ -900,6 +932,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('parentTaskId: $parentTaskId, ')
+          ..write('goalId: $goalId, ')
           ..write('taskDate: $taskDate')
           ..write(')'))
         .toString();
@@ -927,6 +960,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
     createdAt,
     updatedAt,
     parentTaskId,
+    goalId,
     taskDate,
   ]);
   @override
@@ -953,6 +987,7 @@ class TasksTableData extends DataClass implements Insertable<TasksTableData> {
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.parentTaskId == this.parentTaskId &&
+          other.goalId == this.goalId &&
           other.taskDate == this.taskDate);
 }
 
@@ -977,6 +1012,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<String?> parentTaskId;
+  final Value<String?> goalId;
   final Value<String> taskDate;
   final Value<int> rowid;
   const TasksTableCompanion({
@@ -1000,6 +1036,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.parentTaskId = const Value.absent(),
+    this.goalId = const Value.absent(),
     this.taskDate = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1024,6 +1061,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
     required DateTime createdAt,
     required DateTime updatedAt,
     this.parentTaskId = const Value.absent(),
+    this.goalId = const Value.absent(),
     required String taskDate,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -1052,6 +1090,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<String>? parentTaskId,
+    Expression<String>? goalId,
     Expression<String>? taskDate,
     Expression<int>? rowid,
   }) {
@@ -1079,6 +1118,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (parentTaskId != null) 'parent_task_id': parentTaskId,
+      if (goalId != null) 'goal_id': goalId,
       if (taskDate != null) 'task_date': taskDate,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1105,6 +1145,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<String?>? parentTaskId,
+    Value<String?>? goalId,
     Value<String>? taskDate,
     Value<int>? rowid,
   }) {
@@ -1131,6 +1172,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       parentTaskId: parentTaskId ?? this.parentTaskId,
+      goalId: goalId ?? this.goalId,
       taskDate: taskDate ?? this.taskDate,
       rowid: rowid ?? this.rowid,
     );
@@ -1203,6 +1245,9 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
     if (parentTaskId.present) {
       map['parent_task_id'] = Variable<String>(parentTaskId.value);
     }
+    if (goalId.present) {
+      map['goal_id'] = Variable<String>(goalId.value);
+    }
     if (taskDate.present) {
       map['task_date'] = Variable<String>(taskDate.value);
     }
@@ -1235,6 +1280,7 @@ class TasksTableCompanion extends UpdateCompanion<TasksTableData> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('parentTaskId: $parentTaskId, ')
+          ..write('goalId: $goalId, ')
           ..write('taskDate: $taskDate, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -2079,6 +2125,378 @@ class DailySummariesTableCompanion
   }
 }
 
+class $GoalsTableTable extends GoalsTable
+    with TableInfo<$GoalsTableTable, GoalsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GoalsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 80),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('project'),
+  );
+  static const VerificationMeta _durationHoursMeta = const VerificationMeta(
+    'durationHours',
+  );
+  @override
+  late final GeneratedColumn<int> durationHours = GeneratedColumn<int>(
+    'duration_hours',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    type,
+    durationHours,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'goals';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<GoalsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    }
+    if (data.containsKey('duration_hours')) {
+      context.handle(
+        _durationHoursMeta,
+        durationHours.isAcceptableOrUnknown(
+          data['duration_hours']!,
+          _durationHoursMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  GoalsTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GoalsTableData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      title:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}title'],
+          )!,
+      type:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}type'],
+          )!,
+      durationHours: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_hours'],
+      ),
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}created_at'],
+          )!,
+    );
+  }
+
+  @override
+  $GoalsTableTable createAlias(String alias) {
+    return $GoalsTableTable(attachedDatabase, alias);
+  }
+}
+
+class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
+  final String id;
+  final String title;
+  final String type;
+
+  /// Duration of the goal in hours. Null means no set time.
+  final int? durationHours;
+  final DateTime createdAt;
+  const GoalsTableData({
+    required this.id,
+    required this.title,
+    required this.type,
+    this.durationHours,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    map['type'] = Variable<String>(type);
+    if (!nullToAbsent || durationHours != null) {
+      map['duration_hours'] = Variable<int>(durationHours);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  GoalsTableCompanion toCompanion(bool nullToAbsent) {
+    return GoalsTableCompanion(
+      id: Value(id),
+      title: Value(title),
+      type: Value(type),
+      durationHours:
+          durationHours == null && nullToAbsent
+              ? const Value.absent()
+              : Value(durationHours),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory GoalsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GoalsTableData(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      type: serializer.fromJson<String>(json['type']),
+      durationHours: serializer.fromJson<int?>(json['durationHours']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'type': serializer.toJson<String>(type),
+      'durationHours': serializer.toJson<int?>(durationHours),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  GoalsTableData copyWith({
+    String? id,
+    String? title,
+    String? type,
+    Value<int?> durationHours = const Value.absent(),
+    DateTime? createdAt,
+  }) => GoalsTableData(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    type: type ?? this.type,
+    durationHours:
+        durationHours.present ? durationHours.value : this.durationHours,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  GoalsTableData copyWithCompanion(GoalsTableCompanion data) {
+    return GoalsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      type: data.type.present ? data.type.value : this.type,
+      durationHours:
+          data.durationHours.present
+              ? data.durationHours.value
+              : this.durationHours,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoalsTableData(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('type: $type, ')
+          ..write('durationHours: $durationHours, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, title, type, durationHours, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GoalsTableData &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.type == this.type &&
+          other.durationHours == this.durationHours &&
+          other.createdAt == this.createdAt);
+}
+
+class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<String> type;
+  final Value<int?> durationHours;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const GoalsTableCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.type = const Value.absent(),
+    this.durationHours = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GoalsTableCompanion.insert({
+    required String id,
+    required String title,
+    this.type = const Value.absent(),
+    this.durationHours = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       createdAt = Value(createdAt);
+  static Insertable<GoalsTableData> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<String>? type,
+    Expression<int>? durationHours,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (type != null) 'type': type,
+      if (durationHours != null) 'duration_hours': durationHours,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GoalsTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<String>? type,
+    Value<int?>? durationHours,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return GoalsTableCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      type: type ?? this.type,
+      durationHours: durationHours ?? this.durationHours,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (durationHours.present) {
+      map['duration_hours'] = Variable<int>(durationHours.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoalsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('type: $type, ')
+          ..write('durationHours: $durationHours, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2086,9 +2504,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TagsTableTable tagsTable = $TagsTableTable(this);
   late final $DailySummariesTableTable dailySummariesTable =
       $DailySummariesTableTable(this);
+  late final $GoalsTableTable goalsTable = $GoalsTableTable(this);
   late final TaskDao taskDao = TaskDao(this as AppDatabase);
   late final TagDao tagDao = TagDao(this as AppDatabase);
   late final AnalyticsDao analyticsDao = AnalyticsDao(this as AppDatabase);
+  late final GoalDao goalDao = GoalDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2097,6 +2517,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     tasksTable,
     tagsTable,
     dailySummariesTable,
+    goalsTable,
   ];
 }
 
@@ -2122,6 +2543,7 @@ typedef $$TasksTableTableCreateCompanionBuilder =
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<String?> parentTaskId,
+      Value<String?> goalId,
       required String taskDate,
       Value<int> rowid,
     });
@@ -2147,6 +2569,7 @@ typedef $$TasksTableTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<String?> parentTaskId,
+      Value<String?> goalId,
       Value<String> taskDate,
       Value<int> rowid,
     });
@@ -2257,6 +2680,11 @@ class $$TasksTableTableFilterComposer
 
   ColumnFilters<String> get parentTaskId => $composableBuilder(
     column: $table.parentTaskId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get goalId => $composableBuilder(
+    column: $table.goalId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2375,6 +2803,11 @@ class $$TasksTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get goalId => $composableBuilder(
+    column: $table.goalId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get taskDate => $composableBuilder(
     column: $table.taskDate,
     builder: (column) => ColumnOrderings(column),
@@ -2472,6 +2905,9 @@ class $$TasksTableTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get goalId =>
+      $composableBuilder(column: $table.goalId, builder: (column) => column);
+
   GeneratedColumn<String> get taskDate =>
       $composableBuilder(column: $table.taskDate, builder: (column) => column);
 }
@@ -2527,6 +2963,7 @@ class $$TasksTableTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<String?> parentTaskId = const Value.absent(),
+                Value<String?> goalId = const Value.absent(),
                 Value<String> taskDate = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TasksTableCompanion(
@@ -2550,6 +2987,7 @@ class $$TasksTableTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 parentTaskId: parentTaskId,
+                goalId: goalId,
                 taskDate: taskDate,
                 rowid: rowid,
               ),
@@ -2575,6 +3013,7 @@ class $$TasksTableTableTableManager
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<String?> parentTaskId = const Value.absent(),
+                Value<String?> goalId = const Value.absent(),
                 required String taskDate,
                 Value<int> rowid = const Value.absent(),
               }) => TasksTableCompanion.insert(
@@ -2598,6 +3037,7 @@ class $$TasksTableTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 parentTaskId: parentTaskId,
+                goalId: goalId,
                 taskDate: taskDate,
                 rowid: rowid,
               ),
@@ -3097,6 +3537,215 @@ typedef $$DailySummariesTableTableProcessedTableManager =
       DailySummariesTableData,
       PrefetchHooks Function()
     >;
+typedef $$GoalsTableTableCreateCompanionBuilder =
+    GoalsTableCompanion Function({
+      required String id,
+      required String title,
+      Value<String> type,
+      Value<int?> durationHours,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$GoalsTableTableUpdateCompanionBuilder =
+    GoalsTableCompanion Function({
+      Value<String> id,
+      Value<String> title,
+      Value<String> type,
+      Value<int?> durationHours,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$GoalsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $GoalsTableTable> {
+  $$GoalsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationHours => $composableBuilder(
+    column: $table.durationHours,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$GoalsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $GoalsTableTable> {
+  $$GoalsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationHours => $composableBuilder(
+    column: $table.durationHours,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$GoalsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GoalsTableTable> {
+  $$GoalsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<int> get durationHours => $composableBuilder(
+    column: $table.durationHours,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$GoalsTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $GoalsTableTable,
+          GoalsTableData,
+          $$GoalsTableTableFilterComposer,
+          $$GoalsTableTableOrderingComposer,
+          $$GoalsTableTableAnnotationComposer,
+          $$GoalsTableTableCreateCompanionBuilder,
+          $$GoalsTableTableUpdateCompanionBuilder,
+          (
+            GoalsTableData,
+            BaseReferences<_$AppDatabase, $GoalsTableTable, GoalsTableData>,
+          ),
+          GoalsTableData,
+          PrefetchHooks Function()
+        > {
+  $$GoalsTableTableTableManager(_$AppDatabase db, $GoalsTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$GoalsTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$GoalsTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$GoalsTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<int?> durationHours = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => GoalsTableCompanion(
+                id: id,
+                title: title,
+                type: type,
+                durationHours: durationHours,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String title,
+                Value<String> type = const Value.absent(),
+                Value<int?> durationHours = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => GoalsTableCompanion.insert(
+                id: id,
+                title: title,
+                type: type,
+                durationHours: durationHours,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          BaseReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$GoalsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $GoalsTableTable,
+      GoalsTableData,
+      $$GoalsTableTableFilterComposer,
+      $$GoalsTableTableOrderingComposer,
+      $$GoalsTableTableAnnotationComposer,
+      $$GoalsTableTableCreateCompanionBuilder,
+      $$GoalsTableTableUpdateCompanionBuilder,
+      (
+        GoalsTableData,
+        BaseReferences<_$AppDatabase, $GoalsTableTable, GoalsTableData>,
+      ),
+      GoalsTableData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3107,4 +3756,6 @@ class $AppDatabaseManager {
       $$TagsTableTableTableManager(_db, _db.tagsTable);
   $$DailySummariesTableTableTableManager get dailySummariesTable =>
       $$DailySummariesTableTableTableManager(_db, _db.dailySummariesTable);
+  $$GoalsTableTableTableManager get goalsTable =>
+      $$GoalsTableTableTableManager(_db, _db.goalsTable);
 }

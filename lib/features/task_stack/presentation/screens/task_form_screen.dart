@@ -9,6 +9,8 @@ import 'package:taskstack/core/constants/app_colors.dart';
 import 'package:taskstack/core/constants/task_graphics.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:taskstack/core/widgets/animated_graphic.dart';
+import 'package:taskstack/features/task_stack/presentation/providers/goal_providers.dart';
+import 'package:taskstack/features/settings/presentation/providers/settings_provider.dart';
 
 class TaskFormScreen extends ConsumerStatefulWidget {
   const TaskFormScreen({super.key, this.taskId, this.prefilledDate});
@@ -120,6 +122,52 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                   maxLength: 80,
                   onChanged: notifier.updateTitle,
                   textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // ── Goal ───────────────────────────────────────────────────────
+                Consumer(
+                  builder: (context, ref, child) {
+                    final goalsAsync = ref.watch(goalsProvider);
+                    return goalsAsync.when(
+                      data: (goals) {
+                        return DropdownButtonFormField<String?>(
+                          decoration: const InputDecoration(
+                            labelText: 'Link to Goal / Project',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.flag_outlined),
+                          ),
+                          value: form.goalId,
+                          isExpanded: true,
+                          items: [
+                            const DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text('No Goal'),
+                            ),
+                            ...goals.map((g) {
+                              return DropdownMenuItem<String?>(
+                                value: g.id,
+                                child: Text(g.title),
+                              );
+                            }),
+                            const DropdownMenuItem<String?>(
+                              value: 'create_new',
+                              child: Text('+ Create New Goal'),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val == 'create_new') {
+                              context.push('/goal/new');
+                            } else {
+                              notifier.updateGoalId(val);
+                            }
+                          },
+                        );
+                      },
+                      loading: () => const CircularProgressIndicator(),
+                      error: (_, __) => const Text('Error loading goals'),
+                    );
+                  },
                 ),
                 const SizedBox(height: AppSpacing.md),
 

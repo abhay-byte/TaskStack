@@ -10,6 +10,8 @@ import 'package:taskstack/features/settings/presentation/screens/settings_screen
 import 'package:taskstack/core/widgets/app_shell.dart';
 import 'package:taskstack/features/settings/presentation/providers/settings_provider.dart';
 import 'package:taskstack/features/notifications/notification_service.dart';
+import 'package:taskstack/features/task_stack/presentation/screens/goal_form_screen.dart';
+import 'package:taskstack/features/task_stack/presentation/screens/goals_list_screen.dart';
 
 final _rootKey = GlobalKey<NavigatorState>();
 
@@ -31,6 +33,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => AppShell(child: child),
         routes: [
           GoRoute(path: '/', builder: (_, __) => const TaskStackScreen()),
+          GoRoute(path: '/goals', builder: (_, __) => const GoalsListScreen()),
           GoRoute(path: '/analytics', builder: (_, __) => const AnalyticsScreen()),
           GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
         ],
@@ -49,6 +52,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/task/:id/edit',
         builder: (context, state) =>
             TaskFormScreen(taskId: state.pathParameters['id']),
+      ),
+      GoRoute(
+        path: '/goal/new',
+        builder: (context, state) => const GoalFormScreen(),
+      ),
+      GoRoute(
+        path: '/goal/:id/edit',
+        builder: (context, state) => GoalFormScreen(goalId: state.pathParameters['id']),
       ),
     ],
   );

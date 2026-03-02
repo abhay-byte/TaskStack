@@ -6,6 +6,7 @@ import 'package:taskstack/features/task_stack/domain/usecases/task_usecases.dart
 import 'package:taskstack/features/task_stack/presentation/providers/task_providers.dart';
 import 'package:taskstack/core/constants/app_spacing.dart';
 import 'package:taskstack/core/widgets/animated_graphic.dart';
+import 'package:taskstack/features/task_stack/presentation/providers/goal_providers.dart';
 
 class TaskDetailScreen extends ConsumerWidget {
   const TaskDetailScreen({super.key, required this.taskId});
@@ -137,6 +138,26 @@ class _TaskDetailView extends ConsumerWidget {
 
           // Time
           _InfoTile(icon: Icons.access_time, label: 'Time', value: timeLabel),
+
+          // Goal
+          if (task.goalId != null)
+            Consumer(
+              builder: (context, ref, _) {
+                final goalsOuter = ref.watch(goalsProvider);
+                return goalsOuter.maybeWhen(
+                  data: (goals) {
+                    final goal = goals.where((g) => g.id == task.goalId).firstOrNull;
+                    if (goal == null) return const SizedBox.shrink();
+                    return _InfoTile(
+                      icon: Icons.flag_outlined,
+                      label: 'Goal',
+                      value: goal.title,
+                    );
+                  },
+                  orElse: () => const SizedBox.shrink(),
+                );
+              },
+            ),
 
           // Tags
           if (task.tags.isNotEmpty)

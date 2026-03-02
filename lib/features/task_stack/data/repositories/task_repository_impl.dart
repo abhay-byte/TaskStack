@@ -97,6 +97,7 @@ class TaskRepositoryImpl implements TaskRepository {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       parentTaskId: row.parentTaskId,
+      goalId: row.goalId,
       taskDate: DateTime.parse(row.taskDate),
     );
   }
@@ -123,6 +124,7 @@ class TaskRepositoryImpl implements TaskRepository {
       createdAt: Value(task.createdAt),
       updatedAt: Value(task.updatedAt),
       parentTaskId: Value(task.parentTaskId),
+      goalId: Value(task.goalId),
       taskDate: Value(_dateString(task.taskDate)),
     );
   }

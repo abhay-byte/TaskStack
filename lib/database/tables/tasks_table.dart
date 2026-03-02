@@ -27,6 +27,7 @@ class TasksTable extends Table {
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   TextColumn get parentTaskId => text().nullable()();
+  TextColumn get goalId => text().nullable()();
   TextColumn get taskDate => text()(); // yyyy-MM-dd
 
   @override

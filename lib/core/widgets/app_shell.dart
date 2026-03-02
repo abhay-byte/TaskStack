@@ -10,8 +10,9 @@ class AppShell extends StatelessWidget {
     final location = GoRouterState.of(context).uri.path;
     final currentIndex = switch (location) {
       '/' => 0,
-      '/analytics' => 1,
-      '/settings' => 2,
+      '/goals' => 1,
+      '/analytics' => 2,
+      '/settings' => 3,
       _ => 0,
     };
 
@@ -24,8 +25,10 @@ class AppShell extends StatelessWidget {
             case 0:
               context.go('/');
             case 1:
-              context.go('/analytics');
+              context.go('/goals');
             case 2:
+              context.go('/analytics');
+            case 3:
               context.go('/settings');
           }
         },
@@ -34,6 +37,11 @@ class AppShell extends StatelessWidget {
             icon: Icon(Icons.view_agenda_outlined),
             selectedIcon: Icon(Icons.view_agenda),
             label: 'Stack',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.flag_outlined),
+            selectedIcon: Icon(Icons.flag),
+            label: 'Goals',
           ),
           NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),
