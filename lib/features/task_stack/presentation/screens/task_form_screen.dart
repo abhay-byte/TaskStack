@@ -375,12 +375,13 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     }
     
     // Auto-advance to tomorrow if creating a new task, task date is today, 
-    // and picked time is in the past (e.g. at 11 PM setting a 5:30 AM task).
+    // and picked time is clearly meant for the next morning (target is AM, currently PM).
     if (widget.taskId == null && form.startMinutes != null) {
       final now = DateTime.now();
       if (date.year == now.year && date.month == now.month && date.day == now.day) {
-        final todayMinutes = now.hour * 60 + now.minute;
-        if (form.startMinutes! < todayMinutes) {
+        final currentHour = now.hour;
+        final targetHour = form.startMinutes! ~/ 60;
+        if (currentHour >= 12 && targetHour < 12) {
           date = DateTime(date.year, date.month, date.day + 1);
         }
       }
