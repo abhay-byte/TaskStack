@@ -7,6 +7,7 @@ import 'package:taskstack/features/task_stack/presentation/providers/task_provid
 import 'package:taskstack/core/constants/app_spacing.dart';
 import 'package:taskstack/core/widgets/animated_graphic.dart';
 import 'package:taskstack/features/task_stack/presentation/providers/goal_providers.dart';
+import 'package:taskstack/core/extensions/int_extensions.dart';
 
 class TaskDetailScreen extends ConsumerWidget {
   const TaskDetailScreen({super.key, required this.taskId});
@@ -56,7 +57,7 @@ class _TaskDetailView extends ConsumerWidget {
       final period = h < 12 ? 'AM' : 'PM';
       final displayH = h == 0 ? 12 : (h > 12 ? h - 12 : h);
       timeLabel =
-          '$displayH:${m.toString().padLeft(2, '0')} $period — ${task.durationMinutes ?? 30} min';
+          '$displayH:${m.toString().padLeft(2, '0')} $period — ${(task.durationMinutes ?? 30).toFormattedDuration()}';
     }
 
     return Scaffold(
@@ -83,10 +84,7 @@ class _TaskDetailView extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
               clipBehavior: Clip.antiAlias,
-              child: AnimatedGraphic(
-                assetPath: task.graphicImage!,
-                padding: const EdgeInsets.only(top: 20),
-              ),
+              child: AnimatedGraphic(assetPath: task.graphicImage!),
             ),
             const SizedBox(height: AppSpacing.lg),
           ],
@@ -146,7 +144,8 @@ class _TaskDetailView extends ConsumerWidget {
                 final goalsOuter = ref.watch(goalsProvider);
                 return goalsOuter.maybeWhen(
                   data: (goals) {
-                    final goal = goals.where((g) => g.id == task.goalId).firstOrNull;
+                    final goal =
+                        goals.where((g) => g.id == task.goalId).firstOrNull;
                     if (goal == null) return const SizedBox.shrink();
                     return _InfoTile(
                       icon: Icons.flag_outlined,

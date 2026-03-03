@@ -4,6 +4,7 @@ import 'package:taskstack/core/constants/app_spacing.dart';
 import 'package:taskstack/core/widgets/animated_graphic.dart'; // Ensure this import is present
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:taskstack/features/task_stack/presentation/providers/goal_providers.dart';
+import 'package:taskstack/core/extensions/int_extensions.dart';
 
 class TaskCardWidget extends StatelessWidget {
   const TaskCardWidget({
@@ -204,13 +205,21 @@ class TaskCardWidget extends StatelessWidget {
                                     final goalsOuter = ref.watch(goalsProvider);
                                     return goalsOuter.maybeWhen(
                                       data: (goals) {
-                                        final goal = goals.where((g) => g.id == task.goalId).firstOrNull;
-                                        if (goal == null) return const SizedBox.shrink();
+                                        final goal =
+                                            goals
+                                                .where(
+                                                  (g) => g.id == task.goalId,
+                                                )
+                                                .firstOrNull;
+                                        if (goal == null)
+                                          return const SizedBox.shrink();
                                         return Text(
                                           'Goal: ${goal.title}',
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.labelSmall?.copyWith(
                                             color: cs.primary,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -218,7 +227,7 @@ class TaskCardWidget extends StatelessWidget {
                                       },
                                       orElse: () => const SizedBox.shrink(),
                                     );
-                                  }
+                                  },
                                 ),
                               if (task.tags.isNotEmpty) ...[
                                 const SizedBox(height: 2),
@@ -246,7 +255,7 @@ class TaskCardWidget extends StatelessWidget {
                         // Duration chip
                         if (task.durationMinutes != null)
                           Text(
-                            '${task.durationMinutes}m',
+                            task.durationMinutes!.toFormattedDuration(),
                             style: Theme.of(
                               context,
                             ).textTheme.labelSmall?.copyWith(color: cs.outline),
