@@ -93,103 +93,106 @@ class TaskCardWidget extends StatelessWidget {
               final cardHeight =
                   constraints.hasBoundedHeight ? constraints.maxHeight : 140.0;
               final hasGraphic = task.graphicImage != null;
-              final headerHeight = cardHeight < 120 ? cardHeight : 100.0;
 
-              return Stack(
-                children: [
-                  // 1. Full-card Animated Graphic Background
-                  if (hasGraphic)
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: AnimatedGraphic(assetPath: task.graphicImage!),
-                      ),
-                    ),
-
-                  // 2. Gradient Overlay for readability
-                  if (hasGraphic)
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
+              return SizedBox(
+                height: cardHeight,
+                width: double.infinity,
+                child: Stack(
+                  children: [
+                    // 1. Full-card Animated Graphic Background
+                    if (hasGraphic)
+                      Positioned.fill(
+                        child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withAlpha(150),
-                              Colors.black.withAlpha(80),
-                              Colors.black.withAlpha(180),
-                            ],
-                            stops: const [0.0, 0.5, 1.0],
+                          child: AnimatedGraphic(assetPath: task.graphicImage!),
+                        ),
+                      ),
+
+                    // 2. Gradient Overlay for readability
+                    if (hasGraphic)
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.black.withAlpha(150),
+                                Colors.black.withAlpha(80),
+                                Colors.black.withAlpha(180),
+                              ],
+                              stops: const [0.0, 0.5, 1.0],
+                            ),
                           ),
                         ),
                       ),
-                    ),
 
-                  // 3. Content (Sticky Title and Details)
-                  Builder(
-                    builder: (contentContext) {
-                      final scrollableState = Scrollable.maybeOf(context);
-                      if (scrollableState == null) {
-                        return _buildContent(
-                          context,
-                          cs,
-                          accent,
-                          isDone,
-                          hasGraphic,
-                        );
-                      }
-
-                      return AnimatedBuilder(
-                        animation: scrollableState.position,
-                        builder: (context, child) {
-                          double topOffset = 0.0;
-
-                          // Find this widget's position relative to the viewport
-                          final renderObject = context.findRenderObject();
-                          if (renderObject is RenderBox &&
-                              renderObject.hasSize) {
-                            try {
-                              // We assume the AppBar (56) + DateBar (~50) ≈ 110px.
-                              // For safety, let's use 120px as the sticky threshold.
-                              const stickyTopThreshold = 120.0;
-                              final globalPosition = renderObject.localToGlobal(
-                                Offset.zero,
-                              );
-
-                              if (globalPosition.dy < stickyTopThreshold) {
-                                // Scrolled past the threshold, push content down
-                                topOffset =
-                                    stickyTopThreshold - globalPosition.dy;
-
-                                // Prevent content from going below the card's bottom edge
-                                // Assume content height is roughly 60px
-                                final maxOffset = constraints.maxHeight - 60.0;
-                                if (topOffset > maxOffset) {
-                                  topOffset = maxOffset > 0 ? maxOffset : 0;
-                                }
-                              }
-                            } catch (e) {
-                              // Ignore if not fully laid out yet
-                            }
-                          }
-
-                          return Padding(
-                            padding: EdgeInsets.only(top: topOffset),
-                            child: child,
+                    // 3. Content (Sticky Title and Details)
+                    Builder(
+                      builder: (contentContext) {
+                        final scrollableState = Scrollable.maybeOf(context);
+                        if (scrollableState == null) {
+                          return _buildContent(
+                            context,
+                            cs,
+                            accent,
+                            isDone,
+                            hasGraphic,
                           );
-                        },
-                        child: _buildContent(
-                          context,
-                          cs,
-                          accent,
-                          isDone,
-                          hasGraphic,
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                        }
+
+                        return AnimatedBuilder(
+                          animation: scrollableState.position,
+                          builder: (context, child) {
+                            double topOffset = 0.0;
+
+                            // Find this widget's position relative to the viewport
+                            final renderObject = context.findRenderObject();
+                            if (renderObject is RenderBox &&
+                                renderObject.hasSize) {
+                              try {
+                                // We assume the AppBar (56) + DateBar (~50) ≈ 110px.
+                                // For safety, let's use 120px as the sticky threshold.
+                                const stickyTopThreshold = 120.0;
+                                final globalPosition = renderObject
+                                    .localToGlobal(Offset.zero);
+
+                                if (globalPosition.dy < stickyTopThreshold) {
+                                  // Scrolled past the threshold, push content down
+                                  topOffset =
+                                      stickyTopThreshold - globalPosition.dy;
+
+                                  // Prevent content from going below the card's bottom edge
+                                  // Assume content height is roughly 60px
+                                  final maxOffset =
+                                      constraints.maxHeight - 60.0;
+                                  if (topOffset > maxOffset) {
+                                    topOffset = maxOffset > 0 ? maxOffset : 0;
+                                  }
+                                }
+                              } catch (e) {
+                                // Ignore if not fully laid out yet
+                              }
+                            }
+
+                            return Padding(
+                              padding: EdgeInsets.only(top: topOffset),
+                              child: child,
+                            );
+                          },
+                          child: _buildContent(
+                            context,
+                            cs,
+                            accent,
+                            isDone,
+                            hasGraphic,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               );
             },
           ),
@@ -256,7 +259,6 @@ class TaskCardWidget extends StatelessWidget {
         hasGraphic
             ? Colors.white
             : (isDone ? cs.onSurfaceVariant : cs.onSurface);
-    final secondaryTextColor = hasGraphic ? Colors.white70 : cs.outline;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
