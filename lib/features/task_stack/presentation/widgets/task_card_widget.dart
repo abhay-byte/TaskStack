@@ -97,171 +97,97 @@ class TaskCardWidget extends StatelessWidget {
 
               return Stack(
                 children: [
-                  // 1. Full-width Animated Graphic Header
+                  // 1. Full-card Animated Graphic Background
                   if (hasGraphic)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      top: 0,
-                      height: headerHeight,
+                    Positioned.fill(
                       child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(12),
-                        ),
-                        child: Opacity(
-                          opacity: 0.4, // Increased visibility
-                          child: IgnorePointer(
-                            child: AnimatedGraphic(
-                              assetPath: task.graphicImage!,
-                            ),
-                          ),
-                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        child: AnimatedGraphic(assetPath: task.graphicImage!),
                       ),
                     ),
 
-                  // 2. Gradient Overlay for readability (Bottom-to-Top)
+                  // 2. Gradient Overlay for readability
                   if (hasGraphic)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      top: 0,
-                      height: headerHeight,
+                    Positioned.fill(
                       child: Container(
                         decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              Colors.transparent,
-                              (isDone
-                                      ? cs.surfaceContainerLow
-                                      : cs.surfaceContainerHigh)
-                                  .withAlpha(200),
-                              isDone
-                                  ? cs.surfaceContainerLow
-                                  : cs.surfaceContainerHigh,
+                              Colors.black.withAlpha(150),
+                              Colors.black.withAlpha(80),
+                              Colors.black.withAlpha(180),
                             ],
-                            stops: const [0.0, 0.7, 1.0],
+                            stops: const [0.0, 0.5, 1.0],
                           ),
                         ),
                       ),
                     ),
 
-                  // 3. Content (Shifted down if graphic is present)
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      AppSpacing.md,
-                      hasGraphic
-                          ? (cardHeight < 120
-                              ? AppSpacing.sm
-                              : headerHeight - 10)
-                          : AppSpacing.sm,
-                      AppSpacing.md,
-                      AppSpacing.sm,
-                    ),
-                    child: Row(
-                      children: [
-                        // Status icon
-                        Icon(
-                          isDone
-                              ? Icons.check_circle
-                              : isInProgress
-                              ? Icons.radio_button_checked
-                              : Icons.radio_button_unchecked,
-                          color:
-                              isDone
-                                  ? cs.primary
-                                  : isInProgress
-                                  ? accent
-                                  : cs.outline,
-                          size: 18,
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                task.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.titleSmall?.copyWith(
-                                  decoration:
-                                      isDone
-                                          ? TextDecoration.lineThrough
-                                          : null,
-                                  color:
-                                      isDone
-                                          ? cs.onSurfaceVariant
-                                          : cs.onSurface,
-                                ),
-                              ),
-                              if (task.goalId != null)
-                                Consumer(
-                                  builder: (context, ref, _) {
-                                    final goalsOuter = ref.watch(goalsProvider);
-                                    return goalsOuter.maybeWhen(
-                                      data: (goals) {
-                                        final goal =
-                                            goals
-                                                .where(
-                                                  (g) => g.id == task.goalId,
-                                                )
-                                                .firstOrNull;
-                                        if (goal == null)
-                                          return const SizedBox.shrink();
-                                        return Text(
-                                          'Goal: ${goal.title}',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.labelSmall?.copyWith(
-                                            color: cs.primary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        );
-                                      },
-                                      orElse: () => const SizedBox.shrink(),
-                                    );
-                                  },
-                                ),
-                              if (task.tags.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Wrap(
-                                  spacing: 4,
-                                  children:
-                                      task.tags
-                                          .take(3)
-                                          .map(
-                                            (tag) => Text(
-                                              '#$tag',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelSmall
-                                                  ?.copyWith(color: cs.primary),
-                                            ),
-                                          )
-                                          .toList(),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
+                  // 3. Content (Sticky Title and Details)
+                  Builder(
+                    builder: (contentContext) {
+                      final scrollableState = Scrollable.maybeOf(context);
+                      if (scrollableState == null) {
+                        return _buildContent(
+                          context,
+                          cs,
+                          accent,
+                          isDone,
+                          hasGraphic,
+                        );
+                      }
 
-                        // Duration chip
-                        if (task.durationMinutes != null)
-                          Text(
-                            task.durationMinutes!.toFormattedDuration(),
-                            style: Theme.of(
-                              context,
-                            ).textTheme.labelSmall?.copyWith(color: cs.outline),
-                          ),
-                      ],
-                    ),
+                      return AnimatedBuilder(
+                        animation: scrollableState.position,
+                        builder: (context, child) {
+                          double topOffset = 0.0;
+
+                          // Find this widget's position relative to the viewport
+                          final renderObject = context.findRenderObject();
+                          if (renderObject is RenderBox &&
+                              renderObject.hasSize) {
+                            try {
+                              // We assume the AppBar (56) + DateBar (~50) ≈ 110px.
+                              // For safety, let's use 120px as the sticky threshold.
+                              const stickyTopThreshold = 120.0;
+                              final globalPosition = renderObject.localToGlobal(
+                                Offset.zero,
+                              );
+
+                              if (globalPosition.dy < stickyTopThreshold) {
+                                // Scrolled past the threshold, push content down
+                                topOffset =
+                                    stickyTopThreshold - globalPosition.dy;
+
+                                // Prevent content from going below the card's bottom edge
+                                // Assume content height is roughly 60px
+                                final maxOffset = constraints.maxHeight - 60.0;
+                                if (topOffset > maxOffset) {
+                                  topOffset = maxOffset > 0 ? maxOffset : 0;
+                                }
+                              }
+                            } catch (e) {
+                              // Ignore if not fully laid out yet
+                            }
+                          }
+
+                          return Padding(
+                            padding: EdgeInsets.only(top: topOffset),
+                            child: child,
+                          );
+                        },
+                        child: _buildContent(
+                          context,
+                          cs,
+                          accent,
+                          isDone,
+                          hasGraphic,
+                        ),
+                      );
+                    },
                   ),
                 ],
               );
@@ -315,6 +241,157 @@ class TaskCardWidget extends StatelessWidget {
               ],
             ),
           ),
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    ColorScheme cs,
+    Color accent,
+    bool isDone,
+    bool hasGraphic,
+  ) {
+    // Dynamic text colors based on whether graphic background is present
+    final primaryTextColor =
+        hasGraphic
+            ? Colors.white
+            : (isDone ? cs.onSurfaceVariant : cs.onSurface);
+    final secondaryTextColor = hasGraphic ? Colors.white70 : cs.outline;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Status icon
+          Padding(
+            padding: const EdgeInsets.only(top: 2.0),
+            child: Icon(
+              isDone
+                  ? Icons.check_circle
+                  : isInProgress
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
+              color:
+                  hasGraphic
+                      ? Colors.white
+                      : (isDone
+                          ? cs.primary
+                          : (isInProgress ? accent : cs.outline)),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  task.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    decoration: isDone ? TextDecoration.lineThrough : null,
+                    color: primaryTextColor,
+                  ),
+                ),
+                if (task.goalId != null)
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final goalsOuter = ref.watch(goalsProvider);
+                      return goalsOuter.maybeWhen(
+                        data: (goals) {
+                          final goal =
+                              goals
+                                  .where((g) => g.id == task.goalId)
+                                  .firstOrNull;
+                          if (goal == null) return const SizedBox.shrink();
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 2.0),
+                            child: Text(
+                              'Goal: ${goal.title}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(
+                                context,
+                              ).textTheme.labelSmall?.copyWith(
+                                color: hasGraphic ? Colors.white70 : cs.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          );
+                        },
+                        orElse: () => const SizedBox.shrink(),
+                      );
+                    },
+                  ),
+                if (task.tags.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children:
+                        task.tags
+                            .take(3)
+                            .map(
+                              (tag) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      hasGraphic
+                                          ? Colors.white24
+                                          : cs.primaryContainer,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '#$tag',
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.labelSmall?.copyWith(
+                                    color:
+                                        hasGraphic
+                                            ? Colors.white
+                                            : cs.onPrimaryContainer,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          // Duration chip
+          if (task.durationMinutes != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: hasGraphic ? Colors.black45 : cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                task.durationMinutes!.toFormattedDuration(),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: hasGraphic ? Colors.white : cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
