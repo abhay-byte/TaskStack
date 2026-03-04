@@ -1,21 +1,5 @@
 # Todo Tasks
 
-## 📱 Phase 7: Flutter Cloud Integration — Auth
-- [ ] Add `dio` and `flutter_secure_storage` dependencies
-- [ ] Create `AuthRepository` and StateNotifier for auth state
-- [ ] Build `LoginScreen` and `SignupScreen`
-- [ ] Implement GoRouter guard for auth requirement
-
-## 📱 Phase 8: Flutter Cloud Integration — Social & Groups
-- [ ] Create `GroupRepository` and StateNotifier
-- [ ] Build `GroupsListScreen`, `CreateGroupScreen`, and `GroupDetailScreen`
-- [ ] Build `InviteScreen` (QR code display) and `JoinGroupScreen` (QR scanner)
-- [ ] Handle invite accept/reject actions
-
-## 📱 Phase 9: Flutter Cloud Integration — Profiles
-- [ ] Build `MyProfileScreen` to edit bio/avatar and toggle public status
-- [ ] Build `UserProfileScreen` to view other users (restricted by group/public status)
-
 ## 🔄 Future Enhancements (Post v1.0)
 - Signed release APK (requires a keystore — set up manually)
 - Flavour productFlavours in build.gradle.kts (see `docs/flavour-config.md`)

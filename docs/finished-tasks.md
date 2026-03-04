@@ -98,6 +98,7 @@
 
 ---
 
+
 ## 📊 Build Summary (v1.0)
 | Check | Result |
 |---|---|
@@ -105,3 +106,60 @@
 | `flutter build apk --debug` | ✅ `app-debug.apk` |
 | GitHub Actions CI | ✅ Configured |
 | Tests | ✅ Domain unit + widget + integration scaffold |
+
+---
+
+## ✅ Phase 7 — Flutter Cloud Integration: Auth
+- **Dependencies**: `dio ^5.7.0`, `flutter_secure_storage ^9.2.2` added to `pubspec.yaml`
+- **`AppConfig.apiBaseUrl`**: compile-time constant, defaults to `https://taskstack-api.onrender.com`
+- **`ApiClient`** (`lib/core/network/api_client.dart`): singleton Dio with JWT Bearer interceptor (reads token from secure storage on every request)
+- **`AuthUser` entity** (`domain/entities/auth_user.dart`): `fromJson`/`toJson` for secure storage persistence
+- **`AuthRepository` interface** + **`AuthRepositoryImpl`**: login, register, logout, token persistence in `flutter_secure_storage`
+- **`AuthNotifier`** (sealed `AuthState`: Initial/Loading/Authenticated/Unauthenticated): restores session on cold start, exposes `currentUserProvider`
+- **`LoginScreen`**: email + password, validation, loading, error snackbar
+- **`SignupScreen`**: username (regex), display name, email, password (min 8)
+- **GoRouter auth guard**: redirects unauthenticated users to `/login`, prevents double-navigation during `AuthInitial`
+- **Android `INTERNET` permission** added to `AndroidManifest.xml`
+
+---
+
+## ✅ Phase 8 — Flutter Cloud Integration: Groups & Invites
+- **Dependencies**: `mobile_scanner ^5.2.3`, `qr_flutter ^4.1.0` added
+- **`Group` + `GroupMember` + `Invite` entities** with `fromJson` factories
+- **`GroupRepository` interface** + **`GroupRepositoryImpl`**: all `/groups` and `/invites` endpoints via authenticated Dio
+- **`GroupNotifier`**: `AsyncValue<List<Group>>` state, `create`/`join`/`inviteByUsername` methods
+- **`InviteNotifier`**: `AsyncValue<List<Invite>>`, `accept`/`reject`, `pendingCount` getter
+- **`groupDetailProvider` + `groupQrProvider`**: auto-dispose family FutureProviders
+- **`GroupsListScreen`**: pending invite badge, pull-to-refresh, empty state, dual FAB (scan/create), inline invite bottom sheet with accept/reject
+- **`CreateGroupScreen`**: name + description form
+- **`GroupDetailScreen`**: members list with roles, invite-by-username dialog, QR button
+- **`InviteScreen`**: renders base64 QR image from API (`Image.memory`)
+- **`JoinGroupScreen`**: tabbed — QR scanner (`mobile_scanner`, parses `taskstack://join?code=XXX`) + manual code entry
+- **Android `CAMERA` permission** added
+
+---
+
+## ✅ Phase 9 — Flutter Cloud Integration: Profiles
+- **`UserProfile` entity** with `fromJson`
+- **`ProfileRepository`**: `GET /users/me`, `PUT /users/me`, `GET /users/:id`
+- **`myProfileProvider` + `userProfileProvider`**: auto-dispose FutureProviders
+- **`MyProfileScreen`**: avatar, @username, editable display name/bio/avatarUrl, isPublic toggle, logout button
+- **`UserProfileScreen`**: avatar, name, public/private badge, bio card, graceful "Profile is private" lock state
+
+---
+
+## ✅ Navigation & Shell (Phase 7-9 Changes)
+- **`AppShell`**: added **Social** tab (index 2, `group`/`group_outlined` icons); Analytics → 3, Settings → 4
+- **`AppRouter`**: dual-guard (onboarding + auth), all new routes: `/login`, `/signup`, `/social`, `/groups/new`, `/groups/join`, `/groups/:id`, `/groups/:id/qr`, `/profile/me`, `/profile/:id`
+
+---
+
+## 📊 Build Summary (v1.0 Cloud)
+| Check | Result |
+|---|---|
+| `dart analyze` (new files) | ✅ 0 errors, 0 warnings |
+| Backend live at | ✅ `https://taskstack-api.onrender.com` |
+| Android permissions | ✅ CAMERA, INTERNET added |
+| Auth | ✅ Login/Register/JWT/Secure storage |
+| Groups | ✅ CRUD, QR invite, scanner, accept/reject |
+| Profiles | ✅ View/edit self, view others with privacy guard |
