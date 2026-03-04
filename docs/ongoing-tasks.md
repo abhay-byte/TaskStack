@@ -1,13 +1,21 @@
 # Ongoing Tasks
 
-## 🔄 Future Enhancements (Post v1.0)
+## 🔄 Phase 10: Task Cloud Sync (Next Up)
 
-All phases (0–9) are now complete. The app has full offline task management and cloud social features.
+No sync currently exists between the local Drift/SQLite database (tasks, goals) and the cloud Postgres database (which only handles users, groups, invites).
 
-**Remaining post-v1.0 enhancements (no active development):**
-- Signed release APK (keystore setup required — manual step)
-- Flavour `productFlavours` in `build.gradle.kts`
-- Headless background Dart isolate for persistent notifications
-- Deeper analytics: streak tracking, category breakdowns
-- Full-text task search
-- Home screen widget for today's top 3 tasks
+**Planned approach:**
+- Extend backend schema with `tasks` + `goals` tables (user-scoped)
+- Implement `SyncRepository` in Flutter with push/pull and last-write-wins conflict resolution
+- Trigger: login → pull cloud→local; create/update/delete → push to cloud (when authenticated)
+- Offline queue for failed sync ops
+
+## 👤 Phase 11: Guest Mode
+
+Currently the auth guard forces all users to `/login`. Adding a "Continue as Guest" path:
+
+**Planned approach:**
+- `isGuest` state in `AuthNotifier`
+- Social tab gated (shows sign-in prompt for guests)
+- Sync disabled for guests
+- Optional: local → cloud migration when guest logs in

@@ -163,3 +163,36 @@
 | Auth | ✅ Login/Register/JWT/Secure storage |
 | Groups | ✅ CRUD, QR invite, scanner, accept/reject |
 | Profiles | ✅ View/edit self, view others with privacy guard |
+
+> **Scope note:** Cloud schema only covers `users`, `groups`, `group_members`, `group_invites`.
+> Local tasks/goals are **not yet synced** to cloud (Phase 10). Guest mode (no account) **not yet implemented** (Phase 11).
+
+---
+
+## ✅ Security Audit & Hardening (Post Phase 9)
+- **bcrypt** password hashing with 12 rounds confirmed on all auth routes
+- **JWT** signed with HS256, 7-day expiry, `sub` claim enforced on all protected routes
+- **JWT_SECRET** upgraded from weak placeholder to 96-char `crypto.randomBytes(48)` hex key in `.env`
+- **helmet** HTTP security headers on all responses
+- **Rate limiting**: global 100 req/15 min; auth routes 10 req/15 min
+- **CORS** restricted to `ALLOWED_ORIGINS` env var (not wildcard)
+- **SQL injection**: all queries use parameterised `$1…$n` (no string concatenation)
+- **Authorization**: groups, invites, and user-update routes all validate `req.user.sub` ownership
+- **Body limit**: 50 kb JSON cap
+- **`password_hash` never returned** in any API response
+
+---
+
+## ✅ Profile Seed (abhay_byte)
+- Registered `abhay_byte` / `abhay02delhi@gmail.com` on live production API
+- Display name: Abhay, bio: "Builder of TaskStack", `is_public: true`
+- Password: `TaskStack@2026`
+
+---
+
+## ✅ ER Diagram Updated (v4)
+- `docs/er-diagram.md` now covers both schemas:
+  - **Local** (Drift/SQLite): goals, tasks, tags, daily_summaries
+  - **Cloud** (Postgres): users, groups, group_members, group_invites, with Mermaid ERD + relationships table
+- Pushed as commit `3be839c`
+
