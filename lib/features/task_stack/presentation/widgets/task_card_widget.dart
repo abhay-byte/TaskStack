@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/core/constants/app_spacing.dart';
-import 'package:taskstack/core/widgets/animated_graphic.dart'; // Ensure this import is present
+import 'package:taskstack/core/widgets/animated_graphic.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:taskstack/features/task_stack/presentation/providers/goal_providers.dart';
 import 'package:taskstack/core/extensions/int_extensions.dart';
 
-class TaskCardWidget extends StatelessWidget {
+class TaskCardWidget extends StatefulWidget {
   const TaskCardWidget({
     super.key,
     required this.task,
@@ -27,23 +27,122 @@ class TaskCardWidget extends StatelessWidget {
   final VoidCallback onDuplicate;
 
   @override
+  State<TaskCardWidget> createState() => _TaskCardWidgetState();
+}
+
+class _TaskCardWidgetState extends State<TaskCardWidget> {
+  /// Key on the Stack so we can measure the card's initial global position.
+  final _cardKey = GlobalKey();
+
+  /// Card's global top-Y the moment [_baseScrollOffset] was recorded.
+  double _baseCardTop = 0.0;
+
+  /// Scroll offset at the moment the baseline was last recorded.
+  double _baseScrollOffset = 0.0;
+
+  /// Whether the baseline has been measured at least once.
+  bool _hasMeasured = false;
+
+  ScrollPosition? _scrollPos;
+
+  /// Approximate height of the content row (icon + title + duration chip).
+  static const double _kContentH = 52.0;
+
+  // ── Lifecycle ────────────────────────────────────────────────────────────
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final pos = Scrollable.maybeOf(context)?.position;
+    if (pos != _scrollPos) {
+      _scrollPos = pos;
+    }
+    // Measure after first layout.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureBaseline());
+  }
+
+  @override
+  void didUpdateWidget(covariant TaskCardWidget old) {
+    super.didUpdateWidget(old);
+    // Re-measure if the task (and thus potentially card size) changed.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureBaseline());
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  // ── Measurement ──────────────────────────────────────────────────────────
+
+  /// Records the card's current global Y and the scroll offset at this moment.
+  /// Called once post-frame; subsequent position updates are computed via math.
+  void _measureBaseline() {
+    if (!mounted) return;
+    final box = _cardKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+
+    final newCardTop = box.localToGlobal(Offset.zero).dy;
+    final newScrollOffset = _scrollPos?.pixels ?? 0.0;
+
+    // Only trigger a setState if the values actually changed to avoid extra rebuilds.
+    if (!_hasMeasured ||
+        (newCardTop - newScrollOffset) != (_baseCardTop - _baseScrollOffset)) {
+      if (mounted) {
+        setState(() {
+          _baseCardTop = newCardTop;
+          _baseScrollOffset = newScrollOffset;
+          _hasMeasured = true;
+        });
+      }
+    }
+  }
+
+  // ── Offset computation (called inside AnimatedBuilder, no layout calls) ──
+
+  /// Computes how far from the top of the card the content row should sit
+  /// so it always tries to be vertically centered on the screen,
+  /// clamped to [0 .. cardHeight - contentHeight].
+  ///
+  /// All values are derived mathematically — no [findRenderObject] here.
+  double _computeContentOffset(double cardHeight, double screenHeight) {
+    if (!_hasMeasured || _scrollPos == null) return 0.0;
+
+    // Where the card's top edge is right now in global coordinates.
+    final scrollDelta = _scrollPos!.pixels - _baseScrollOffset;
+    final cardTopNow = _baseCardTop - scrollDelta;
+
+    // Ideal top of the content so its midpoint sits at screen center.
+    final screenCenterY = screenHeight / 2.0;
+    final idealTop = screenCenterY - (_kContentH / 2.0) - cardTopNow;
+
+    // Clamp: can't go above card top (0) or push content below card bottom.
+    return idealTop.clamp(
+      0.0,
+      (cardHeight - _kContentH).clamp(0.0, cardHeight),
+    );
+  }
+
+  // ── Build ────────────────────────────────────────────────────────────────
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isDone = task.isDone;
+    final isDone = widget.task.isDone;
 
     final accent =
-        task.colorArgb != null
-            ? Color(task.colorArgb!)
-            : isInProgress
+        widget.task.colorArgb != null
+            ? Color(widget.task.colorArgb!)
+            : widget.isInProgress
             ? cs.primary
             : cs.secondaryContainer;
 
     return Dismissible(
-      key: ValueKey(task.id),
+      key: ValueKey(widget.task.id),
       direction: isDone ? DismissDirection.none : DismissDirection.startToEnd,
       confirmDismiss: (_) async {
-        onDone();
-        return false; // Don't actually remove from list — DB stream handles it
+        widget.onDone();
+        return false;
       },
       background: Container(
         alignment: Alignment.centerLeft,
@@ -61,7 +160,7 @@ class TaskCardWidget extends StatelessWidget {
         ),
       ),
       child: GestureDetector(
-        onTap: onTap,
+        onTap: widget.onTap,
         onLongPress: () => _showContextMenu(context),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
@@ -74,10 +173,10 @@ class TaskCardWidget extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isDone ? cs.outlineVariant : accent,
-              width: isInProgress ? 2 : 1,
+              width: widget.isInProgress ? 2 : 1,
             ),
             boxShadow:
-                isInProgress
+                widget.isInProgress
                     ? [
                       BoxShadow(
                         color: accent.withAlpha(60),
@@ -90,109 +189,81 @@ class TaskCardWidget extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: LayoutBuilder(
             builder: (context, constraints) {
+              final hasGraphic = widget.task.graphicImage != null;
+              // Use LayoutBuilder's height for math — no extra RenderBox reads.
               final cardHeight =
-                  constraints.hasBoundedHeight ? constraints.maxHeight : 140.0;
-              final hasGraphic = task.graphicImage != null;
+                  constraints.maxHeight.isFinite
+                      ? constraints.maxHeight
+                      : 200.0;
 
-              return SizedBox(
-                height: cardHeight,
-                width: double.infinity,
-                child: Stack(
-                  children: [
-                    // 1. Full-card Animated Graphic Background
-                    if (hasGraphic)
-                      Positioned.fill(
-                        child: ClipRRect(
+              final contentWidget = _buildContent(
+                context,
+                cs,
+                accent,
+                isDone,
+                hasGraphic,
+              );
+
+              return Stack(
+                key: _cardKey,
+                children: [
+                  // 1. Full-card Animated Graphic Background
+                  if (hasGraphic)
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: AnimatedGraphic(
+                          assetPath: widget.task.graphicImage!,
+                        ),
+                      ),
+                    ),
+
+                  // 2. Gradient Overlay
+                  if (hasGraphic)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          child: AnimatedGraphic(assetPath: task.graphicImage!),
-                        ),
-                      ),
-
-                    // 2. Gradient Overlay for readability
-                    if (hasGraphic)
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.black.withAlpha(150),
-                                Colors.black.withAlpha(80),
-                                Colors.black.withAlpha(180),
-                              ],
-                              stops: const [0.0, 0.5, 1.0],
-                            ),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withAlpha(150),
+                              Colors.black.withAlpha(80),
+                              Colors.black.withAlpha(180),
+                            ],
+                            stops: const [0.0, 0.5, 1.0],
                           ),
                         ),
                       ),
+                    ),
 
-                    // 3. Content (Sticky Title and Details)
-                    Builder(
-                      builder: (contentContext) {
-                        final scrollableState = Scrollable.maybeOf(context);
-                        if (scrollableState == null) {
-                          return _buildContent(
-                            context,
-                            cs,
-                            accent,
-                            isDone,
-                            hasGraphic,
-                          );
-                        }
-
-                        return AnimatedBuilder(
-                          animation: scrollableState.position,
-                          builder: (context, child) {
-                            double topOffset = 0.0;
-
-                            // Find this widget's position relative to the viewport
-                            final renderObject = context.findRenderObject();
-                            if (renderObject is RenderBox &&
-                                renderObject.hasSize) {
-                              try {
-                                // We assume the AppBar (56) + DateBar (~50) ≈ 110px.
-                                // For safety, let's use 120px as the sticky threshold.
-                                const stickyTopThreshold = 120.0;
-                                final globalPosition = renderObject
-                                    .localToGlobal(Offset.zero);
-
-                                if (globalPosition.dy < stickyTopThreshold) {
-                                  // Scrolled past the threshold, push content down
-                                  topOffset =
-                                      stickyTopThreshold - globalPosition.dy;
-
-                                  // Prevent content from going below the card's bottom edge
-                                  // Assume content height is roughly 60px
-                                  final maxOffset =
-                                      constraints.maxHeight - 60.0;
-                                  if (topOffset > maxOffset) {
-                                    topOffset = maxOffset > 0 ? maxOffset : 0;
-                                  }
-                                }
-                              } catch (e) {
-                                // Ignore if not fully laid out yet
-                              }
-                            }
-
-                            return Padding(
-                              padding: EdgeInsets.only(top: topOffset),
-                              child: child,
-                            );
-                          },
-                          child: _buildContent(
-                            context,
-                            cs,
-                            accent,
-                            isDone,
-                            hasGraphic,
-                          ),
+                  // 3. Content — tracks scroll synchronously via math.
+                  //    AnimatedBuilder fires on every scroll frame; offset
+                  //    is computed from the cached baseline + scroll delta,
+                  //    so there are zero findRenderObject() calls here.
+                  if (_hasMeasured && _scrollPos != null)
+                    AnimatedBuilder(
+                      animation: _scrollPos!,
+                      builder: (ctx, child) {
+                        final screenH = MediaQuery.of(ctx).size.height;
+                        final offset = _computeContentOffset(
+                          cardHeight,
+                          screenH,
+                        );
+                        return Positioned(
+                          top: offset,
+                          left: 0,
+                          right: 0,
+                          child: child!,
                         );
                       },
-                    ),
-                  ],
-                ),
+                      child: contentWidget,
+                    )
+                  else
+                    // Before first measurement: render at the top normally.
+                    Positioned(top: 0, left: 0, right: 0, child: contentWidget),
+                ],
               );
             },
           ),
@@ -200,6 +271,8 @@ class TaskCardWidget extends StatelessWidget {
       ),
     );
   }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
 
   void _showContextMenu(BuildContext context) {
     showModalBottomSheet(
@@ -214,7 +287,7 @@ class TaskCardWidget extends StatelessWidget {
                   title: const Text('Edit'),
                   onTap: () {
                     Navigator.pop(context);
-                    onEdit();
+                    widget.onEdit();
                   },
                 ),
                 ListTile(
@@ -222,7 +295,7 @@ class TaskCardWidget extends StatelessWidget {
                   title: const Text('Duplicate'),
                   onTap: () {
                     Navigator.pop(context);
-                    onDuplicate();
+                    widget.onDuplicate();
                   },
                 ),
                 ListTile(
@@ -238,7 +311,7 @@ class TaskCardWidget extends StatelessWidget {
                   ),
                   onTap: () {
                     Navigator.pop(context);
-                    onDelete();
+                    widget.onDelete();
                   },
                 ),
               ],
@@ -254,7 +327,6 @@ class TaskCardWidget extends StatelessWidget {
     bool isDone,
     bool hasGraphic,
   ) {
-    // Dynamic text colors based on whether graphic background is present
     final primaryTextColor =
         hasGraphic
             ? Colors.white
@@ -276,7 +348,7 @@ class TaskCardWidget extends StatelessWidget {
             child: Icon(
               isDone
                   ? Icons.check_circle
-                  : isInProgress
+                  : widget.isInProgress
                   ? Icons.radio_button_checked
                   : Icons.radio_button_unchecked,
               color:
@@ -284,7 +356,7 @@ class TaskCardWidget extends StatelessWidget {
                       ? Colors.white
                       : (isDone
                           ? cs.primary
-                          : (isInProgress ? accent : cs.outline)),
+                          : (widget.isInProgress ? accent : cs.outline)),
               size: 20,
             ),
           ),
@@ -295,7 +367,7 @@ class TaskCardWidget extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  task.title,
+                  widget.task.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -304,7 +376,7 @@ class TaskCardWidget extends StatelessWidget {
                     color: primaryTextColor,
                   ),
                 ),
-                if (task.goalId != null)
+                if (widget.task.goalId != null)
                   Consumer(
                     builder: (context, ref, _) {
                       final goalsOuter = ref.watch(goalsProvider);
@@ -312,7 +384,7 @@ class TaskCardWidget extends StatelessWidget {
                         data: (goals) {
                           final goal =
                               goals
-                                  .where((g) => g.id == task.goalId)
+                                  .where((g) => g.id == widget.task.goalId)
                                   .firstOrNull;
                           if (goal == null) return const SizedBox.shrink();
                           return Padding(
@@ -334,13 +406,13 @@ class TaskCardWidget extends StatelessWidget {
                       );
                     },
                   ),
-                if (task.tags.isNotEmpty) ...[
+                if (widget.task.tags.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Wrap(
                     spacing: 4,
                     runSpacing: 4,
                     children:
-                        task.tags
+                        widget.task.tags
                             .take(3)
                             .map(
                               (tag) => Container(
@@ -377,7 +449,7 @@ class TaskCardWidget extends StatelessWidget {
           ),
 
           // Duration chip
-          if (task.durationMinutes != null)
+          if (widget.task.durationMinutes != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -385,7 +457,7 @@ class TaskCardWidget extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                task.durationMinutes!.toFormattedDuration(),
+                widget.task.durationMinutes!.toFormattedDuration(),
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: hasGraphic ? Colors.white : cs.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
