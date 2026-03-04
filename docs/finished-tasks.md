@@ -70,6 +70,12 @@
 
 ---
 
+## ✅ Phase 5.5 — UI Polish & Documentation Updates
+- **Smooth Sticky Header Refactor**: Converted `TaskCardWidget` to a StatefulWidget that tracks scroll position with mathematical calculations (`cardTopNow = baseline - scrollDelta`) ensuring titles stay centred beautifully in the viewport without lagging or causing `findRenderObject` layout cycle blinks.
+- **Database ER Diagram Docs**: Updated project documentation by adding `docs/er-diagram.md`, containing a live-generated Mermaid diagram reflecting the complete Drift schema (Tasks, Tags, Goals, Analytics), schema relationships, and denormalised tag reasoning.
+
+---
+
 ## 📊 Build Summary (v1.0)
 | Check | Result |
 |---|---|
