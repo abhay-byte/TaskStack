@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: taskstack-api
+    env: node
+    region: singapore          # closest to IN/SG users; change to frankfurt/ohio etc. as needed
+    plan: free                 # upgrade to starter when ready
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: node server.js
+
+    # Keep-alive: Render pings / every 14 min; this endpoint returns 200
+    # Configure an external cron (e.g. cron-job.org) to hit:
+    #   GET https://<your-service>.onrender.com/cron-job
+    healthCheckPath: /
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false            # Set in Render dashboard — never commit plaintext
+      - key: JWT_SECRET
+        sync: false            # Set in Render dashboard — never commit plaintext
+      - key: BCRYPT_ROUNDS
+        value: 12
+      # Optional: restrict CORS to specific origins in production
+      # - key: ALLOWED_ORIGINS
+      #   value: https://your-flutter-app.example.com

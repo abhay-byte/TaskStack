@@ -76,6 +76,28 @@
 
 ---
 
+## ✅ Phase 6 — Backend API (Node.js + Aiven Postgres)
+- **Node.js/Express backend** initialised with dependencies: `express`, `pg`, `bcrypt`, `jsonwebtoken`, `zod`, `cors`, `qrcode`, `uuid`
+- **Postgres schema** (`db/schema.sql`): `users`, `groups`, `group_members`, `group_invites` tables
+- **DB migration script** (`db/migrate.js`) + connection pool (`db/pool.js`) with SSL + Aiven support
+- **Auth routes** (`POST /auth/register`, `POST /auth/login`) with bcrypt hashing + JWT token issuance (7d expiry)
+- **User routes** (`GET /users/me`, `PUT /users/me`, `GET /users/:id`) with public/group visibility logic
+- **Groups routes** (`GET/POST /groups`, `GET /groups/:id`, `GET /groups/:id/qr`, `POST /groups/join`, `POST /groups/:id/invite`), QR code generation via `qrcode` package
+- **Invites routes** (`GET /invites`, `POST /invites/:id/accept`, `POST /invites/:id/reject`) with transactional accept logic
+- **JWT auth middleware** (`middleware/auth.js`) verifying Bearer tokens on all protected routes
+- **Security hardening**:
+  - `helmet` for HTTP security headers
+  - Global rate limiter: 100 req / 15 min per IP
+  - Auth-specific rate limiter: 10 req / 15 min per IP
+  - Configurable CORS via `ALLOWED_ORIGINS` env var
+  - JSON body limit: 50 KB
+  - 404 + global error handler middleware
+- **`/cron-job` keep-alive endpoint**: `GET /cron-job` → 200 OK (for Render free tier wake-up pings)
+- **`backend/.gitignore`**: excludes `node_modules/`, `.env`, logs, `.DS_Store`, IDE files
+- **`render.yaml`**: Render hosting config — `rootDir: backend`, `buildCommand: npm ci`, `startCommand: node server.js`; secrets set via Render dashboard
+
+---
+
 ## 📊 Build Summary (v1.0)
 | Check | Result |
 |---|---|

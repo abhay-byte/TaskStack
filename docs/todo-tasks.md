@@ -1,14 +1,5 @@
 # Todo Tasks
 
-All core offline features have been implemented. See `finished-tasks.md` for details.
-
-## ☁️ Phase 6: Backend API Implementation (Node.js + Postgres)
-- [ ] Write `backend/routes/groups.js` (CRUD groups, members)
-- [ ] Write `backend/routes/invites.js` (Create, accept, reject invites)
-- [ ] Setup `qr-code` generation endpoint for group invites
-- [ ] Create `server.js` and finalise API setup
-- [ ] Test API endpoints with mock requests
-
 ## 📱 Phase 7: Flutter Cloud Integration — Auth
 - [ ] Add `dio` and `flutter_secure_storage` dependencies
 - [ ] Create `AuthRepository` and StateNotifier for auth state
