@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:taskstack/features/auth/domain/entities/auth_user.dart';
 import 'package:taskstack/features/auth/domain/repositories/auth_repository.dart';
 import 'package:taskstack/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:taskstack/features/sync/domain/repositories/sync_repository.dart';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -31,18 +32,24 @@ class AuthUnauthenticated extends AuthState {
 // ── Notifier ──────────────────────────────────────────────────────────────────
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier(this._repo) : super(const AuthInitial()) {
+  AuthNotifier(this._repo, this._ref) : super(const AuthInitial()) {
     _restore();
   }
 
   final AuthRepository _repo;
+  final Ref _ref;
+
+  SyncRepository get _sync => _ref.read(syncRepositoryProvider);
 
   /// Restore session on cold start
   Future<void> _restore() async {
     final user = await _repo.currentUser();
-    state = user != null
-        ? AuthAuthenticated(user)
-        : const AuthUnauthenticated();
+    if (user != null) {
+      state = AuthAuthenticated(user);
+      _sync.pullCloudToLocal(); // fire-and-forget pull on session restore
+    } else {
+      state = const AuthUnauthenticated();
+    }
   }
 
   Future<void> login({required String email, required String password}) async {
@@ -50,6 +57,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final user = await _repo.login(email: email, password: password);
       state = AuthAuthenticated(user);
+      _sync.pullCloudToLocal(); // fire-and-forget pull on login
     } on DioException catch (e) {
       final msg = _parseError(e);
       state = AuthUnauthenticated(msg);
@@ -73,6 +81,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         displayName: displayName,
       );
       state = AuthAuthenticated(user);
+      _sync.pushLocalToCloud(); // push any local data after first sign-up
     } on DioException catch (e) {
       final msg = _parseError(e);
       state = AuthUnauthenticated(msg);
@@ -106,7 +115,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
 final authNotifierProvider =
     StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(ref.watch(authRepositoryProvider));
+  return AuthNotifier(ref.watch(authRepositoryProvider), ref);
 });
 
 /// Convenience: emit the authenticated user or null.

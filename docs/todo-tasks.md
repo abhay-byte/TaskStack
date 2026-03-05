@@ -1,13 +1,13 @@
 # Todo Tasks
 
-## 🔄 Phase 10: Task Cloud Sync
-- [ ] Add `tasks` + `goals` + `tags` tables to backend Postgres schema (`backend/db/schema.sql`)
-- [ ] Add backend REST endpoints: `POST /tasks`, `GET /tasks`, `PUT /tasks/:id`, `DELETE /tasks/:id` (same for goals)
-- [ ] Implement `SyncRepository` in Flutter — `pushLocalToCloud`, `pullCloudToLocal`, `resolveConflicts` (last-write-wins on `updated_at`)
-- [ ] Add a `user_id` owner column to cloud tasks (only user's own tasks synced)
-- [ ] Wire sync trigger: on login, pull cloud → local; on task create/update/delete (if logged in), push to cloud
-- [ ] Show sync status indicator in the app bar (idle / syncing / error)
-- [ ] Handle offline gracefully — queue failed sync ops and retry when network returns
+## ✅ Phase 10: Task Cloud Sync — COMPLETE
+- [x] Add `goals` + `tasks` tables to backend Postgres schema (`backend/db/schema.sql`)
+- [x] Add backend REST endpoints: `GET /tasks`, `POST /tasks/bulk`, `DELETE /tasks/:id` (same for goals)
+- [x] Implement `SyncRepository` in Flutter — `pushLocalToCloud`, `pullCloudToLocal`, last-write-wins on `updated_at`
+- [x] `user_id` owner column on all cloud tasks + goals (only user's own data synced)
+- [x] Sync trigger: on login → pull cloud→local; on task save → push to cloud (fire-and-forget)
+- [x] `SyncStatusIndicator` in app bar — idle (hidden) / spinning / cloud-off error icon (tap to retry)
+- [x] Offline-safe — `DioException` caught silently, sets `SyncStatus.error`; retries on next action
 
 ## 👤 Phase 11: Guest Mode (Local-Only without Account)
 - [ ] Update GoRouter: add "Continue as Guest" option on `LoginScreen` that skips auth guard

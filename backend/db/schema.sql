@@ -52,3 +52,43 @@ CREATE TABLE IF NOT EXISTS group_invites (
 CREATE INDEX IF NOT EXISTS idx_group_members_user  ON group_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_group_invites_user  ON group_invites(invited_user_id);
 CREATE INDEX IF NOT EXISTS idx_group_invites_group ON group_invites(group_id);
+
+-- ── Goals (cloud mirror of Drift GoalsTable) ─────────────────────────────────
+CREATE TABLE IF NOT EXISTS goals (
+  id             TEXT        PRIMARY KEY,          -- UUID string matching Drift
+  user_id        UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title          TEXT        NOT NULL,
+  type           TEXT        NOT NULL DEFAULT 'project', -- 'project'|'habit'|'noTime'
+  duration_hours INT,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_goals_user ON goals(user_id);
+
+-- ── Tasks (cloud mirror of Drift TasksTable) ─────────────────────────────────
+CREATE TABLE IF NOT EXISTS tasks (
+  id                          TEXT        PRIMARY KEY,  -- UUID string matching Drift
+  user_id                     UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title                       TEXT        NOT NULL,
+  description                 TEXT,
+  purpose                     TEXT,
+  icon_id                     TEXT,
+  color_argb                  INT,
+  tags_json                   TEXT        NOT NULL DEFAULT '[]',
+  start_minutes               INT,
+  duration_minutes            INT,
+  recurrence_type             TEXT        NOT NULL DEFAULT 'none',
+  recurrence_rule             TEXT,
+  repeat_interval_minutes     INT,
+  notification_enabled        BOOLEAN     NOT NULL DEFAULT true,
+  notification_offset_minutes INT         NOT NULL DEFAULT 5,
+  status                      TEXT        NOT NULL DEFAULT 'pending',
+  completed_at                TIMESTAMPTZ,
+  task_date                   DATE        NOT NULL,
+  parent_task_id              TEXT,
+  goal_id                     TEXT        REFERENCES goals(id) ON DELETE SET NULL,
+  created_at                  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at                  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(user_id, task_date);

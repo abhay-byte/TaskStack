@@ -47,9 +47,19 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
       ..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
+  /// Get all tasks (used by sync push to cloud).
+  Future<List<TasksTableData>> getAllTasks() {
+    return select(tasksTable).get();
+  }
+
   /// Insert a new task.
   Future<void> insertTask(TasksTableCompanion task) {
     return into(tasksTable).insert(task);
+  }
+
+  /// Upsert a task — replaces any existing row with same id (used by sync pull).
+  Future<void> upsertTask(TasksTableCompanion task) {
+    return into(tasksTable).insert(task, mode: InsertMode.replace);
   }
 
   /// Insert multiple tasks in a batch.

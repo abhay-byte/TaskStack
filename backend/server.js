@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
 const groupsRoutes = require('./routes/groups');
 const invitesRoutes = require('./routes/invites');
+const tasksRoutes = require('./routes/tasks');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -66,6 +67,7 @@ app.use('/auth', authLimiter, authRoutes);
 app.use('/users', usersRoutes);
 app.use('/groups', groupsRoutes);
 app.use('/invites', invitesRoutes);
+app.use('/tasks', tasksRoutes);
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {

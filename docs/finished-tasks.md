@@ -196,3 +196,42 @@
   - **Cloud** (Postgres): users, groups, group_members, group_invites, with Mermaid ERD + relationships table
 - Pushed as commit `3be839c`
 
+---
+
+## ✅ Phase 10 — Task Cloud Sync
+
+### Backend
+- **`goals` table** added to Postgres schema: `id` (TEXT PK matching Drift UUID), `user_id`, `title`, `type`, `duration_hours`, `created_at`, `updated_at`; indexed on `user_id`
+- **`tasks` table** added: all Drift `TasksTable` columns mirrored (`tags_json`, `recurrence_type`, `task_date` as DATE, etc.); indexed on `(user_id)` and `(user_id, task_date)`
+- **`backend/routes/tasks.js`**: six endpoints, all protected by `verifyToken`:
+  - `GET /tasks?since=<ISO>` — fetch all tasks for user (optional since-filter)
+  - `POST /tasks/bulk` — upsert array with **last-write-wins** on `updated_at`
+  - `DELETE /tasks/:id` — hard-delete (ownership enforced)
+  - `GET /tasks/goals`, `POST /tasks/goals/bulk`, `DELETE /tasks/goals/:id` — same pattern for goals
+- **`backend/server.js`** — `app.use('/tasks', tasksRoutes)` registered
+- **Aiven Postgres migration** — `node db/migrate.js` applied schema successfully ✅
+
+### Flutter — Sync Layer (`lib/features/sync/`)
+- **`sync_repository.dart`** — `SyncRepository` abstract interface + `SyncStatus` enum (`idle`/`syncing`/`error`) + `syncStatusProvider` (`StateProvider`)
+- **`sync_repository_impl.dart`** — `SyncRepositoryImpl`:
+  - `pushLocalToCloud()`: reads all local goals + tasks from DAOs, bulk-POSTs to API
+  - `pullCloudToLocal()`: fetches all remote goals + tasks, upserts into Drift via `InsertMode.replace`
+  - Offline-safe: any `DioException` or uncaught error → `SyncStatus.error` (silent, no crash)
+- **`sync_status_indicator.dart`** — `ConsumerWidget` in app bar: hidden when idle, `CircularProgressIndicator` when syncing, `cloud_off_rounded` icon (tap-to-retry `pushLocalToCloud`) when error
+
+### Flutter — TaskDao Extensions
+- `getAllTasks()` — full-table scan for sync push
+- `upsertTask(TasksTableCompanion)` — `InsertMode.replace` for sync pull
+
+### Flutter — Wiring
+- **`AuthNotifier`**: `pullCloudToLocal()` fired on login + session restore; `pushLocalToCloud()` fired on register
+- **`TaskFormNotifier`**: `pushLocalToCloud()` fired after every successful task save (create or update)
+- **`TaskStackScreen` app bar**: `SyncStatusIndicator` added to `actions`
+
+### Verification
+- `flutter analyze` → **0 errors, 0 warnings** in all new `sync/` files ✅
+- Aiven migration → `✅ Schema applied successfully.` ✅
+
+> **Scope note updated:** Cloud schema now covers `users`, `groups`, `group_members`, `group_invites`, **`goals`**, **`tasks``.
+> Guest mode (no account) **not yet implemented** (Phase 11).
+

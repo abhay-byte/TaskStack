@@ -8,6 +8,7 @@ import 'package:taskstack/features/task_stack/presentation/providers/task_provid
 import 'package:taskstack/features/task_stack/presentation/widgets/task_card_widget.dart';
 import 'package:taskstack/features/task_stack/presentation/widgets/time_indicator_widget.dart';
 import 'package:taskstack/core/constants/app_spacing.dart';
+import 'package:taskstack/features/sync/presentation/sync_status_indicator.dart';
 
 const double _kPixelsPerHour = 120.0;
 const double _kMinuteHeight = _kPixelsPerHour / 60;
@@ -123,6 +124,7 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
           height: 48,
         ),
         actions: [
+          const SyncStatusIndicator(),
           if (!isToday)
             TextButton.icon(
               onPressed: () {
