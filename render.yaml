@@ -6,7 +6,7 @@ services:
     plan: free                 # upgrade to starter when ready
     rootDir: backend
     buildCommand: npm ci
-    startCommand: node server.js
+    startCommand: node db/migrate.js && node server.js
 
     # Keep-alive: Render pings / every 14 min; this endpoint returns 200
     # Configure an external cron (e.g. cron-job.org) to hit:
