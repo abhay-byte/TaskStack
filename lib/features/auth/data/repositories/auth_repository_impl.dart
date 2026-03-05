@@ -86,8 +86,15 @@ final _storageProvider = Provider<FlutterSecureStorage>((_) =>
 
 /// Retries up to [maxRetries] times when the server returns 502
 /// (Render free-tier cold-start bounce). Waits [delay] between attempts.
+/// Must be constructed with the parent [Dio] instance so retries go through
+/// the full interceptor chain (including this interceptor) — not a bare Dio().
 class _RenderWakeInterceptor extends Interceptor {
-  const _RenderWakeInterceptor({this.maxRetries = 6, this.delay = const Duration(seconds: 5)});
+  _RenderWakeInterceptor(
+    this._dio, {
+    this.maxRetries = 6,
+    this.delay = const Duration(seconds: 5),
+  });
+  final Dio _dio;
   final int maxRetries;
   final Duration delay;
 
@@ -101,9 +108,9 @@ class _RenderWakeInterceptor extends Interceptor {
       err.requestOptions.extra['_retryCount'] = attempt + 1;
       await Future.delayed(delay);
       try {
-        // fetch() replays the exact same RequestOptions (full URL + headers
-        // already resolved) without needing a new Dio configuration.
-        final response = await Dio().fetch(err.requestOptions);
+        // Use the parent Dio (with this interceptor attached) so subsequent
+        // 502s are also retried up to maxRetries total.
+        final response = await _dio.fetch(err.requestOptions);
         handler.resolve(response);
       } catch (e) {
         handler.next(err);
@@ -124,7 +131,7 @@ final _baseDioProvider = Provider<Dio>((ref) {
     receiveTimeout: const Duration(seconds: 90),
     headers: {'Content-Type': 'application/json'},
   ));
-  dio.interceptors.add(const _RenderWakeInterceptor());
+  dio.interceptors.add(_RenderWakeInterceptor(dio));
   return dio;
 });
 
