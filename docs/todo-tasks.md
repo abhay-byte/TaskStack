@@ -9,13 +9,13 @@
 - [x] `SyncStatusIndicator` in app bar — idle (hidden) / spinning / cloud-off error icon (tap to retry)
 - [x] Offline-safe — `DioException` caught silently, sets `SyncStatus.error`; retries on next action
 
-## 👤 Phase 11: Guest Mode (Local-Only without Account)
-- [ ] Update GoRouter: add "Continue as Guest" option on `LoginScreen` that skips auth guard
-- [ ] Track `isGuest` boolean in `AuthNotifier` / `SettingsNotifier`
-- [ ] Gate social tab: show "Sign in to use Social" placeholder when in guest mode
-- [ ] Gate sync: no push/pull when guest
-- [ ] Show "You're using TaskStack offline" banner on guest mode
-- [ ] On Sign Up / Login from guest: migrate local Drift data into cloud (optional but ideal)
+## ✅ Phase 11: Guest Mode (Local-Only without Account) — COMPLETE
+- [x] Update GoRouter: "Continue as Guest" on `LoginScreen` skips auth guard (`AuthGuest` treated same as authenticated)
+- [x] Track `isGuest` via `AuthGuest` sealed state + `isGuestModeProvider` + `isGuestProvider`
+- [x] Gate social tab: `GroupsListScreen` shows "Sign in to use Social" UI for guests
+- [x] Gate sync: `SyncRepositoryImpl` no-ops on `pushLocalToCloud`/`pullCloudToLocal` when guest
+- [x] Show "You're using TaskStack offline" `MaterialBanner` in `TaskStackScreen` for guests
+- [x] On login/register from guest: local Drift data pushed to cloud (`pushLocalToCloud` after login, full migration on register)
 
 ## 🔮 Future Enhancements (Post v1.0)
 - Signed release APK (requires keystore — manual step)

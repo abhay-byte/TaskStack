@@ -11,13 +11,17 @@ Bidirectional sync between local Drift/SQLite and cloud Postgres is now live.
 
 ---
 
-## � Phase 11: Guest Mode (In Progress)
+## ✅ Phase 11: Guest Mode — COMPLETE
 
-Currently the auth guard forces all users to `/login`. Adding a "Continue as Guest" path:
+All guest mode features shipped in commit `c1ba36b`. See `finished-tasks.md` for details.
 
-**Planned approach:**
-- `AuthGuest` sealed class + `continueAsGuest()` in `AuthNotifier`
-- Social tab gated (shows sign-in prompt for guests)
-- Sync disabled for guests (`SyncRepositoryImpl` checks auth state)
-- "You're using TaskStack offline" banner on `TaskStackScreen` for guests
-- Local → cloud migration when guest logs in or signs up
+---
+
+## 🔮 Up Next: Future Enhancements (Post v1.0)
+
+- Signed release APK (requires keystore — manual step)
+- Flavour `productFlavours` in `build.gradle.kts`
+- Headless background isolate for persistent notifications
+- Deeper analytics: streak tracking, category breakdowns
+- Full-text task search
+- Home screen widget for today's top 3 tasks

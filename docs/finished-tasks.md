@@ -233,5 +233,49 @@
 - Aiven migration → `✅ Schema applied successfully.` ✅
 
 > **Scope note updated:** Cloud schema now covers `users`, `groups`, `group_members`, `group_invites`, **`goals`**, **`tasks``.
-> Guest mode (no account) **not yet implemented** (Phase 11).
+> Guest mode implemented in Phase 11.
 
+---
+
+## ✅ Phase 11 — Guest Mode (Local-Only without Account)
+
+Users can now use TaskStack fully offline without creating an account.
+
+### Auth Layer
+- **`AuthGuest`** sealed class added to `AuthState` hierarchy
+- **`continueAsGuest()`** method in `AuthNotifier`: sets `isGuestModeProvider` to `true`, emits `AuthGuest`
+- **`isGuestModeProvider`** (`StateProvider<bool>`) in `lib/core/providers/guest_mode_provider.dart` — no circular import issues
+- **`isGuestProvider`** (`Provider<bool>`) derived from `authNotifierProvider` in `auth_provider.dart`
+- **`logout()`** resets `isGuestModeProvider` to `false`
+
+### Login Screen
+- **"Continue as Guest" `TextButton.icon`** added below sign-up link with divider separator
+- Calls `authNotifierProvider.notifier.continueAsGuest()` — GoRouter redirect immediately grants access
+
+### Router
+- `AuthGuest` treated same as `AuthAuthenticated` in the redirect guard (`loggedIn = AuthAuthenticated || AuthGuest`)
+- Guests can access all app-shell routes; `/social` itself handles the gate
+
+### Sync Gate
+- `SyncRepositoryImpl.pushLocalToCloud()` and `pullCloudToLocal()` both early-return when `isGuestModeProvider` is `true`
+- No 401 errors, no `SyncStatus.error` shown while browsing as guest
+
+### Social Tab Gate
+- `GroupsListScreen` checks `isGuestProvider` at the top of `build()`
+- If guest: renders a dedicated screen with `cloud_off_rounded` icon, "Sign in to use Social" heading, "Sign In" + "Create an account" buttons
+
+### Offline Banner
+- **`MaterialBanner`** shown at the top of `TaskStackScreen` body column when `isGuestProvider` is `true`
+- Text: "You're using TaskStack offline" with a "Sign In" action leading to `/login`
+
+### Guest → Account Migration
+- `login()` in `AuthNotifier` detects `wasGuest` before switching state
+- On successful login from guest: calls `pushLocalToCloud()` to migrate all local tasks/goals to cloud
+- On `register()`: already calls `pushLocalToCloud()` (covers guest-to-new-account migration too)
+
+### Build Verification
+| Check | Result |
+|---|---|
+| `flutter analyze` | ✅ 0 errors (90 pre-existing infos, unchanged) |
+| `flutter build apk --debug` | ✅ `app-debug.apk` copied to `/sdcard/Download/taskstack-debug.apk` |
+| Commit | ✅ `c1ba36b` |

@@ -113,11 +113,50 @@ erDiagram
         TIMESTAMPTZ created_at        "default now()"
     }
 
+    goals {
+        TEXT        id            PK  "UUID string — matches Drift id"
+        UUID        user_id           "FK → users.id CASCADE"
+        TEXT        title             "NOT NULL"
+        TEXT        type              "project|habit|noTime, default project"
+        INT         duration_hours    "nullable"
+        TIMESTAMPTZ created_at        "default now()"
+        TIMESTAMPTZ updated_at        "default now()"
+    }
+
+    tasks {
+        TEXT        id                          PK  "UUID string — matches Drift id"
+        UUID        user_id                         "FK → users.id CASCADE"
+        TEXT        title                           "NOT NULL"
+        TEXT        description                     "nullable"
+        TEXT        purpose                         "nullable"
+        TEXT        icon_id                         "nullable"
+        INT         color_argb                      "nullable"
+        TEXT        tags_json                       "JSON array, default []"
+        INT         start_minutes                   "nullable"
+        INT         duration_minutes                "nullable"
+        TEXT        recurrence_type                 "none|daily|weekly|…, default none"
+        TEXT        recurrence_rule                 "nullable"
+        INT         repeat_interval_minutes         "nullable"
+        BOOL        notification_enabled            "default true"
+        INT         notification_offset_minutes     "default 5"
+        TEXT        status                          "pending|done, default pending"
+        TIMESTAMPTZ completed_at                    "nullable"
+        DATE        task_date                       "NOT NULL"
+        TEXT        parent_task_id                  "nullable — self-ref"
+        TEXT        goal_id                         "nullable — FK → goals.id SET NULL"
+        TIMESTAMPTZ created_at                      "default now()"
+        TIMESTAMPTZ updated_at                      "default now()"
+    }
+
     users      ||--o{ groups         : "creates"
     users      ||--o{ group_members  : "belongs to"
     groups     ||--o{ group_members  : "has"
     users      ||--o{ group_invites  : "sends / receives"
     groups     ||--o{ group_invites  : "has pending"
+    users      ||--o{ goals          : "owns"
+    users      ||--o{ tasks          : "owns"
+    goals      ||--o{ tasks          : "has"
+    tasks      ||--o{ tasks          : "parent of (recurring instances)"
 ```
 
 ---
@@ -141,6 +180,10 @@ erDiagram
 | `users` ↔ `groups` | Many-to-many | Via `group_members` pivot (composite PK prevents duplicates) |
 | `users` ↔ `group_invites` | One-to-many | Both `invited_by` and `invited_user_id` are user FKs |
 | `groups` → `group_invites` | One-to-many | `UNIQUE(group_id, invited_user_id)` prevents duplicate invites |
+| `users` → `goals` | One-to-many | `goals.user_id` scopes goals to their owner (CASCADE delete) |
+| `users` → `tasks` | One-to-many | `tasks.user_id` scopes tasks to their owner (CASCADE delete) |
+| `goals` → `tasks` | One-to-many | `tasks.goal_id` FK mirrors local relationship |
+| `tasks` → `tasks` | Self-referencing | `tasks.parent_task_id` links recurring instances to template |
 
 ### Tag Storage Strategy
 
@@ -160,3 +203,4 @@ This means task queries never need a join to retrieve tags, at the cost of tag r
 | 2 | Local | Added `tasks.graphicImage` column |
 | 3 | Local | Added `goals` table + `tasks.goalId` column |
 | 4 | Cloud | Initial cloud schema: `users`, `groups`, `group_members`, `group_invites` |
+| 5 | Cloud | Phase 10: added `goals` + `tasks` tables (user-scoped mirrors of Drift schema) |
