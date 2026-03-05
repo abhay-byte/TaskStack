@@ -60,10 +60,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Guest and Authenticated users both have access to the app shell
       final loggedIn =
           authState is AuthAuthenticated || authState is AuthGuest;
+      final isFullyAuthenticated = authState is AuthAuthenticated;
       final isPublic = _publicPaths.contains(path);
 
       if (!loggedIn && !isPublic) return '/login';
-      if (loggedIn && isPublic) return '/';
+      // Only redirect fully-authenticated users away from login/signup.
+      // Guests can navigate to login/signup to create or sign into an account.
+      if (isFullyAuthenticated && isPublic) return '/';
 
       return null;
     },
