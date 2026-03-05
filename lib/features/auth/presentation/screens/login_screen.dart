@@ -26,8 +26,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    // Show 'waking up' hint after 4 s if still loading (Render cold start)
-    Future.delayed(const Duration(seconds: 4), () {
+    // Show wake hint after 3 s — Render 502 retry loop takes up to 30 s
+    Future.delayed(const Duration(seconds: 3), () {
       if (mounted && ref.read(authNotifierProvider) is AuthLoading) {
         setState(() => _showWakeHint = true);
       }

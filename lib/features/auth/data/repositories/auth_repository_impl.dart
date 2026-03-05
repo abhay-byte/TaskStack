@@ -84,15 +84,47 @@ final _storageProvider = Provider<FlutterSecureStorage>((_) =>
       aOptions: AndroidOptions(encryptedSharedPreferences: true),
     ));
 
+/// Retries up to [maxRetries] times when the server returns 502
+/// (Render free-tier cold-start bounce). Waits [delay] between attempts.
+class _RenderWakeInterceptor extends Interceptor {
+  const _RenderWakeInterceptor({this.maxRetries = 6, this.delay = const Duration(seconds: 5)});
+  final int maxRetries;
+  final Duration delay;
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    final statusCode = err.response?.statusCode;
+    final attempt = (err.requestOptions.extra['_retryCount'] as int?) ?? 0;
+
+    if ((statusCode == 502 || statusCode == 503 || statusCode == 504) &&
+        attempt < maxRetries) {
+      err.requestOptions.extra['_retryCount'] = attempt + 1;
+      await Future.delayed(delay);
+      try {
+        // fetch() replays the exact same RequestOptions (full URL + headers
+        // already resolved) without needing a new Dio configuration.
+        final response = await Dio().fetch(err.requestOptions);
+        handler.resolve(response);
+      } catch (e) {
+        handler.next(err);
+      }
+      return;
+    }
+    handler.next(err);
+  }
+}
+
 /// Base Dio instance — interceptor added in api_client.dart which wraps this.
-/// Timeouts are generous (60 s) to survive Render free-tier cold starts.
+/// Timeouts are generous (90 s) to survive Render free-tier cold starts.
+/// _RenderWakeInterceptor retries on 502/503/504 up to 6× (≈30 s window).
 final _baseDioProvider = Provider<Dio>((ref) {
   final dio = Dio(BaseOptions(
     baseUrl: AppConfig.apiBaseUrl,
-    connectTimeout: const Duration(seconds: 60),
-    receiveTimeout: const Duration(seconds: 60),
+    connectTimeout: const Duration(seconds: 90),
+    receiveTimeout: const Duration(seconds: 90),
     headers: {'Content-Type': 'application/json'},
   ));
+  dio.interceptors.add(const _RenderWakeInterceptor());
   return dio;
 });
 
