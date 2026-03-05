@@ -2,7 +2,7 @@
 const { Router } = require('express');
 const { z } = require('zod');
 const pool = require('../db/pool');
-const verifyToken = require('../middleware/auth');
+const { requireAuth: verifyToken } = require('../middleware/auth');
 
 const router = Router();
 router.use(verifyToken);
