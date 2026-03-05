@@ -28,10 +28,22 @@ final _rootKey = GlobalKey<NavigatorState>();
 /// Paths that do NOT require authentication.
 const _publicPaths = {'/login', '/signup', '/onboarding'};
 
+/// Bridges Riverpod auth + settings state changes into a [ChangeNotifier]
+/// so GoRouter re-evaluates its redirect whenever either provider changes.
+class _RouterRefreshNotifier extends ChangeNotifier {
+  _RouterRefreshNotifier(Ref ref) {
+    ref.listen<AuthState>(authNotifierProvider, (_, __) => notifyListeners());
+    ref.listen<AppSettings>(settingsProvider, (_, __) => notifyListeners());
+  }
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final refreshListenable = _RouterRefreshNotifier(ref);
+
   final router = GoRouter(
     navigatorKey: _rootKey,
     initialLocation: '/',
+    refreshListenable: refreshListenable,
     redirect: (context, state) async {
       final path = state.uri.path;
 
