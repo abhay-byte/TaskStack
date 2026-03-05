@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskstack/features/auth/presentation/providers/auth_provider.dart';
 import 'package:taskstack/features/groups/presentation/providers/group_provider.dart';
 
 class GroupsListScreen extends ConsumerWidget {
@@ -8,9 +9,56 @@ class GroupsListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final groupsAsync = ref.watch(groupNotifierProvider);
-    final pendingCount = ref.watch(inviteNotifierProvider.notifier).pendingCount;
+    final isGuest = ref.watch(isGuestProvider);
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    // ── Guest gate ──────────────────────────────────────────────────────────
+    if (isGuest) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Social')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cloud_off_rounded,
+                    size: 72, color: cs.onSurfaceVariant),
+                const SizedBox(height: 24),
+                Text(
+                  'Sign in to use Social',
+                  style: tt.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Groups, invites, and profiles are only available when you have an account.',
+                  style: tt.bodyMedium
+                      ?.copyWith(color: cs.onSurfaceVariant),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                FilledButton.icon(
+                  onPressed: () => context.go('/login'),
+                  icon: const Icon(Icons.login),
+                  label: const Text('Sign In'),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => context.go('/signup'),
+                  child: const Text('Create an account'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final groupsAsync = ref.watch(groupNotifierProvider);
+    final pendingCount =
+        ref.watch(inviteNotifierProvider.notifier).pendingCount;
 
     return Scaffold(
       appBar: AppBar(

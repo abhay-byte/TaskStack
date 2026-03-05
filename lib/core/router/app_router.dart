@@ -45,7 +45,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Still initialising (AuthInitial) → do nothing yet
       if (authState is AuthInitial) return null;
 
-      final loggedIn = authState is AuthAuthenticated;
+      // Guest and Authenticated users both have access to the app shell
+      final loggedIn =
+          authState is AuthAuthenticated || authState is AuthGuest;
       final isPublic = _publicPaths.contains(path);
 
       if (!loggedIn && !isPublic) return '/login';

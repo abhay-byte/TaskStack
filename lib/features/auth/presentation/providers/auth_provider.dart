@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:taskstack/core/providers/guest_mode_provider.dart';
 import 'package:taskstack/features/auth/domain/entities/auth_user.dart';
 import 'package:taskstack/features/auth/domain/repositories/auth_repository.dart';
 import 'package:taskstack/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:taskstack/features/sync/domain/repositories/sync_repository.dart';
+import 'package:taskstack/features/sync/data/repositories/sync_repository_impl.dart';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -29,6 +31,11 @@ class AuthUnauthenticated extends AuthState {
   final String? errorMessage;
 }
 
+/// User skipped login and is using the app offline (no cloud account).
+class AuthGuest extends AuthState {
+  const AuthGuest();
+}
+
 // ── Notifier ──────────────────────────────────────────────────────────────────
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -52,12 +59,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Enter guest / offline mode — skips authentication entirely.
+  void continueAsGuest() {
+    _ref.read(isGuestModeProvider.notifier).state = true;
+    state = const AuthGuest();
+  }
+
   Future<void> login({required String email, required String password}) async {
+    final wasGuest = state is AuthGuest;
     state = const AuthLoading();
     try {
       final user = await _repo.login(email: email, password: password);
+      _ref.read(isGuestModeProvider.notifier).state = false;
       state = AuthAuthenticated(user);
-      _sync.pullCloudToLocal(); // fire-and-forget pull on login
+      if (wasGuest) {
+        _sync.pushLocalToCloud(); // migrate guest data to cloud
+      } else {
+        _sync.pullCloudToLocal(); // fire-and-forget pull on login
+      }
     } on DioException catch (e) {
       final msg = _parseError(e);
       state = AuthUnauthenticated(msg);
@@ -80,8 +99,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         password: password,
         displayName: displayName,
       );
+      _ref.read(isGuestModeProvider.notifier).state = false;
       state = AuthAuthenticated(user);
-      _sync.pushLocalToCloud(); // push any local data after first sign-up
+      _sync.pushLocalToCloud(); // push local data (including any guest data)
     } on DioException catch (e) {
       final msg = _parseError(e);
       state = AuthUnauthenticated(msg);
@@ -92,6 +112,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     await _repo.logout();
+    _ref.read(isGuestModeProvider.notifier).state = false;
     state = const AuthUnauthenticated();
   }
 
@@ -122,4 +143,9 @@ final authNotifierProvider =
 final currentUserProvider = Provider<AuthUser?>((ref) {
   final state = ref.watch(authNotifierProvider);
   return state is AuthAuthenticated ? state.user : null;
+});
+
+/// True when the user is in guest / offline mode.
+final isGuestProvider = Provider<bool>((ref) {
+  return ref.watch(authNotifierProvider) is AuthGuest;
 });

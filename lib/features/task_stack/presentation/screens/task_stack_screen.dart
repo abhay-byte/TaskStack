@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskstack/features/auth/presentation/providers/auth_provider.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/features/task_stack/domain/usecases/task_usecases.dart';
 import 'package:taskstack/features/task_stack/presentation/providers/task_providers.dart';
@@ -115,6 +116,7 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
     final selectedDate = ref.watch(selectedStackDateProvider);
     final isToday = _isToday(selectedDate);
     final now = DateTime.now();
+    final isGuest = ref.watch(isGuestProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -145,6 +147,20 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
       ),
       body: Column(
         children: [
+          // ── Guest offline banner ──────────────────────────────────────
+          if (isGuest)
+            MaterialBanner(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              content: const Text("You're using TaskStack offline"),
+              leading: const Icon(Icons.cloud_off_rounded),
+              actions: [
+                TextButton(
+                  onPressed: () => context.go('/login'),
+                  child: const Text('Sign In'),
+                ),
+              ],
+            ),
           // Date navigation bar
           _DateNavBar(
             selectedDate: selectedDate,

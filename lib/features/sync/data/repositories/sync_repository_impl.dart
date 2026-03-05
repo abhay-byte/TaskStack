@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:taskstack/core/network/api_client.dart';
+import 'package:taskstack/core/providers/guest_mode_provider.dart';
 import 'package:taskstack/database/app_database.dart';
 import 'package:taskstack/database/daos/goal_dao.dart';
 import 'package:taskstack/database/daos/task_dao.dart';
@@ -25,6 +26,8 @@ class SyncRepositoryImpl implements SyncRepository {
 
   @override
   Future<void> pushLocalToCloud() async {
+    // No-op in guest mode — no account to sync to.
+    if (ref.read(isGuestModeProvider)) return;
     ref.read(syncStatusProvider.notifier).state = SyncStatus.syncing;
     try {
       await _pushGoals();
@@ -90,6 +93,8 @@ class SyncRepositoryImpl implements SyncRepository {
 
   @override
   Future<void> pullCloudToLocal() async {
+    // No-op in guest mode — no account to sync from.
+    if (ref.read(isGuestModeProvider)) return;
     ref.read(syncStatusProvider.notifier).state = SyncStatus.syncing;
     try {
       await _pullGoals();

@@ -4,6 +4,7 @@ import 'package:taskstack/features/task_stack/data/repositories/task_repository_
 import 'package:taskstack/features/task_stack/domain/usecases/task_usecases.dart';
 import 'package:taskstack/features/notifications/notification_scheduler.dart';
 import 'package:taskstack/features/sync/domain/repositories/sync_repository.dart';
+import 'package:taskstack/features/sync/data/repositories/sync_repository_impl.dart';
 
 // ── Date Providers ────────────────────────────────────────────────────────
 

@@ -1,0 +1,141 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build APK & Copy to Downloads",
+			"type": "shell",
+			"command": "flutter build apk --release && cp build/app/outputs/flutter-apk/app-release.apk /sdcard/Download/taskstack.apk && echo 'APK copied to /sdcard/Download/taskstack.apk'",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Accept Android SDK Licenses",
+			"type": "shell",
+			"command": "yes | /usr/lib/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses 2>&1 || yes | /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses 2>&1 || yes | sdkmanager --licenses 2>&1",
+			"isBackground": false
+		},
+		{
+			"label": "Build & Copy APK",
+			"type": "shell",
+			"command": "flutter build apk --release && cp build/app/outputs/flutter-apk/app-release.apk /sdcard/Download/taskstack.apk && echo 'APK copied to /sdcard/Download/taskstack.apk'",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Check opt SDK",
+			"type": "shell",
+			"command": "find /opt/android-sdk -maxdepth 3 -name 'ndk' -o -name 'ndk-bundle' 2>/dev/null | head -20; echo '---'; ls /opt/android-sdk/",
+			"isBackground": false
+		},
+		{
+			"label": "Build APK (opt SDK)",
+			"type": "shell",
+			"command": "flutter build apk --release && cp build/app/outputs/flutter-apk/app-release.apk /sdcard/Download/taskstack.apk && echo 'SUCCESS: APK copied to /sdcard/Download/taskstack.apk'",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Build APK forced opt",
+			"type": "shell",
+			"command": "ANDROID_SDK_ROOT=/opt/android-sdk ANDROID_HOME=/opt/android-sdk flutter build apk --release && cp build/app/outputs/flutter-apk/app-release.apk /sdcard/Download/taskstack.apk && echo 'SUCCESS: APK copied to /sdcard/Download/taskstack.apk'",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Flutter precache ARM64",
+			"type": "shell",
+			"command": "flutter precache --android 2>&1 && echo 'PRECACHE DONE'",
+			"isBackground": false
+		},
+		{
+			"label": "Build APK final",
+			"type": "shell",
+			"command": "ANDROID_SDK_ROOT=/opt/android-sdk ANDROID_HOME=/opt/android-sdk flutter build apk --release && cp build/app/outputs/flutter-apk/app-release.apk /sdcard/Download/taskstack.apk && echo 'SUCCESS: APK copied to /sdcard/Download/taskstack.apk'",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Check gen_snapshot cache",
+			"type": "shell",
+			"command": "find /opt/flutter/bin/cache/artifacts/engine/android-arm64-release -type f 2>/dev/null; echo '---'; uname -m",
+			"isBackground": false
+		},
+		{
+			"label": "Symlink gen_snapshot arm64",
+			"type": "shell",
+			"command": "for dir in android-arm-release android-arm64-release android-x64-release; do ln -sfn /opt/flutter/bin/cache/artifacts/engine/$dir/linux-x64 /opt/flutter/bin/cache/artifacts/engine/$dir/linux-arm64 && echo \"Linked $dir\"; done",
+			"isBackground": false
+		},
+		{
+			"label": "Build APK symlinked",
+			"type": "shell",
+			"command": "ANDROID_SDK_ROOT=/opt/android-sdk ANDROID_HOME=/opt/android-sdk flutter build apk --release && cp build/app/outputs/flutter-apk/app-release.apk /sdcard/Download/taskstack.apk && echo 'SUCCESS: APK copied to /sdcard/Download/taskstack.apk'",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Check x64 emulators",
+			"type": "shell",
+			"command": "which box64 qemu-x86_64 qemu-x86_64-static 2>/dev/null; echo '---file check:'; file /opt/flutter/bin/cache/artifacts/engine/android-arm64-release/linux-x64/gen_snapshot",
+			"isBackground": false
+		},
+		{
+			"label": "Get Flutter engine hash",
+			"type": "shell",
+			"command": "cat /opt/flutter/bin/internal/engine.version; echo '---'; flutter --version 2>/dev/null | head -3",
+			"isBackground": false
+		},
+		{
+			"label": "Download ARM64 gen_snapshot",
+			"type": "shell",
+			"command": "HASH=6c0baaebf70e0148f485f27d5616b3d3382da7bf; BASE=/opt/flutter/bin/cache/artifacts/engine; for target in android-arm-release android-arm64-release android-x64-release; do echo \"=== Downloading $target ===\"; rm -rf $BASE/$target/linux-arm64; mkdir -p $BASE/$target/linux-arm64; curl -fL \"https://storage.googleapis.com/flutter_infra_release/flutter/$HASH/$target/linux-arm64.zip\" -o /tmp/arm64_${target}.zip && unzip -o /tmp/arm64_${target}.zip -d $BASE/$target/linux-arm64/ && echo \"OK: $target\" || echo \"FAIL: $target\"; done",
+			"isBackground": false
+		},
+		{
+			"label": "Build Debug APK",
+			"type": "shell",
+			"command": "ANDROID_SDK_ROOT=/opt/android-sdk ANDROID_HOME=/opt/android-sdk flutter build apk --debug && cp build/app/outputs/flutter-apk/app-debug.apk /sdcard/Download/taskstack-debug.apk && echo 'SUCCESS: debug APK at /sdcard/Download/taskstack-debug.apk'",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Verify arch",
+			"type": "shell",
+			"command": "echo '=== Flutter binaries ==='; file /opt/flutter/bin/flutter; echo ''; file /opt/flutter/bin/cache/dart-sdk/bin/dart; echo ''; echo '=== gen_snapshot ==='; file /opt/flutter/bin/cache/artifacts/engine/android-arm64-release/linux-x64/gen_snapshot; echo ''; file /opt/flutter/bin/cache/artifacts/engine/android-arm-release/linux-x64/gen_snapshot; echo ''; echo '=== uname ==='; uname -m",
+			"isBackground": false
+		},
+		{
+			"label": "Check engine arches",
+			"type": "shell",
+			"command": "ls -la /opt/flutter/bin/cache/artifacts/engine/android-arm64-release/ 2>/dev/null | grep -E 'linux|apple|windows'; echo '---'; find /opt/flutter/bin/cache/artifacts/engine/android-arm64-release -type d -maxdepth 1 2>/dev/null",
+			"isBackground": false
+		},
+		{
+			"label": "Check linux-arm64 dir",
+			"type": "shell",
+			"command": "ls -la /opt/flutter/bin/cache/artifacts/engine/android-arm64-release/linux-arm64/; echo ''; file /opt/flutter/bin/cache/artifacts/engine/android-arm64-release/linux-arm64/gen_snapshot",
+			"isBackground": false
+		},
+		{
+			"label": "Build debug APK clean",
+			"type": "shell",
+			"command": "rm -rf /opt/flutter/bin/cache/artifacts/engine/android-*-release/linux-arm64; ANDROID_SDK_ROOT=/opt/android-sdk ANDROID_HOME=/opt/android-sdk flutter build apk --debug --split-debug-info=/tmp/flutter_debug && cp build/app/outputs/flutter-apk/app-debug.apk /sdcard/Download/taskstack-debug.apk && echo 'SUCCESS: debug APK at /sdcard/Download/taskstack-debug.apk'",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Build APK NDK fixed",
+			"type": "shell",
+			"command": "ANDROID_SDK_ROOT=/opt/android-sdk ANDROID_HOME=/opt/android-sdk flutter build apk --debug --split-debug-info=/tmp/flutter_debug && cp build/app/outputs/flutter-apk/app-debug.apk /sdcard/Download/taskstack-debug.apk && echo 'SUCCESS: debug APK at /sdcard/Download/taskstack-debug.apk'",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Verify APK copied",
+			"type": "shell",
+			"command": "ls -lh /sdcard/Download/taskstack* 2>/dev/null && echo 'APK ready for installation'",
+			"isBackground": false
+		}
+	]
+}

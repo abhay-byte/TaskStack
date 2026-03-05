@@ -133,6 +133,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     onPressed: () => context.go('/signup'),
                     child: const Text("Don't have an account? Sign up"),
                   ),
+
+                  // ── Guest mode ──────────────────────────────────────────
+                  const Divider(height: 32),
+                  TextButton.icon(
+                    onPressed: isLoading
+                        ? null
+                        : () => ref
+                            .read(authNotifierProvider.notifier)
+                            .continueAsGuest(),
+                    icon: const Icon(Icons.person_outline),
+                    label: const Text('Continue as Guest'),
+                    style: TextButton.styleFrom(
+                      foregroundColor:
+                          Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             ),
