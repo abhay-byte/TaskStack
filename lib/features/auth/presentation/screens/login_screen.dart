@@ -165,9 +165,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextButton.icon(
                     onPressed: isLoading
                         ? null
-                        : () => ref
-                            .read(authNotifierProvider.notifier)
-                            .continueAsGuest(),
+                        : () {
+                            ref
+                                .read(authNotifierProvider.notifier)
+                                .continueAsGuest();
+                            context.go('/');
+                          },
                     icon: const Icon(Icons.person_outline),
                     label: const Text('Continue as Guest'),
                     style: TextButton.styleFrom(
