@@ -85,11 +85,12 @@ final _storageProvider = Provider<FlutterSecureStorage>((_) =>
     ));
 
 /// Base Dio instance — interceptor added in api_client.dart which wraps this.
+/// Timeouts are generous (60 s) to survive Render free-tier cold starts.
 final _baseDioProvider = Provider<Dio>((ref) {
   final dio = Dio(BaseOptions(
     baseUrl: AppConfig.apiBaseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 15),
+    connectTimeout: const Duration(seconds: 60),
+    receiveTimeout: const Duration(seconds: 60),
     headers: {'Content-Type': 'application/json'},
   ));
   return dio;

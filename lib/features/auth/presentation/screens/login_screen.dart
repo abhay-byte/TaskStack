@@ -15,6 +15,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   bool _obscure = true;
+  bool _showWakeHint = false;
 
   @override
   void dispose() {
@@ -25,10 +26,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    // Show 'waking up' hint after 4 s if still loading (Render cold start)
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted && ref.read(authNotifierProvider) is AuthLoading) {
+        setState(() => _showWakeHint = true);
+      }
+    });
     await ref.read(authNotifierProvider.notifier).login(
           email: _emailCtrl.text.trim(),
           password: _passCtrl.text,
         );
+    if (mounted) setState(() => _showWakeHint = false);
     // GoRouter redirect handles navigation on AuthAuthenticated
   }
 
@@ -126,6 +134,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           )
                         : const Text('Sign In'),
                   ),
+                  if (isLoading && _showWakeHint) ...
+                    [
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.cloud_sync_outlined,
+                              size: 16,
+                              color: cs.onSurfaceVariant),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Waking up server… please wait',
+                            style: tt.bodySmall
+                                ?.copyWith(color: cs.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ],
                   const SizedBox(height: 16),
 
                   // ── Sign Up link ────────────────────────────────────────
