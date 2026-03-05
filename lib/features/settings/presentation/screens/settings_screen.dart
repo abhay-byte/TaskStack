@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'package:taskstack/features/auth/presentation/providers/auth_provider.dart';
 import 'package:taskstack/features/settings/presentation/providers/settings_provider.dart';
 import 'package:taskstack/features/task_stack/presentation/providers/task_providers.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
@@ -21,11 +23,37 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
     final cs = Theme.of(context).colorScheme;
+    final authState = ref.watch(authNotifierProvider);
+    final isGuest = authState is AuthGuest;
+    final isAuthenticated = authState is AuthAuthenticated;
+    final currentUser = isAuthenticated ? (authState).user : null;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
+          // ── Account ───────────────────────────────────────────────────
+          _SectionHeader('Account'),
+
+          if (isAuthenticated)
+            _AccountCard(
+              displayName: currentUser!.displayName ?? currentUser.username,
+              username: '@${currentUser.username}',
+              avatarUrl: currentUser.avatarUrl,
+              onProfile: () => context.push('/profile/me'),
+              onLogout: () => _confirmLogout(context, ref),
+            )
+          else if (isGuest)
+            _GuestCard(
+              onSignIn: () => context.go('/login'),
+              onSignUp: () => context.go('/signup'),
+            )
+          else
+            _GuestCard(
+              onSignIn: () => context.go('/login'),
+              onSignUp: () => context.go('/signup'),
+            ),
+
           // ── Appearance ────────────────────────────────────────────────
           _SectionHeader('Appearance'),
 
@@ -155,6 +183,29 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Log out?'),
+        content: const Text('You will need to sign in again to access cloud features.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Log out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ref.read(authNotifierProvider.notifier).logout();
+    }
   }
 
   void _showAccentPicker(
@@ -428,6 +479,168 @@ class _SectionHeader extends StatelessWidget {
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: Theme.of(context).colorScheme.primary,
           letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Account card (logged-in) ───────────────────────────────────────────────────
+
+class _AccountCard extends StatelessWidget {
+  const _AccountCard({
+    required this.displayName,
+    required this.username,
+    this.avatarUrl,
+    required this.onProfile,
+    required this.onLogout,
+  });
+
+  final String displayName;
+  final String username;
+  final String? avatarUrl;
+  final VoidCallback onProfile;
+  final VoidCallback onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            // Avatar
+            CircleAvatar(
+              radius: 26,
+              backgroundColor: cs.primaryContainer,
+              backgroundImage:
+                  avatarUrl != null && avatarUrl!.isNotEmpty
+                      ? NetworkImage(avatarUrl!)
+                      : null,
+              child:
+                  avatarUrl == null || avatarUrl!.isEmpty
+                      ? Text(
+                          displayName.substring(0, 1).toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 20,
+                            color: cs.onPrimaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
+            ),
+            const SizedBox(width: 14),
+            // Name + username
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(displayName,
+                      style: tt.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(username,
+                      style: tt.bodySmall
+                          ?.copyWith(color: cs.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            // Actions
+            Column(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: onProfile,
+                  icon: const Icon(Icons.person_outline, size: 16),
+                  label: const Text('Profile'),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextButton.icon(
+                  onPressed: onLogout,
+                  icon: Icon(Icons.logout, size: 16, color: cs.error),
+                  label: Text('Log out',
+                      style: TextStyle(color: cs.error, fontSize: 12)),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Account card (guest / logged-out) ─────────────────────────────────────────
+
+class _GuestCard extends StatelessWidget {
+  const _GuestCard({required this.onSignIn, required this.onSignUp});
+  final VoidCallback onSignIn;
+  final VoidCallback onSignUp;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: cs.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.person_off_outlined,
+                    color: cs.onSurfaceVariant, size: 28),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Not signed in',
+                        style: tt.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    Text('Local data only — no cloud sync',
+                        style: tt.bodySmall
+                            ?.copyWith(color: cs.onSurfaceVariant)),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton(
+                    onPressed: onSignIn,
+                    style: FilledButton.styleFrom(
+                        visualDensity: VisualDensity.compact),
+                    child: const Text('Sign In'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onSignUp,
+                    style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact),
+                    child: const Text('Create Account'),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
