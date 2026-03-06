@@ -76,6 +76,15 @@ class SyncRepositoryImpl implements SyncRepository {
     await dio.post('/tasks/goals/bulk', data: payload);
   }
 
+  /// Split a list into chunks of [size].
+  List<List<T>> _chunk<T>(List<T> list, int size) {
+    final chunks = <List<T>>[];
+    for (var i = 0; i < list.length; i += size) {
+      chunks.add(list.sublist(i, i + size < list.length ? i + size : list.length));
+    }
+    return chunks;
+  }
+
   Future<void> _pushTasks() async {
     // Get all tasks across all dates
     final tasks = await taskDao.getAllTasks();
@@ -108,7 +117,12 @@ class SyncRepositoryImpl implements SyncRepository {
               'updated_at': t.updatedAt.toUtc().toIso8601String(),
             })
         .toList();
-    await dio.post('/tasks/bulk', data: payload);
+    // Push in chunks of 100 to avoid hitting the server body-size limit
+    // (daily recurrence generates 365 instances — a single bulk can be >50KB)
+    final chunks = _chunk(payload, 100);
+    for (final chunk in chunks) {
+      await dio.post('/tasks/bulk', data: chunk);
+    }
   }
 
   // ── PULL: cloud → local ────────────────────────────────────────────────────

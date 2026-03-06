@@ -35,7 +35,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-app.use(express.json({ limit: '50kb' }));
+app.use(express.json({ limit: '2mb' }));
 
 // ─── Global rate limiter: 100 req / 15 min per IP ─────────────────────────────
 const globalLimiter = rateLimit({
