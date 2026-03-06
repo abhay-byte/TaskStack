@@ -17,6 +17,9 @@
 - [x] Show "You're using TaskStack offline" `MaterialBanner` in `TaskStackScreen` for guests
 - [x] On login/register from guest: local Drift data pushed to cloud (`pushLocalToCloud` after login, full migration on register)
 
+## 🔄 Current Issue: Sync 500 Error on Sleep Task
+- [ ] Investigate and fix 500 error when saving task "Sleep" with daily recurrence, time 11:00 PM to 6:30 AM
+
 ## 🔮 Future Enhancements (Post v1.0)
 - Signed release APK (requires keystore — manual step)
 - Flavour `productFlavours` in `build.gradle.kts`

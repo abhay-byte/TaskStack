@@ -136,6 +136,12 @@
 			"type": "shell",
 			"command": "ls -lh /sdcard/Download/taskstack* 2>/dev/null && echo 'APK ready for installation'",
 			"isBackground": false
+		},
+		{
+			"label": "Run API full test",
+			"type": "shell",
+			"command": "python3 /tmp/fulltest.py",
+			"isBackground": false
 		}
 	]
 }
