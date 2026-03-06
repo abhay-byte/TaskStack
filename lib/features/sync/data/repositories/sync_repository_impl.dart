@@ -39,7 +39,7 @@ class SyncRepositoryImpl implements SyncRepository {
     debugPrint('[Sync] Starting push to cloud...');
     try {
       await _pushGoals();
-      await _pushTasks();
+      await _pushTasksWithRetry();
       ref.read(syncStatusProvider.notifier).state = SyncStatus.idle;
       debugPrint('[Sync] Push completed successfully');
     } on DioException catch (e) {
@@ -85,7 +85,62 @@ class SyncRepositoryImpl implements SyncRepository {
     return chunks;
   }
 
-  Future<void> _pushTasks() async {
+  /// Push tasks with retry logic for cold-start 500 errors
+  Future<void> _pushTasksWithRetry({int maxRetries = 3}) async {
+    final tasks = await taskDao.getAllTasks();
+    if (tasks.isEmpty) return;
+    final payload = tasks
+        .map((t) => {
+              'id': t.id,
+              'title': t.title,
+              'description': t.description,
+              'purpose': t.purpose,
+              'icon_id': t.iconId,
+              'color_argb': t.colorArgb != null
+                  ? t.colorArgb! & 0xFFFFFFFF
+                  : null,
+              'tags_json': t.tagsJson,
+              'start_minutes': t.startMinutes,
+              'duration_minutes': t.durationMinutes,
+              'recurrence_type': t.recurrenceType,
+              'recurrence_rule': t.recurrenceRule,
+              'repeat_interval_minutes': t.repeatIntervalMinutes,
+              'notification_enabled': t.notificationEnabled,
+              'notification_offset_minutes': t.notificationOffsetMinutes,
+              'status': t.status,
+              'completed_at': t.completedAt?.toUtc().toIso8601String(),
+              'task_date': t.taskDate,
+              'graphic_image': t.graphicImage,
+              'parent_task_id': t.parentTaskId,
+              'goal_id': t.goalId,
+              'created_at': t.createdAt.toUtc().toIso8601String(),
+              'updated_at': t.updatedAt.toUtc().toIso8601String(),
+            })
+        .toList();
+    // Push in chunks of 100 to avoid hitting the server body-size limit
+    // (daily recurrence generates 365 instances — a single bulk can be >50KB)
+    final chunks = _chunk(payload, 100);
+
+    for (final chunk in chunks) {
+      int retries = 0;
+      bool success = false;
+      while (!success && retries < maxRetries) {
+        try {
+          await dio.post('/tasks/bulk', data: chunk);
+          success = true;
+        } on DioException catch (e) {
+          // Retry on 500 errors (server cold-start)
+          if (e.response?.statusCode == 500 && retries < maxRetries - 1) {
+            retries++;
+            debugPrint('[Sync] Retry $retries/$maxRetries after 500 error');
+            await Future.delayed(Duration(seconds: retries * 2)); // Exponential backoff
+          } else {
+            rethrow;
+          }
+        }
+      }
+    }
+  }
     // Get all tasks across all dates
     final tasks = await taskDao.getAllTasks();
     if (tasks.isEmpty) return;
