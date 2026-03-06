@@ -7,12 +7,14 @@ import 'package:taskstack/features/groups/domain/repositories/group_repository.d
 
 // ── Group Notifier ─────────────────────────────────────────────────────────────
 
-class GroupNotifier extends StateNotifier<AsyncValue<List<Group>>> {
-  GroupNotifier(this._repo) : super(const AsyncValue.loading()) {
+class GroupNotifier extends Notifier<AsyncValue<List<Group>>> {
+  @override
+  AsyncValue<List<Group>> build() {
     load();
+    return const AsyncValue.loading();
   }
 
-  final GroupRepository _repo;
+  GroupRepository get _repo => ref.read(groupRepositoryProvider);
 
   Future<void> load() async {
     state = const AsyncValue.loading();
@@ -21,15 +23,19 @@ class GroupNotifier extends StateNotifier<AsyncValue<List<Group>>> {
       state = AsyncValue.data(groups);
     } on DioException catch (e) {
       state = AsyncValue.error(
-          e.response?.data['error'] ?? e.message ?? 'Network error',
-          StackTrace.current);
+        e.response?.data['error'] ?? e.message ?? 'Network error',
+        StackTrace.current,
+      );
     }
   }
 
   Future<bool> create(String name, String? description) async {
     try {
-      final group = await _repo.createGroup(name: name, description: description);
-      state = AsyncValue.data([group, ...state.valueOrNull ?? []]);
+      final group = await _repo.createGroup(
+        name: name,
+        description: description,
+      );
+      state = AsyncValue.data([group, ...state.value ?? []]);
       return true;
     } catch (_) {
       return false;
@@ -52,36 +58,41 @@ class GroupNotifier extends StateNotifier<AsyncValue<List<Group>>> {
       return true;
     } on DioException catch (e) {
       return Future.error(
-          e.response?.data['error'] ?? e.message ?? 'Network error');
+        e.response?.data['error'] ?? e.message ?? 'Network error',
+      );
     }
   }
 }
 
 final groupNotifierProvider =
-    StateNotifierProvider<GroupNotifier, AsyncValue<List<Group>>>((ref) {
-  return GroupNotifier(ref.watch(groupRepositoryProvider));
-});
+    NotifierProvider<GroupNotifier, AsyncValue<List<Group>>>(GroupNotifier.new);
 
 // ── Group Detail Provider ──────────────────────────────────────────────────────
 
-final groupDetailProvider =
-    FutureProvider.autoDispose.family<Group, String>((ref, groupId) {
+final groupDetailProvider = FutureProvider.autoDispose.family<Group, String>((
+  ref,
+  groupId,
+) {
   return ref.watch(groupRepositoryProvider).fetchGroup(groupId);
 });
 
-final groupQrProvider =
-    FutureProvider.autoDispose.family<String?, String>((ref, groupId) {
+final groupQrProvider = FutureProvider.autoDispose.family<String?, String>((
+  ref,
+  groupId,
+) {
   return ref.watch(groupRepositoryProvider).fetchGroupQr(groupId);
 });
 
 // ── Invite Notifier ────────────────────────────────────────────────────────────
 
-class InviteNotifier extends StateNotifier<AsyncValue<List<Invite>>> {
-  InviteNotifier(this._repo) : super(const AsyncValue.loading()) {
+class InviteNotifier extends Notifier<AsyncValue<List<Invite>>> {
+  @override
+  AsyncValue<List<Invite>> build() {
     load();
+    return const AsyncValue.loading();
   }
 
-  final GroupRepository _repo;
+  GroupRepository get _repo => ref.read(groupRepositoryProvider);
 
   Future<void> load() async {
     state = const AsyncValue.loading();
@@ -90,13 +101,13 @@ class InviteNotifier extends StateNotifier<AsyncValue<List<Invite>>> {
       state = AsyncValue.data(invites);
     } on DioException catch (e) {
       state = AsyncValue.error(
-          e.response?.data['error'] ?? e.message ?? 'Network error',
-          StackTrace.current);
+        e.response?.data['error'] ?? e.message ?? 'Network error',
+        StackTrace.current,
+      );
     }
   }
 
-  int get pendingCount =>
-      state.valueOrNull?.length ?? 0;
+  int get pendingCount => state.value?.length ?? 0;
 
   Future<void> accept(String inviteId) async {
     try {
@@ -114,6 +125,6 @@ class InviteNotifier extends StateNotifier<AsyncValue<List<Invite>>> {
 }
 
 final inviteNotifierProvider =
-    StateNotifierProvider<InviteNotifier, AsyncValue<List<Invite>>>((ref) {
-  return InviteNotifier(ref.watch(groupRepositoryProvider));
-});
+    NotifierProvider<InviteNotifier, AsyncValue<List<Invite>>>(
+      InviteNotifier.new,
+    );

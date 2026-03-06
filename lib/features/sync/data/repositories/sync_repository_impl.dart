@@ -87,7 +87,9 @@ class SyncRepositoryImpl implements SyncRepository {
               'description': t.description,
               'purpose': t.purpose,
               'icon_id': t.iconId,
-              'color_argb': t.colorArgb,
+              'color_argb': t.colorArgb != null
+                  ? t.colorArgb! & 0xFFFFFFFF
+                  : null,
               'tags_json': t.tagsJson,
               'start_minutes': t.startMinutes,
               'duration_minutes': t.durationMinutes,

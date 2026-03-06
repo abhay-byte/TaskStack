@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 import 'package:taskstack/database/tables/tasks_table.dart';
 import 'package:taskstack/database/tables/tags_table.dart';
 import 'package:taskstack/database/tables/daily_summaries_table.dart';
@@ -47,6 +48,9 @@ class AppDatabase extends _$AppDatabase {
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
+    if (Platform.isAndroid) {
+      await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
+    }
     final dir = await getApplicationDocumentsDirectory();
     final file = File(p.join(dir.path, 'taskstack.db'));
     return NativeDatabase.createInBackground(file);

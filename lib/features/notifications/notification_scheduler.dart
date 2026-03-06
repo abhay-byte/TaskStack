@@ -1,4 +1,3 @@
-
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -46,21 +45,24 @@ class NotificationScheduler {
     );
 
     await NotificationService.plugin.zonedSchedule(
-      task.id.hashCode.abs() & 0x7FFFFFFF,
-      task.title,
-      task.purpose ?? task.description ?? 'Tap to view your task',
-      scheduled,
-      const NotificationDetails(android: androidDetails, iOS: iosDetails),
+      id: task.id.hashCode.abs() & 0x7FFFFFFF,
+      title: task.title,
+      body: task.purpose ?? task.description ?? 'Tap to view your task',
+      scheduledDate: scheduled,
+      notificationDetails: const NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
       payload: task.id,
       matchDateTimeComponents: DateTimeComponents.dateAndTime,
     );
   }
 
   Future<void> cancelFor(String taskId) async {
-    await NotificationService.plugin.cancel(taskId.hashCode.abs() & 0x7FFFFFFF);
+    await NotificationService.plugin.cancel(
+      id: taskId.hashCode.abs() & 0x7FFFFFFF,
+    );
   }
 
   Future<void> rescheduleAll(List<Task> tasks) async {

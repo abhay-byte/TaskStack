@@ -152,8 +152,7 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
           // ── Guest offline banner ──────────────────────────────────────
           if (isGuest)
             MaterialBanner(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               content: const Text("You're using TaskStack offline"),
               leading: const Icon(Icons.cloud_off_rounded),
               actions: [
@@ -170,7 +169,10 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
                 final errorMsg = ref.watch(syncErrorMessageProvider);
                 if (errorMsg == null) return const SizedBox.shrink();
                 return MaterialBanner(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   backgroundColor: Theme.of(context).colorScheme.errorContainer,
                   content: Text(
                     errorMsg,
@@ -196,7 +198,8 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        ref.read(syncErrorMessageProvider.notifier).state = null;
+                        ref.read(syncErrorMessageProvider.notifier).state =
+                            null;
                       },
                       child: Text(
                         'Dismiss',
@@ -284,7 +287,7 @@ class _DayViewBlock extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncTasks = ref.watch(tasksForDateProvider(pageDate));
-    final tasks = asyncTasks.valueOrNull ?? [];
+    final tasks = asyncTasks.value ?? [];
 
     // Process tasks locally to sort and split
     final sortedTasks = [...tasks]..sort((a, b) {

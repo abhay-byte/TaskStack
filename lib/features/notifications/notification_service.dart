@@ -11,15 +11,16 @@ class NotificationService {
   static void Function(String taskId)? onNotificationTapped;
 
   static Future<void> initialise() async {
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
     await plugin.initialize(
-      const InitializationSettings(
+      settings: const InitializationSettings(
         android: androidSettings,
         iOS: iosSettings,
       ),
@@ -35,14 +36,16 @@ class NotificationService {
   static Future<void> requestPermissions() async {
     await plugin
         .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
+          IOSFlutterLocalNotificationsPlugin
+        >()
         ?.requestPermissions(alert: true, badge: true, sound: true);
     await plugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.requestNotificationsPermission();
   }
 
   static Future<void> cancelAll() => plugin.cancelAll();
-  static Future<void> cancel(int id) => plugin.cancel(id);
+  static Future<void> cancel(int id) => plugin.cancel(id: id);
 }

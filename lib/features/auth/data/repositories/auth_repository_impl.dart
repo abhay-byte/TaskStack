@@ -7,7 +7,7 @@ import 'package:taskstack/features/auth/domain/entities/auth_user.dart';
 import 'package:taskstack/features/auth/domain/repositories/auth_repository.dart';
 
 const _kToken = 'auth_token';
-const _kUser  = 'auth_user';
+const _kUser = 'auth_user';
 
 class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(this._dio, this._storage);
@@ -42,10 +42,10 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    final res = await _dio.post('/auth/login', data: {
-      'email': email,
-      'password': password,
-    });
+    final res = await _dio.post(
+      '/auth/login',
+      data: {'email': email, 'password': password},
+    );
     final user = AuthUser.fromJson(res.data['user'] as Map<String, dynamic>);
     await _persist(res.data['token'] as String, user);
     return user;
@@ -79,10 +79,11 @@ class AuthRepositoryImpl implements AuthRepository {
 
 // ── Providers ─────────────────────────────────────────────────────────────────
 
-final _storageProvider = Provider<FlutterSecureStorage>((_) =>
-    const FlutterSecureStorage(
-      aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    ));
+final _storageProvider = Provider<FlutterSecureStorage>(
+  (_) => const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  ),
+);
 
 /// Retries up to [maxRetries] times when the server returns 502
 /// (Render free-tier cold-start bounce). Waits [delay] between attempts.
@@ -91,8 +92,8 @@ final _storageProvider = Provider<FlutterSecureStorage>((_) =>
 class _RenderWakeInterceptor extends Interceptor {
   _RenderWakeInterceptor(
     this._dio, {
-    this.maxRetries = 6,
-    this.delay = const Duration(seconds: 5),
+    this.maxRetries = 10,
+    this.delay = const Duration(seconds: 15),
   });
   final Dio _dio;
   final int maxRetries;
@@ -125,12 +126,14 @@ class _RenderWakeInterceptor extends Interceptor {
 /// Timeouts are generous (90 s) to survive Render free-tier cold starts.
 /// _RenderWakeInterceptor retries on 502/503/504 up to 6× (≈30 s window).
 final _baseDioProvider = Provider<Dio>((ref) {
-  final dio = Dio(BaseOptions(
-    baseUrl: AppConfig.apiBaseUrl,
-    connectTimeout: const Duration(seconds: 90),
-    receiveTimeout: const Duration(seconds: 90),
-    headers: {'Content-Type': 'application/json'},
-  ));
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: AppConfig.apiBaseUrl,
+      connectTimeout: const Duration(seconds: 90),
+      receiveTimeout: const Duration(seconds: 90),
+      headers: {'Content-Type': 'application/json'},
+    ),
+  );
   dio.interceptors.add(_RenderWakeInterceptor(dio));
   return dio;
 });

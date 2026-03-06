@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/features/task_stack/data/repositories/task_repository_impl.dart';
 import 'package:taskstack/features/task_stack/domain/usecases/task_usecases.dart';
@@ -28,7 +29,7 @@ final tasksForDateProvider = StreamProvider.family<List<Task>, DateTime>((
 final sortedTasksProvider = Provider<List<Task>>((ref) {
   final date = ref.watch(selectedStackDateProvider);
   final async = ref.watch(tasksForDateProvider(date));
-  final tasks = async.valueOrNull ?? [];
+  final tasks = async.value ?? [];
   return [...tasks]..sort((a, b) {
     if (a.startMinutes == null && b.startMinutes == null) return 0;
     if (a.startMinutes == null) return 1;
@@ -186,13 +187,15 @@ class TaskFormState {
   }
 }
 
-class TaskFormNotifier extends StateNotifier<TaskFormState> {
-  TaskFormNotifier(this._create, this._update, this._sync)
-      : super(const TaskFormState());
+class TaskFormNotifier extends Notifier<TaskFormState> {
+  @override
+  TaskFormState build() {
+    return const TaskFormState();
+  }
 
-  final CreateTaskUseCase _create;
-  final UpdateTaskUseCase _update;
-  final SyncRepository _sync;
+  CreateTaskUseCase get _create => ref.read(createTaskUseCaseProvider);
+  UpdateTaskUseCase get _update => ref.read(updateTaskUseCaseProvider);
+  SyncRepository get _sync => ref.read(syncRepositoryProvider);
 
   void loadTask(Task task) {
     state = TaskFormState(
@@ -295,10 +298,6 @@ class TaskFormNotifier extends StateNotifier<TaskFormState> {
 }
 
 final taskFormProvider =
-    StateNotifierProvider.autoDispose<TaskFormNotifier, TaskFormState>((ref) {
-      return TaskFormNotifier(
-        ref.watch(createTaskUseCaseProvider),
-        ref.watch(updateTaskUseCaseProvider),
-        ref.watch(syncRepositoryProvider),
-      );
-    });
+    NotifierProvider.autoDispose<TaskFormNotifier, TaskFormState>(
+      TaskFormNotifier.new,
+    );

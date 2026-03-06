@@ -67,7 +67,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // ── Logo ────────────────────────────────────────────────
-                  Icon(Icons.layers_rounded, size: 56, color: cs.primary),
+                  Center(
+                    child: Image.asset(
+                      'assets/images/app_icon.png',
+                      width: 72,
+                      height: 72,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Welcome back',

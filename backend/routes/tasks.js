@@ -24,7 +24,7 @@ const taskSchema = z.object({
     description: z.string().nullable().optional(),
     purpose: z.string().nullable().optional(),
     icon_id: z.string().nullable().optional(),
-    color_argb: z.number().int().nullable().optional(),
+    color_argb: z.number().nullable().optional(),
     tags_json: z.string().default('[]'),
     start_minutes: z.number().int().nullable().optional(),
     duration_minutes: z.number().int().nullable().optional(),

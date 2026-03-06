@@ -38,15 +38,15 @@ class AuthGuest extends AuthState {
 
 // ── Notifier ──────────────────────────────────────────────────────────────────
 
-class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier(this._repo, this._ref) : super(const AuthInitial()) {
+class AuthNotifier extends Notifier<AuthState> {
+  @override
+  AuthState build() {
     _restore();
+    return const AuthInitial();
   }
 
-  final AuthRepository _repo;
-  final Ref _ref;
-
-  SyncRepository get _sync => _ref.read(syncRepositoryProvider);
+  AuthRepository get _repo => ref.read(authRepositoryProvider);
+  SyncRepository get _sync => ref.read(syncRepositoryProvider);
 
   /// Restore session on cold start
   Future<void> _restore() async {
@@ -61,7 +61,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Enter guest / offline mode — skips authentication entirely.
   void continueAsGuest() {
-    _ref.read(isGuestModeProvider.notifier).state = true;
+    ref.read(isGuestModeProvider.notifier).state = true;
     state = const AuthGuest();
   }
 
@@ -70,7 +70,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthLoading();
     try {
       final user = await _repo.login(email: email, password: password);
-      _ref.read(isGuestModeProvider.notifier).state = false;
+      ref.read(isGuestModeProvider.notifier).state = false;
       state = AuthAuthenticated(user);
       if (wasGuest) {
         _sync.pushLocalToCloud(); // migrate guest data to cloud
@@ -99,7 +99,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         password: password,
         displayName: displayName,
       );
-      _ref.read(isGuestModeProvider.notifier).state = false;
+      ref.read(isGuestModeProvider.notifier).state = false;
       state = AuthAuthenticated(user);
       _sync.pushLocalToCloud(); // push local data (including any guest data)
     } on DioException catch (e) {
@@ -112,7 +112,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     await _repo.logout();
-    _ref.read(isGuestModeProvider.notifier).state = false;
+    ref.read(isGuestModeProvider.notifier).state = false;
     state = const AuthUnauthenticated();
   }
 
@@ -134,10 +134,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
-final authNotifierProvider =
-    StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(ref.watch(authRepositoryProvider), ref);
-});
+final authNotifierProvider = NotifierProvider<AuthNotifier, AuthState>(
+  AuthNotifier.new,
+);
 
 /// Convenience: emit the authenticated user or null.
 final currentUserProvider = Provider<AuthUser?>((ref) {

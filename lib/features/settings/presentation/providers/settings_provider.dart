@@ -31,19 +31,22 @@ class AppSettings {
       accentColorArgb: accentColorArgb ?? this.accentColorArgb,
       weekStartsSunday: weekStartsSunday ?? this.weekStartsSunday,
       use24HourTime: use24HourTime ?? this.use24HourTime,
-      defaultNotificationOffsetMinutes: defaultNotificationOffsetMinutes ??
+      defaultNotificationOffsetMinutes:
+          defaultNotificationOffsetMinutes ??
           this.defaultNotificationOffsetMinutes,
       isFirstLaunch: isFirstLaunch ?? this.isFirstLaunch,
     );
   }
 }
 
-class SettingsNotifier extends StateNotifier<AppSettings> {
-  SettingsNotifier(this._prefs) : super(const AppSettings()) {
+class SettingsNotifier extends Notifier<AppSettings> {
+  @override
+  AppSettings build() {
     _load();
+    return const AppSettings();
   }
 
-  final SharedPreferences _prefs;
+  SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
 
   static const _kTheme = 'theme_mode';
   static const _kAccent = 'accent_color';
@@ -102,8 +105,6 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('Override in ProviderScope');
 });
 
-final settingsProvider =
-    StateNotifierProvider<SettingsNotifier, AppSettings>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return SettingsNotifier(prefs);
-});
+final settingsProvider = NotifierProvider<SettingsNotifier, AppSettings>(
+  SettingsNotifier.new,
+);

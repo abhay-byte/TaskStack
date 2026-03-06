@@ -29,7 +29,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    await ref.read(authNotifierProvider.notifier).register(
+    await ref
+        .read(authNotifierProvider.notifier)
+        .register(
           username: _usernameCtrl.text.trim(),
           email: _emailCtrl.text.trim(),
           password: _passCtrl.text,
@@ -46,9 +48,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
     ref.listen(authNotifierProvider, (_, next) {
       if (next is AuthUnauthenticated && next.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.errorMessage!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
       }
     });
 
@@ -63,7 +65,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(Icons.layers_rounded, size: 56, color: cs.primary),
+                  // ── Logo ────────────────────────────────────────────────
+                  Center(
+                    child: Image.asset(
+                      'assets/images/app_icon.png',
+                      width: 72,
+                      height: 72,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Create account',
@@ -72,8 +81,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   ),
                   Text(
                     'Join TaskStack to sync with your team',
-                    style: tt.bodyMedium
-                        ?.copyWith(color: cs.onSurfaceVariant),
+                    style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 36),
@@ -134,11 +142,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       labelText: 'Password',
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
-                        icon: Icon(_obscure
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined),
-                        onPressed: () =>
-                            setState(() => _obscure = !_obscure),
+                        icon: Icon(
+                          _obscure
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                        ),
+                        onPressed: () => setState(() => _obscure = !_obscure),
                       ),
                     ),
                     obscureText: _obscure,
@@ -154,14 +163,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
                   FilledButton(
                     onPressed: isLoading ? null : _submit,
-                    child: isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child:
-                                CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Create Account'),
+                    child:
+                        isLoading
+                            ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : const Text('Create Account'),
                   ),
                   const SizedBox(height: 16),
                   TextButton(

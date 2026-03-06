@@ -188,20 +188,23 @@ class SettingsScreen extends ConsumerWidget {
   Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Log out?'),
-        content: const Text('You will need to sign in again to access cloud features.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Log out?'),
+            content: const Text(
+              'You will need to sign in again to access cloud features.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Log out'),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Log out'),
-          ),
-        ],
-      ),
     );
     if (confirmed == true) {
       await ref.read(authNotifierProvider.notifier).logout();
@@ -441,15 +444,18 @@ class SettingsScreen extends ConsumerWidget {
     );
     try {
       await NotificationService.plugin.show(
-        9999,
-        'Test Notification',
-        'This is a test notification from TaskStack!',
-        const NotificationDetails(android: androidDetails, iOS: iosDetails),
+        id: 9999,
+        title: 'Test Notification',
+        body: 'This is a test notification from TaskStack!',
+        notificationDetails: const NotificationDetails(
+          android: androidDetails,
+          iOS: iosDetails,
+        ),
       );
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Test notification sent')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Test notification sent')));
       }
     } catch (e) {
       if (context.mounted) {
@@ -523,13 +529,13 @@ class _AccountCard extends StatelessWidget {
               child:
                   avatarUrl == null || avatarUrl!.isEmpty
                       ? Text(
-                          displayName.substring(0, 1).toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 20,
-                            color: cs.onPrimaryContainer,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        )
+                        displayName.substring(0, 1).toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: cs.onPrimaryContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
                       : null,
             ),
             const SizedBox(width: 14),
@@ -538,12 +544,16 @@ class _AccountCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(displayName,
-                      style: tt.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600)),
-                  Text(username,
-                      style: tt.bodySmall
-                          ?.copyWith(color: cs.onSurfaceVariant)),
+                  Text(
+                    displayName,
+                    style: tt.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    username,
+                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  ),
                 ],
               ),
             ),
@@ -557,19 +567,25 @@ class _AccountCard extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
                 TextButton.icon(
                   onPressed: onLogout,
                   icon: Icon(Icons.logout, size: 16, color: cs.error),
-                  label: Text('Log out',
-                      style: TextStyle(color: cs.error, fontSize: 12)),
+                  label: Text(
+                    'Log out',
+                    style: TextStyle(color: cs.error, fontSize: 12),
+                  ),
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                   ),
                 ),
               ],
@@ -602,18 +618,25 @@ class _GuestCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.person_off_outlined,
-                    color: cs.onSurfaceVariant, size: 28),
+                Icon(
+                  Icons.person_off_outlined,
+                  color: cs.onSurfaceVariant,
+                  size: 28,
+                ),
                 const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Not signed in',
-                        style: tt.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w600)),
-                    Text('Local data only — no cloud sync',
-                        style: tt.bodySmall
-                            ?.copyWith(color: cs.onSurfaceVariant)),
+                    Text(
+                      'Not signed in',
+                      style: tt.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      'Local data only — no cloud sync',
+                      style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                    ),
                   ],
                 ),
               ],
@@ -625,7 +648,8 @@ class _GuestCard extends StatelessWidget {
                   child: FilledButton(
                     onPressed: onSignIn,
                     style: FilledButton.styleFrom(
-                        visualDensity: VisualDensity.compact),
+                      visualDensity: VisualDensity.compact,
+                    ),
                     child: const Text('Sign In'),
                   ),
                 ),
@@ -634,7 +658,8 @@ class _GuestCard extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: onSignUp,
                     style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact),
+                      visualDensity: VisualDensity.compact,
+                    ),
                     child: const Text('Create Account'),
                   ),
                 ),

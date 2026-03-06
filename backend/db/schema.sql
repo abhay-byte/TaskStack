@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   description                 TEXT,
   purpose                     TEXT,
   icon_id                     TEXT,
-  color_argb                  INT,
+  color_argb                  BIGINT,
   tags_json                   TEXT        NOT NULL DEFAULT '[]',
   start_minutes               INT,
   duration_minutes            INT,

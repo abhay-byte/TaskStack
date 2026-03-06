@@ -38,6 +38,13 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    packaging {
+        jniLibs {
+            // Extract .so files at install time so dlopen can find libsqlite3.so
+            useLegacyPackaging = true
+        }
+    }
 }
 
 flutter {

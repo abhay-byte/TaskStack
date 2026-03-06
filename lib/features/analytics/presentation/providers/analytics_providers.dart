@@ -8,10 +8,12 @@ final weeklyTasksProvider = FutureProvider<List<List<Task>>>((ref) async {
   final now = DateTime.now();
   final monday = now.subtract(Duration(days: now.weekday - 1));
   final repo = ref.watch(taskRepositoryProvider);
-  final days = await Future.wait(List.generate(7, (i) {
-    final day = monday.add(Duration(days: i));
-    return repo.getTasksInRange(day, day);
-  }));
+  final days = await Future.wait(
+    List.generate(7, (i) {
+      final day = monday.add(Duration(days: i));
+      return repo.getTasksInRange(day, day);
+    }),
+  );
   return days;
 });
 
@@ -43,12 +45,15 @@ final yearlyTasksProvider = FutureProvider<List<double>>((ref) async {
 
   for (var i = 0; i < daysInYear; i++) {
     final day = start.add(Duration(days: i));
-    final dayTasks = tasks
-        .where((t) =>
-            t.taskDate.year == day.year &&
-            t.taskDate.month == day.month &&
-            t.taskDate.day == day.day)
-        .toList();
+    final dayTasks =
+        tasks
+            .where(
+              (t) =>
+                  t.taskDate.year == day.year &&
+                  t.taskDate.month == day.month &&
+                  t.taskDate.day == day.day,
+            )
+            .toList();
     if (dayTasks.isEmpty) continue;
     final done = dayTasks.where((t) => t.isDone).length;
     scores[i] = done / dayTasks.length;
@@ -58,7 +63,7 @@ final yearlyTasksProvider = FutureProvider<List<double>>((ref) async {
 
 /// Monthly average score for a given month (1–12).
 final monthlyAvgProvider = Provider.family<double, int>((ref, month) {
-  final yearly = ref.watch(yearlyTasksProvider).valueOrNull;
+  final yearly = ref.watch(yearlyTasksProvider).value;
   if (yearly == null) return 0;
   final now = DateTime.now();
   final start = DateTime(now.year, month, 1);

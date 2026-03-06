@@ -9,8 +9,8 @@ import 'package:taskstack/features/auth/data/repositories/auth_repository_impl.d
 class _RenderWakeInterceptor extends Interceptor {
   _RenderWakeInterceptor(
     this._dio, {
-    this.maxRetries = 6,
-    this.delay = const Duration(seconds: 10),
+    this.maxRetries = 10,
+    this.delay = const Duration(seconds: 15),
   });
   final Dio _dio;
   final int maxRetries;
@@ -23,8 +23,10 @@ class _RenderWakeInterceptor extends Interceptor {
 
     debugPrint('[API] Error interceptor: status=$statusCode, attempt=$attempt');
 
-    if ((statusCode == 502 || statusCode == 503 || statusCode == 504 ||
-        err.type == DioExceptionType.connectionTimeout) &&
+    if ((statusCode == 502 ||
+            statusCode == 503 ||
+            statusCode == 504 ||
+            err.type == DioExceptionType.connectionTimeout) &&
         attempt < maxRetries) {
       err.requestOptions.extra['_retryCount'] = attempt + 1;
       debugPrint('[API] Retrying (attempt ${attempt + 1}/$maxRetries)...');
@@ -46,33 +48,41 @@ class _RenderWakeInterceptor extends Interceptor {
 final apiClientProvider = Provider<Dio>((ref) {
   final storage = ref.watch(storageProvider);
 
-  final dio = Dio(BaseOptions(
-    baseUrl: AppConfig.apiBaseUrl,
-    connectTimeout: const Duration(seconds: 60),  // Increased for Render cold start
-    receiveTimeout: const Duration(seconds: 30),
-    headers: {'Content-Type': 'application/json'},
-  ));
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: AppConfig.apiBaseUrl,
+      connectTimeout: const Duration(
+        seconds: 120,
+      ), // Increased for Render cold start
+      receiveTimeout: const Duration(seconds: 60),
+      headers: {'Content-Type': 'application/json'},
+    ),
+  );
 
   // Add retry interceptor for Render cold start
   dio.interceptors.add(_RenderWakeInterceptor(dio));
 
   // ── JWT Interceptor ──────────────────────────────────────────────────────
-  dio.interceptors.add(InterceptorsWrapper(
-    onRequest: (options, handler) async {
-      final token = await storage.read(key: 'auth_token');
-      debugPrint('[API] Token from storage: ${token != null ? "present" : "null"}');
-      if (token != null) {
-        options.headers['Authorization'] = 'Bearer $token';
-        debugPrint('[API] Added Authorization header');
-      }
-      handler.next(options);
-    },
-    onError: (error, handler) {
-      debugPrint('[API] Error: ${error.message}');
-      // 401 responses are propagated; auth notifier will catch and logout.
-      handler.next(error);
-    },
-  ));
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final token = await storage.read(key: 'auth_token');
+        debugPrint(
+          '[API] Token from storage: ${token != null ? "present" : "null"}',
+        );
+        if (token != null) {
+          options.headers['Authorization'] = 'Bearer $token';
+          debugPrint('[API] Added Authorization header');
+        }
+        handler.next(options);
+      },
+      onError: (error, handler) {
+        debugPrint('[API] Error: ${error.message}');
+        // 401 responses are propagated; auth notifier will catch and logout.
+        handler.next(error);
+      },
+    ),
+  );
 
   return dio;
 });
