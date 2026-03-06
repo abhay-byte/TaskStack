@@ -36,6 +36,7 @@ const taskSchema = z.object({
     status: z.enum(['pending', 'done']).default('pending'),
     completed_at: z.string().datetime().nullable().optional(),
     task_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    graphic_image: z.string().nullable().optional(),
     parent_task_id: z.string().nullable().optional(),
     goal_id: z.string().nullable().optional(),
     created_at: z.string().datetime(),
@@ -141,7 +142,7 @@ router.post('/bulk', async (req, res, next) => {
 
         const values = [];
         const placeholders = tasks.map((t, i) => {
-            const base = i * 22;
+            const base = i * 23;
             values.push(
                 t.id, req.user.sub, t.title, t.description ?? null, t.purpose ?? null,
                 t.icon_id ?? null, t.color_argb ?? null, t.tags_json,
@@ -149,11 +150,11 @@ router.post('/bulk', async (req, res, next) => {
                 t.recurrence_type, t.recurrence_rule ?? null, t.repeat_interval_minutes ?? null,
                 t.notification_enabled, t.notification_offset_minutes,
                 t.status, t.completed_at ?? null, t.task_date,
-                t.parent_task_id ?? null, t.goal_id ?? null,
+                t.graphic_image ?? null, t.parent_task_id ?? null, t.goal_id ?? null,
                 t.created_at, t.updated_at,
             );
             const p = (n) => `$${base + n}`;
-            return `(${p(1)},${p(2)},${p(3)},${p(4)},${p(5)},${p(6)},${p(7)},${p(8)},${p(9)},${p(10)},${p(11)},${p(12)},${p(13)},${p(14)},${p(15)},${p(16)},${p(17)},${p(18)},${p(19)},${p(20)},${p(21)},${p(22)})`;
+            return `(${p(1)},${p(2)},${p(3)},${p(4)},${p(5)},${p(6)},${p(7)},${p(8)},${p(9)},${p(10)},${p(11)},${p(12)},${p(13)},${p(14)},${p(15)},${p(16)},${p(17)},${p(18)},${p(19)},${p(20)},${p(21)},${p(22)},${p(23)})`;
         });
 
         const sql = `
@@ -161,7 +162,7 @@ router.post('/bulk', async (req, res, next) => {
         id, user_id, title, description, purpose, icon_id, color_argb, tags_json,
         start_minutes, duration_minutes, recurrence_type, recurrence_rule,
         repeat_interval_minutes, notification_enabled, notification_offset_minutes,
-        status, completed_at, task_date, parent_task_id, goal_id, created_at, updated_at
+        status, completed_at, task_date, graphic_image, parent_task_id, goal_id, created_at, updated_at
       ) VALUES ${placeholders.join(', ')}
       ON CONFLICT (id) DO UPDATE SET
         title                       = EXCLUDED.title,
@@ -180,6 +181,7 @@ router.post('/bulk', async (req, res, next) => {
         status                      = EXCLUDED.status,
         completed_at                = EXCLUDED.completed_at,
         task_date                   = EXCLUDED.task_date,
+        graphic_image               = EXCLUDED.graphic_image,
         parent_task_id              = EXCLUDED.parent_task_id,
         goal_id                     = EXCLUDED.goal_id,
         updated_at                  = EXCLUDED.updated_at

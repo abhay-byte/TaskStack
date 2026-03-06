@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   status                      TEXT        NOT NULL DEFAULT 'pending',
   completed_at                TIMESTAMPTZ,
   task_date                   DATE        NOT NULL,
+  graphic_image               TEXT,
   parent_task_id              TEXT,
   goal_id                     TEXT,        -- no FK: goals may not be synced yet
   created_at                  TIMESTAMPTZ NOT NULL DEFAULT now(),

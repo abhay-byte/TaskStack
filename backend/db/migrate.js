@@ -10,6 +10,8 @@ const MIGRATIONS = [
   `ALTER TABLE tasks ALTER COLUMN color_argb TYPE BIGINT`,
   // v2: drop FK constraint on goal_id — tasks may arrive before their goal is synced
   `ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_goal_id_fkey`,
+  // v3: add graphic_image column — stores SVG asset path for animated task graphics
+  `ALTER TABLE tasks ADD COLUMN IF NOT EXISTS graphic_image TEXT`,
 ];
 
 async function migrate() {

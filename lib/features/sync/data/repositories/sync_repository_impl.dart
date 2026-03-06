@@ -101,6 +101,7 @@ class SyncRepositoryImpl implements SyncRepository {
               'status': t.status,
               'completed_at': t.completedAt?.toUtc().toIso8601String(),
               'task_date': t.taskDate,
+              'graphic_image': t.graphicImage,
               'parent_task_id': t.parentTaskId,
               'goal_id': t.goalId,
               'created_at': t.createdAt.toUtc().toIso8601String(),
@@ -185,7 +186,7 @@ class SyncRepositoryImpl implements SyncRepository {
               ? null
               : int.parse(m['color_argb'].toString()),
         ),
-        graphicImage: const Value(null),
+        graphicImage: Value(m['graphic_image'] as String?),
         tagsJson: Value(m['tags_json'] as String? ?? '[]'),
         startMinutes: Value(m['start_minutes'] as int?),
         durationMinutes: Value(m['duration_minutes'] as int?),
