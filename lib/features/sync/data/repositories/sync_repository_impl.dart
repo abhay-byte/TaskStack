@@ -178,7 +178,13 @@ class SyncRepositoryImpl implements SyncRepository {
         description: Value(m['description'] as String?),
         purpose: Value(m['purpose'] as String?),
         iconId: Value(m['icon_id'] as String?),
-        colorArgb: Value(m['color_argb'] as int?),
+        // color_argb is BIGINT in PostgreSQL; pg v8 returns it as a JS string
+        // to avoid precision loss. Parse safely regardless of type.
+        colorArgb: Value(
+          m['color_argb'] == null
+              ? null
+              : int.parse(m['color_argb'].toString()),
+        ),
         graphicImage: const Value(null),
         tagsJson: Value(m['tags_json'] as String? ?? '[]'),
         startMinutes: Value(m['start_minutes'] as int?),
