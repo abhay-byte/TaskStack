@@ -45,8 +45,12 @@ This allows syncing daily recurring tasks (365 instances) without hitting query 
 
 **Fix:** Added retry logic with exponential backoff in Flutter sync code to automatically retry on 500 errors.
 
-### Issue 2: Custom Recurrence Bug - Wrong Days Added
-**Problem:** When selecting Monday-Friday as recurrence, task is incorrectly added to Saturday (not selected) but not to future occurrences correctly.
+### Issue 2: Custom Recurrence Bug - Wrong Days Added — RESOLVED
+**Problem:** When selecting Monday-Friday as recurrence, task incorrectly appeared on Saturday (not selected).
+
+**Root Cause:** The `watchTasksForDate` query in SQLite has spill-over logic to show overnight tasks (like Sleep) on the next day. However, this was incorrectly applying to PARENT recurring tasks too. When a user created a Mon-Fri recurring task on Friday at 11 PM with 7.5 hour duration, the parent task (stored with taskDate=Friday) was showing on Saturday due to spill-over.
+
+**Fix:** Modified `task_dao.dart` to exclude parent recurring tasks from spill-over logic. Parent tasks have `recurrenceType != 'none'` AND `parentTaskId == null`. Now only generated instances (which have `parentTaskId` set) will spill over, not the parent task itself.
 
 ---
 
