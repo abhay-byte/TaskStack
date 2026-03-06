@@ -48,7 +48,11 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
                 t.recurrenceType.equals('repeatToday'));
             
             // Only allow spill-over for non-parent tasks (i.e., generated instances)
-            final canSpillOver = ~isParentRecurring & spillsOver;
+            // A task can spill over if it's NOT a parent recurring task
+            final canSpillOver = (
+              t.parentTaskId.isNotNull() | 
+              t.recurrenceType.equals('none')
+            ) & spillsOver;
 
             return isToday | (isYesterday & canSpillOver);
           })
