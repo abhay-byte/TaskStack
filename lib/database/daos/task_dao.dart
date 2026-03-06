@@ -9,6 +9,8 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   TaskDao(super.db);
 
   /// Watch all tasks for a given date (yyyy-MM-dd), including overnight spillovers.
+  /// Note: Parent recurring tasks (recurringType != none AND parentTaskId == null)
+  /// do NOT spill over - only their generated instances should show on each date.
   Stream<List<TasksTableData>> watchTasksForDate(String dateStr) {
     final date = DateTime.parse(dateStr);
     final prevDateStr = DateTime(
@@ -35,7 +37,20 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
                 t.startMinutes.isNotNull() &
                 startAndDur.isBiggerThanValue(1440);
 
-            return isToday | (isYesterday & spillsOver);
+            // Parent recurring tasks (has recurrence type but no parentTaskId)
+            // should NOT spill over - only their generated instances show on each date.
+            // This prevents tasks like "Sleep" created on Friday from appearing on Saturday
+            // just because they span midnight.
+            final isParentRecurring = t.parentTaskId.isNull() &
+                (t.recurrenceType.equals('daily') |
+                t.recurrenceType.equals('weekly') |
+                t.recurrenceType.equals('custom') |
+                t.recurrenceType.equals('repeatToday'));
+            
+            // Only allow spill-over for non-parent tasks (i.e., generated instances)
+            final canSpillOver = ~isParentRecurring & spillsOver;
+
+            return isToday | (isYesterday & canSpillOver);
           })
           ..orderBy([(t) => OrderingTerm.asc(t.startMinutes)]))
         .watch();

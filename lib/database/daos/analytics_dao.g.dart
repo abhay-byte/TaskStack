@@ -6,4 +6,15 @@ part of 'analytics_dao.dart';
 mixin _$AnalyticsDaoMixin on DatabaseAccessor<AppDatabase> {
   $DailySummariesTableTable get dailySummariesTable =>
       attachedDatabase.dailySummariesTable;
+  AnalyticsDaoManager get managers => AnalyticsDaoManager(this);
+}
+
+class AnalyticsDaoManager {
+  final _$AnalyticsDaoMixin _db;
+  AnalyticsDaoManager(this._db);
+  $$DailySummariesTableTableTableManager get dailySummariesTable =>
+      $$DailySummariesTableTableTableManager(
+        _db.attachedDatabase,
+        _db.dailySummariesTable,
+      );
 }
