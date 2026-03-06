@@ -10,6 +10,8 @@ import 'package:taskstack/features/task_stack/presentation/widgets/task_card_wid
 import 'package:taskstack/features/task_stack/presentation/widgets/time_indicator_widget.dart';
 import 'package:taskstack/core/constants/app_spacing.dart';
 import 'package:taskstack/features/sync/presentation/sync_status_indicator.dart';
+import 'package:taskstack/features/sync/domain/repositories/sync_repository.dart';
+import 'package:taskstack/features/sync/data/repositories/sync_repository_impl.dart';
 
 const double _kPixelsPerHour = 120.0;
 const double _kMinuteHeight = _kPixelsPerHour / 60;
@@ -160,6 +162,52 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
                   child: const Text('Sign In'),
                 ),
               ],
+            ),
+          // ── Sync error banner ──────────────────────────────────────────
+          if (!isGuest)
+            Consumer(
+              builder: (context, ref, _) {
+                final errorMsg = ref.watch(syncErrorMessageProvider);
+                if (errorMsg == null) return const SizedBox.shrink();
+                return MaterialBanner(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                  content: Text(
+                    errorMsg,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                    ),
+                  ),
+                  leading: Icon(
+                    Icons.cloud_off_rounded,
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        ref.read(syncRepositoryProvider).pushLocalToCloud();
+                      },
+                      child: Text(
+                        'Retry',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        ref.read(syncErrorMessageProvider.notifier).state = null;
+                      },
+                      child: Text(
+                        'Dismiss',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           // Date navigation bar
           _DateNavBar(

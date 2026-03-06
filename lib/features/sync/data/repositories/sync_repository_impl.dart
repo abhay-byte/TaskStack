@@ -1,6 +1,7 @@
 
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:taskstack/core/network/api_client.dart';
 import 'package:taskstack/core/providers/guest_mode_provider.dart';
@@ -27,15 +28,33 @@ class SyncRepositoryImpl implements SyncRepository {
   @override
   Future<void> pushLocalToCloud() async {
     // No-op in guest mode — no account to sync to.
-    if (ref.read(isGuestModeProvider)) return;
+    final isGuest = ref.read(isGuestModeProvider);
+    debugPrint('[Sync] pushLocalToCloud: isGuest=$isGuest');
+    ref.read(syncErrorMessageProvider.notifier).state = null;
+    if (isGuest) {
+      ref.read(syncErrorMessageProvider.notifier).state = 'Cannot sync in guest mode. Please sign in.';
+      return;
+    }
     ref.read(syncStatusProvider.notifier).state = SyncStatus.syncing;
+    debugPrint('[Sync] Starting push to cloud...');
     try {
       await _pushGoals();
       await _pushTasks();
       ref.read(syncStatusProvider.notifier).state = SyncStatus.idle;
-    } on DioException {
+      debugPrint('[Sync] Push completed successfully');
+    } on DioException catch (e) {
+      String msg;
+      if (e.type == DioExceptionType.connectionTimeout) {
+        msg = 'Server is starting up (may take 30s). Tap to retry...';
+      } else {
+        msg = e.message ?? 'Network error';
+      }
+      debugPrint('[Sync] Push failed: $msg');
+      ref.read(syncErrorMessageProvider.notifier).state = 'Sync failed: $msg';
       ref.read(syncStatusProvider.notifier).state = SyncStatus.error;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[Sync] Push failed with error: $e');
+      ref.read(syncErrorMessageProvider.notifier).state = 'Sync failed: $e';
       ref.read(syncStatusProvider.notifier).state = SyncStatus.error;
     }
   }
@@ -94,15 +113,33 @@ class SyncRepositoryImpl implements SyncRepository {
   @override
   Future<void> pullCloudToLocal() async {
     // No-op in guest mode — no account to sync from.
-    if (ref.read(isGuestModeProvider)) return;
+    final isGuest = ref.read(isGuestModeProvider);
+    debugPrint('[Sync] pullCloudToLocal: isGuest=$isGuest');
+    ref.read(syncErrorMessageProvider.notifier).state = null;
+    if (isGuest) {
+      ref.read(syncErrorMessageProvider.notifier).state = 'Cannot sync in guest mode. Please sign in.';
+      return;
+    }
     ref.read(syncStatusProvider.notifier).state = SyncStatus.syncing;
+    debugPrint('[Sync] Starting pull from cloud...');
     try {
       await _pullGoals();
       await _pullTasks();
       ref.read(syncStatusProvider.notifier).state = SyncStatus.idle;
-    } on DioException {
+      debugPrint('[Sync] Pull completed successfully');
+    } on DioException catch (e) {
+      String msg;
+      if (e.type == DioExceptionType.connectionTimeout) {
+        msg = 'Server is starting up (may take 30s). Tap to retry...';
+      } else {
+        msg = e.message ?? 'Network error';
+      }
+      debugPrint('[Sync] Pull failed: $msg');
+      ref.read(syncErrorMessageProvider.notifier).state = 'Sync failed: $msg';
       ref.read(syncStatusProvider.notifier).state = SyncStatus.error;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[Sync] Pull failed with error: $e');
+      ref.read(syncErrorMessageProvider.notifier).state = 'Sync failed: $e';
       ref.read(syncStatusProvider.notifier).state = SyncStatus.error;
     }
   }

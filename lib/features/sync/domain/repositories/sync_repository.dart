@@ -8,3 +8,6 @@ abstract class SyncRepository {
 }
 
 final syncStatusProvider = StateProvider<SyncStatus>((_) => SyncStatus.idle);
+
+/// Stores the last sync error message for UI display
+final syncErrorMessageProvider = StateProvider<String?>((_) => null);

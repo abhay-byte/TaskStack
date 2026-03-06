@@ -15,26 +15,36 @@ class SyncStatusIndicator extends ConsumerWidget {
     final status = ref.watch(syncStatusProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return switch (status) {
-      SyncStatus.idle => const SizedBox.shrink(),
-      SyncStatus.syncing => Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              color: colorScheme.primary,
+    // Debug: always show icon to see what's happening
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: switch (status) {
+        SyncStatus.idle => IconButton(
+            tooltip: 'Synced',
+            icon: Icon(Icons.cloud_done_rounded, color: colorScheme.primary),
+            onPressed: () {
+              ref.read(syncRepositoryProvider).pullCloudToLocal();
+            },
+          ),
+        SyncStatus.syncing => Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: colorScheme.primary,
+              ),
             ),
           ),
-        ),
-      SyncStatus.error => IconButton(
-          tooltip: 'Sync failed – tap to retry',
-          icon: Icon(Icons.cloud_off_rounded, color: colorScheme.error),
-          onPressed: () {
-            ref.read(syncRepositoryProvider).pushLocalToCloud();
-          },
-        ),
-    };
+        SyncStatus.error => IconButton(
+            tooltip: 'Sync failed – tap to retry',
+            icon: Icon(Icons.cloud_off_rounded, color: colorScheme.error),
+            onPressed: () {
+              ref.read(syncRepositoryProvider).pushLocalToCloud();
+            },
+          ),
+      },
+    );
   }
 }
