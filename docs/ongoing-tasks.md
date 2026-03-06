@@ -38,12 +38,12 @@ This allows syncing daily recurring tasks (365 instances) without hitting query 
 
 ## 🔄 Current Issues
 
-### Issue 1: Intermittent 500 Error on First Sync
+### Issue 1: Intermittent 500 Error on First Sync — RESOLVED
 **Problem:** Creating a task gives 500 error on first sync attempt but succeeds on retry.
 
 **Root Cause:** Cold start issue with Render's free tier - server not ready on first request.
 
-**Fix:** Added retry logic with exponential backoff in Flutter sync code to automatically retry on 500 errors.
+**Fix:** Added retry logic with exponential backoff in Flutter sync code (`_pushTasksWithRetry`) to automatically retry on 500 errors.
 
 ### Issue 2: Custom Recurrence Bug - Wrong Days Added — RESOLVED
 **Problem:** When selecting Monday-Friday as recurrence, task incorrectly appeared on Saturday (not selected).
