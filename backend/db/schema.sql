@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   completed_at                TIMESTAMPTZ,
   task_date                   DATE        NOT NULL,
   parent_task_id              TEXT,
-  goal_id                     TEXT        REFERENCES goals(id) ON DELETE SET NULL,
+  goal_id                     TEXT,        -- no FK: goals may not be synced yet
   created_at                  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at                  TIMESTAMPTZ NOT NULL DEFAULT now()
 );

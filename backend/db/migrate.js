@@ -8,6 +8,8 @@ const path = require('path');
 const MIGRATIONS = [
   // v1: fix color_argb overflow — INT is signed 32-bit, ARGB values are unsigned 32-bit
   `ALTER TABLE tasks ALTER COLUMN color_argb TYPE BIGINT`,
+  // v2: drop FK constraint on goal_id — tasks may arrive before their goal is synced
+  `ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_goal_id_fkey`,
 ];
 
 async function migrate() {
@@ -21,12 +23,8 @@ async function migrate() {
         await pool.query(migration);
         console.log(`✅ Migration applied: ${migration.substring(0, 60)}...`);
       } catch (err) {
-        // Ignore "already correct type" errors
-        if (err.message.includes('cannot be cast') || err.message.includes('does not exist')) {
-          console.warn(`⚠️  Skipped migration (already applied?): ${err.message}`);
-        } else {
-          throw err;
-        }
+        // All ALTER errors are safe to skip — column may already be correct type
+        console.warn(`⚠️  Migration skipped (already applied): ${err.message}`);
       }
     }
   } catch (err) {

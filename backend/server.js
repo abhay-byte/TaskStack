@@ -90,7 +90,12 @@ app.use((req, res) => {
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err.message);
-  res.status(500).json({ error: 'Internal server error.' });
+  console.error('Stack:', err.stack);
+  // In non-production, surface the real error message to help debugging
+  const message = process.env.NODE_ENV !== 'production'
+    ? err.message
+    : 'Internal server error.';
+  res.status(500).json({ error: message, detail: err.detail ?? undefined });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
