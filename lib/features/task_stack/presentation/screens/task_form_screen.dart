@@ -10,7 +10,6 @@ import 'package:taskstack/core/constants/task_graphics.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:taskstack/core/widgets/animated_graphic.dart';
 import 'package:taskstack/features/task_stack/presentation/providers/goal_providers.dart';
-import 'package:taskstack/features/settings/presentation/providers/settings_provider.dart';
 
 class TaskFormScreen extends ConsumerStatefulWidget {
   const TaskFormScreen({super.key, this.taskId, this.prefilledDate});
@@ -377,6 +376,36 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                     value: '${form.repeatIntervalMinutes} minutes',
                     onTap: () => _showIntervalPicker(context, form, notifier),
                   ),
+                  if (form.repeatIntervalMinutes < form.durationMinutes) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.errorContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            size: 16,
+                            color: cs.onErrorContainer,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Text(
+                              'Repeat interval (${form.repeatIntervalMinutes} min) is shorter than task duration (${form.durationMinutes} min) — tasks will overlap.',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: cs.onErrorContainer),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
                 const SizedBox(height: AppSpacing.md),
 

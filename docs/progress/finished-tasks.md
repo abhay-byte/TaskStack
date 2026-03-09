@@ -279,3 +279,25 @@ Users can now use TaskStack fully offline without creating an account.
 | `flutter analyze` | ✅ 0 errors (90 pre-existing infos, unchanged) |
 | `flutter build apk --debug` | ✅ `app-debug.apk` copied to `/sdcard/Download/taskstack-debug.apk` |
 | Commit | ✅ `c1ba36b` |
+
+---
+
+## ✅ Phase 12 — Bug Fixes (Post-Launch)
+
+### Bug 1: Sync Retry via Cloud-Off Icon Called Pull Instead of Push
+**Problem:** After a failed task sync (500 error from server cold-start), tapping the red `cloud_off` icon in the app bar called `pullCloudToLocal()`. This fetched stale data from the cloud, never re-uploading the newly created local task. The "Retry" banner button was already correctly calling `pushLocalToCloud()`, which is why dismissing and retrying via the banner worked.
+
+**Fix:** Updated `sync_status_indicator.dart` — the error state `onPressed` now calls `pushLocalToCloud()`.
+
+### Bug 2: AnimatedGraphic WebView Appeared Blank While Loading
+**Problem:** `AnimatedGraphic` returned `const SizedBox()` during the WebView initialisation phase, making the graphic area look empty/broken on `TaskDetailScreen` and `TaskFormScreen` until the SVG finished loading.
+
+**Fix:** Updated `animated_graphic.dart` to show a `Container` with the surface color and a centered `CircularProgressIndicator` while `_isLoading` is `true`.
+
+### Bug 3: RepeatToday Recurrence Had No Overlap Validation
+**Problem:** Selecting `repeatToday` with a repeat interval shorter than the task duration (e.g. 15-min interval, 30-min task) silently created overlapping instances without any user feedback.
+
+**Fix:**
+- `task_providers.dart` (`TaskFormNotifier.save()`): added guard — returns `false` and sets `state.error` with a descriptive message if `repeatIntervalMinutes < durationMinutes`.
+- `task_form_screen.dart`: added an inline `errorContainer` banner that appears immediately below the "Repeat every" row when the interval would cause overlap, before the user even taps Save.
+

@@ -83,7 +83,24 @@ class _AnimatedGraphicState extends State<AnimatedGraphic> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const SizedBox();
+    if (_isLoading) {
+      return Padding(
+        padding: widget.padding,
+        child: Container(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          child: Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return Padding(
       padding: widget.padding,
       child: WebViewWidget(controller: _controller),

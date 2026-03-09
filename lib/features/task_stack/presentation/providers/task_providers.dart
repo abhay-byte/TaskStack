@@ -256,6 +256,17 @@ class TaskFormNotifier extends Notifier<TaskFormState> {
     RecurringScope scope = RecurringScope.thisInstance,
   }) async {
     if (!state.isValid) return false;
+
+    // Validate repeatToday overlap: repeat interval must be >= task duration
+    if (state.recurrenceType == RecurrenceType.repeatToday &&
+        state.repeatIntervalMinutes < state.durationMinutes) {
+      state = state.copyWith(
+        error:
+            'Repeat interval (${state.repeatIntervalMinutes} min) is less than task duration (${state.durationMinutes} min) — tasks would overlap. Please increase the interval or reduce the duration.',
+      );
+      return false;
+    }
+
     state = state.copyWith(isSaving: true, error: null);
     try {
       final task = Task(

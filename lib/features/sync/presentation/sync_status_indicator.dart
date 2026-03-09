@@ -41,8 +41,8 @@ class SyncStatusIndicator extends ConsumerWidget {
           tooltip: 'Sync failed – tap to retry',
           icon: Icon(Icons.cloud_off_rounded, color: colorScheme.error),
           onPressed: () {
-            // Pull first to restore cloud data, then push local changes
-            ref.read(syncRepositoryProvider).pullCloudToLocal();
+            // Push local changes to cloud (retry the failed upload)
+            ref.read(syncRepositoryProvider).pushLocalToCloud();
           },
         ),
       },

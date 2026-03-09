@@ -38,23 +38,30 @@ This allows syncing daily recurring tasks (365 instances) without hitting query 
 
 ## 🔄 Current Issues
 
-### Issue 1: Intermittent 500 Error on First Sync — RESOLVED
-**Problem:** Creating a task gives 500 error on first sync attempt but succeeds on retry.
+### Issue 3: Sync Cloud-Off Icon Retried Pull Instead of Push — RESOLVED
+**Problem:** After a failed task sync (500 error), tapping the cloud-off icon in the app bar would call `pullCloudToLocal()` instead of `pushLocalToCloud()`. This fetched old cloud data without ever pushing the newly created task.
 
-**Root Cause:** Cold start issue with Render's free tier - server not ready on first request.
-
-**Fix:** Added retry logic with exponential backoff in Flutter sync code (`_pushTasksWithRetry`) to automatically retry on 500 errors.
-
-### Issue 2: Custom Recurrence Bug - Wrong Days Added — RESOLVED
-**Problem:** When selecting Monday-Friday as recurrence, task incorrectly appeared on Saturday (not selected).
-
-**Root Cause:** The `watchTasksForDate` query in SQLite has spill-over logic to show overnight tasks (like Sleep) on the next day. However, this was incorrectly applying to PARENT recurring tasks too. When a user created a Mon-Fri recurring task on Friday at 11 PM with 7.5 hour duration, the parent task (stored with taskDate=Friday) was showing on Saturday due to spill-over.
-
-**Fix:** Modified `task_dao.dart` to exclude parent recurring tasks from spill-over logic. Parent tasks have `recurrenceType != 'none'` AND `parentTaskId == null`. Now only generated instances (which have `parentTaskId` set) will spill over, not the parent task itself.
+**Fix:** Changed `sync_status_indicator.dart` error state `onPressed` to call `pushLocalToCloud()`. The Retry button in the error banner was already correct.
 
 ---
 
-## � Up Next: Future Enhancements (Post v1.0)
+### Issue 4: AnimatedGraphic Showed Blank While Loading — RESOLVED
+**Problem:** `AnimatedGraphic` returned `const SizedBox()` during WebView loading, making the graphic slot appear empty/broken on the task form and detail pages.
+
+**Fix:** Replaced the blank `SizedBox()` with a styled container showing a `CircularProgressIndicator` until the SVG WebView finishes loading.
+
+---
+
+### Issue 5: No Overlap Validation for RepeatToday Recurrence — RESOLVED
+**Problem:** When selecting `repeatToday` recurrence with a repeat interval shorter than the task duration, the app would silently create overlapping task instances.
+
+**Fix:**
+- Added validation in `TaskFormNotifier.save()` — rejects save with an error message if `repeatIntervalMinutes < durationMinutes`.
+- Added inline warning banner in `TaskFormScreen` that appears immediately when the user sets a conflicting interval, before they even try to save.
+
+---
+
+## 🚀 Up Next: Future Enhancements (Post v1.0)
 
 - Signed release APK (requires keystore — manual step)
 - Flavour `productFlavours` in `build.gradle.kts`

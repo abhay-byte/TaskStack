@@ -42,8 +42,14 @@ class AppSettings {
 class SettingsNotifier extends Notifier<AppSettings> {
   @override
   AppSettings build() {
-    _load();
-    return const AppSettings();
+    return AppSettings(
+      themeMode: _prefs.getInt(_kTheme) ?? 0,
+      accentColorArgb: _prefs.getInt(_kAccent),
+      weekStartsSunday: _prefs.getBool(_kWeekSun) ?? true,
+      use24HourTime: _prefs.getBool(_k24h) ?? false,
+      defaultNotificationOffsetMinutes: _prefs.getInt(_kNotifOffset) ?? 5,
+      isFirstLaunch: _prefs.getBool(_kFirstLaunch) ?? true,
+    );
   }
 
   SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
@@ -54,17 +60,6 @@ class SettingsNotifier extends Notifier<AppSettings> {
   static const _k24h = 'use_24h';
   static const _kNotifOffset = 'notif_offset';
   static const _kFirstLaunch = 'first_launch';
-
-  void _load() {
-    state = AppSettings(
-      themeMode: _prefs.getInt(_kTheme) ?? 0,
-      accentColorArgb: _prefs.getInt(_kAccent),
-      weekStartsSunday: _prefs.getBool(_kWeekSun) ?? true,
-      use24HourTime: _prefs.getBool(_k24h) ?? false,
-      defaultNotificationOffsetMinutes: _prefs.getInt(_kNotifOffset) ?? 5,
-      isFirstLaunch: _prefs.getBool(_kFirstLaunch) ?? true,
-    );
-  }
 
   Future<void> setThemeMode(int mode) async {
     await _prefs.setInt(_kTheme, mode);
