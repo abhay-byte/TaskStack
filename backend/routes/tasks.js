@@ -51,7 +51,7 @@ async function _upsertGoalBatch(goals, userId) {
     const placeholders = goals.map((g, i) => {
         const base = i * 7;
         values.push(g.id, userId, g.title, g.type, g.duration_hours ?? null, g.created_at, g.updated_at);
-        return `(${base + 1}, ${base + 2}, ${base + 3}, ${base + 4}, ${base + 5}, ${base + 6}, ${base + 7})`;
+        return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7})`;
     });
 
     const sql = `
@@ -83,7 +83,7 @@ async function _upsertTaskBatch(tasks, userId) {
             t.graphic_image ?? null, t.parent_task_id ?? null, t.goal_id ?? null,
             t.created_at, t.updated_at,
         );
-        const p = (n) => `${base + n}`;
+        const p = (n) => `$${base + n}`;
         return `(${p(1)},${p(2)},${p(3)},${p(4)},${p(5)},${p(6)},${p(7)},${p(8)},${p(9)},${p(10)},${p(11)},${p(12)},${p(13)},${p(14)},${p(15)},${p(16)},${p(17)},${p(18)},${p(19)},${p(20)},${p(21)},${p(22)},${p(23)})`;
     });
 
@@ -225,58 +225,7 @@ router.post('/bulk', async (req, res, next) => {
     }
 });
 
-// Helper function to upsert a batch of tasks
-async function _upsertTaskBatch(tasks, userId) {
-    const values = [];
-    const placeholders = tasks.map((t, i) => {
-        const base = i * 23;
-        values.push(
-            t.id, userId, t.title, t.description ?? null, t.purpose ?? null,
-            t.icon_id ?? null, t.color_argb ?? null, t.tags_json,
-            t.start_minutes ?? null, t.duration_minutes ?? null,
-            t.recurrence_type, t.recurrence_rule ?? null, t.repeat_interval_minutes ?? null,
-            t.notification_enabled, t.notification_offset_minutes,
-            t.status, t.completed_at ?? null, t.task_date,
-            t.graphic_image ?? null, t.parent_task_id ?? null, t.goal_id ?? null,
-            t.created_at, t.updated_at,
-        );
-        const p = (n) => `${base + n}`;
-        return `(${p(1)},${p(2)},${p(3)},${p(4)},${p(5)},${p(6)},${p(7)},${p(8)},${p(9)},${p(10)},${p(11)},${p(12)},${p(13)},${p(14)},${p(15)},${p(16)},${p(17)},${p(18)},${p(19)},${p(20)},${p(21)},${p(22)},${p(23)})`;
-    });
 
-    const sql = `
-      INSERT INTO tasks (
-        id, user_id, title, description, purpose, icon_id, color_argb, tags_json,
-        start_minutes, duration_minutes, recurrence_type, recurrence_rule,
-        repeat_interval_minutes, notification_enabled, notification_offset_minutes,
-        status, completed_at, task_date, graphic_image, parent_task_id, goal_id, created_at, updated_at
-      ) VALUES ${placeholders.join(', ')}
-      ON CONFLICT (id) DO UPDATE SET
-        title                       = EXCLUDED.title,
-        description                 = EXCLUDED.description,
-        purpose                     = EXCLUDED.purpose,
-        icon_id                     = EXCLUDED.icon_id,
-        color_argb                  = EXCLUDED.color_argb,
-        tags_json                   = EXCLUDED.tags_json,
-        start_minutes               = EXCLUDED.start_minutes,
-        duration_minutes            = EXCLUDED.duration_minutes,
-        recurrence_type             = EXCLUDED.recurrence_type,
-        recurrence_rule             = EXCLUDED.recurrence_rule,
-        repeat_interval_minutes     = EXCLUDED.repeat_interval_minutes,
-        notification_enabled        = EXCLUDED.notification_enabled,
-        notification_offset_minutes = EXCLUDED.notification_offset_minutes,
-        status                      = EXCLUDED.status,
-        completed_at                = EXCLUDED.completed_at,
-        task_date                   = EXCLUDED.task_date,
-        graphic_image               = EXCLUDED.graphic_image,
-        parent_task_id              = EXCLUDED.parent_task_id,
-        goal_id                     = EXCLUDED.goal_id,
-        updated_at                  = EXCLUDED.updated_at
-      WHERE EXCLUDED.updated_at > tasks.updated_at
-    `;
-    const result = await pool.query(sql, values);
-    return result.rowCount;
-}
 
 // DELETE /tasks/:id
 router.delete('/:id', async (req, res, next) => {
