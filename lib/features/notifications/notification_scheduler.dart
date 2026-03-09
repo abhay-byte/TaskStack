@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
@@ -11,6 +12,8 @@ class NotificationScheduler {
   static Future<void> initTimezone() async {
     if (!_tzInitialised) {
       tz_data.initializeTimeZones();
+      final timezoneName = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timezoneName));
       _tzInitialised = true;
     }
   }
@@ -55,7 +58,6 @@ class NotificationScheduler {
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       payload: task.id,
-      matchDateTimeComponents: DateTimeComponents.dateAndTime,
     );
   }
 
