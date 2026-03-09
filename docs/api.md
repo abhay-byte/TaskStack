@@ -202,9 +202,9 @@ Upsert an array of tasks (last-write-wins on `updated_at`).
   {
     "id":                          "uuid-string",
     "title":                       "Morning run",
-    "description":                 null,
-    "purpose":                     null,
-    "icon_id":                     "task_gym",
+    "description":                 "Workout details",
+    "purpose":                     "Stay fit",
+    "icon_id":                     null,
     "color_argb":                  4280391411,
     "tags_json":                   "[]",
     "start_minutes":               360,
@@ -216,23 +216,45 @@ Upsert an array of tasks (last-write-wins on `updated_at`).
     "notification_offset_minutes": 5,
     "status":                      "pending",
     "completed_at":                null,
-    "task_date":                   "2026-03-06",
+    "task_date":                   "2026-03-09",
+    "graphic_image":               "assets/images/task_gym.svg",
     "parent_task_id":              null,
     "goal_id":                     null,
-    "created_at":                  "2026-03-06T00:00:00.000Z",
-    "updated_at":                  "2026-03-06T00:00:00.000Z"
+    "created_at":                  "2026-03-09T00:00:00.000Z",
+    "updated_at":                  "2026-03-09T00:00:00.000Z"
   }
 ]
 ```
 
-| Field | Notes |
-|-------|-------|
-| `color_argb` | Unsigned 32-bit ARGB integer (stored as `BIGINT`) |
-| `status` | `"pending"` or `"done"` |
-| `recurrence_type` | `"none"`, `"daily"`, `"weekly"`, etc. |
-| `task_date` | `YYYY-MM-DD` format |
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | string | Required. UUID string matching Drift local ID |
+| `title` | string | Required. Max 300 chars |
+| `description` | string\|null | Optional |
+| `purpose` | string\|null | Optional |
+| `icon_id` | string\|null | Optional |
+| `color_argb` | number\|null | Unsigned 32-bit ARGB integer (stored as `BIGINT`) |
+| `tags_json` | string | JSON array string, defaults to `"[]"` |
+| `start_minutes` | int\|null | Minutes from midnight |
+| `duration_minutes` | int\|null | Task duration in minutes |
+| `recurrence_type` | string | `"none"`, `"repeatToday"`, `"daily"`, `"weekly"`, `"custom"` |
+| `recurrence_rule` | string\|null | Comma-separated weekday numbers for custom recurrence |
+| `repeat_interval_minutes` | int\|null | For `repeatToday` recurrence |
+| `notification_enabled` | boolean | Defaults to `true` |
+| `notification_offset_minutes` | int | Reminder offset, defaults to `5` |
+| `status` | string | `"pending"` or `"done"` |
+| `completed_at` | ISO8601\|null | Set when status becomes `"done"` |
+| `task_date` | string | Required. `YYYY-MM-DD` format |
+| `graphic_image` | string\|null | Asset path, e.g. `"assets/images/task_gym.svg"` |
+| `parent_task_id` | string\|null | References the root recurring task ID |
+| `goal_id` | string\|null | References a goal (no FK enforced on cloud) |
+| `created_at` | ISO8601 | Required |
+| `updated_at` | ISO8601 | Required. Used for last-write-wins conflict resolution |
 
 **200 OK:** `{ "upserted": 1 }` · **400** if validation fails.
+
+> **Bug fix (2026-03-09):** SQL parameter placeholders were generated as bare integers (`1,2,3`) instead of `$1,$2,$3`, causing all bulk upserts to return 500. Fixed in commit `5c96b10`. Also removed duplicate `_upsertTaskBatch` function.
+
 
 ---
 
