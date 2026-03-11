@@ -69,8 +69,7 @@ class SyncRepositoryImpl implements SyncRepository {
               'type': g.type,
               'duration_hours': g.durationHours,
               'created_at': g.createdAt.toUtc().toIso8601String(),
-              // Goals don't have updatedAt in Drift; mirror createdAt
-              'updated_at': g.createdAt.toUtc().toIso8601String(),
+              'updated_at': g.updatedAt.toUtc().toIso8601String(),
             })
         .toList();
     await dio.post('/tasks/goals/bulk', data: payload);
@@ -190,6 +189,7 @@ class SyncRepositoryImpl implements SyncRepository {
           type: Value(m['type'] as String? ?? 'project'),
           durationHours: Value(m['duration_hours'] as int?),
           createdAt: Value(DateTime.parse(m['created_at'] as String)),
+          updatedAt: Value(DateTime.parse(m['updated_at'] as String)),
         ),
       );
     }

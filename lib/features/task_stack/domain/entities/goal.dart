@@ -7,6 +7,7 @@ class Goal {
     this.type = GoalType.project,
     this.durationHours,
     required this.createdAt,
+    required this.updatedAt,
   });
 
   final String id;
@@ -14,6 +15,7 @@ class Goal {
   final GoalType type;
   final int? durationHours;
   final DateTime createdAt;
+  final DateTime updatedAt;
 
   Goal copyWith({
     String? id,
@@ -21,6 +23,7 @@ class Goal {
     GoalType? type,
     int? durationHours,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return Goal(
       id: id ?? this.id,
@@ -28,6 +31,7 @@ class Goal {
       type: type ?? this.type,
       durationHours: durationHours ?? this.durationHours,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

@@ -251,9 +251,12 @@ Upsert an array of tasks (last-write-wins on `updated_at`).
 | `created_at` | ISO8601 | Required |
 | `updated_at` | ISO8601 | Required. Used for last-write-wins conflict resolution |
 
-**200 OK:** `{ "upserted": 1 }` · **400** if validation fails.
+**200 OK:** `{ "upserted": 1 }`  
+**400** if validation fails.
 
 > **Bug fix (2026-03-09):** SQL parameter placeholders were generated as bare integers (`1,2,3`) instead of `$1,$2,$3`, causing all bulk upserts to return 500. Fixed in commit `5c96b10`. Also removed duplicate `_upsertTaskBatch` function.
+
+> **Bug fix (2026-03-11):** `GoalsTable` and `Goal` entity were missing an `updatedAt` field. The sync code mirrored `createdAt` as `updated_at`, so the backend's last-write-wins guard (`WHERE EXCLUDED.updated_at > goals.updated_at`) silently rejected every re-sync after the first insert — goal edits never reached the cloud. Fixed by adding `updatedAt` to the local schema (migration v4), updating sync push/pull to use the real timestamp, and triggering `pushLocalToCloud()` after goal create/edit/delete.
 
 
 ---

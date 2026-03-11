@@ -4,11 +4,13 @@ import 'package:taskstack/features/task_stack/domain/repositories/goal_repositor
 import 'package:taskstack/features/task_stack/domain/repositories/task_repository.dart';
 import 'package:taskstack/features/task_stack/data/repositories/goal_repository_impl.dart';
 import 'package:taskstack/features/task_stack/data/repositories/task_repository_impl.dart';
+import 'package:taskstack/features/sync/data/repositories/sync_repository_impl.dart';
 
 class DeleteGoalUseCase {
-  const DeleteGoalUseCase(this._goalRepo, this._taskRepo);
+  const DeleteGoalUseCase(this._goalRepo, this._taskRepo, this._ref);
   final GoalRepository _goalRepo;
   final TaskRepository _taskRepo;
+  final Ref _ref;
 
   Future<void> execute(String goalId) async {
     // 1. Fetch all tasks that might be linked to this goal
@@ -59,6 +61,9 @@ class DeleteGoalUseCase {
     
     // 3. Delete the goal
     await _goalRepo.deleteGoalById(goalId);
+
+    // 4. Push changes to cloud immediately
+    _ref.read(syncRepositoryProvider).pushLocalToCloud();
   }
 }
 
@@ -66,5 +71,6 @@ final deleteGoalUseCaseProvider = Provider<DeleteGoalUseCase>((ref) {
   return DeleteGoalUseCase(
     ref.watch(goalRepositoryProvider),
     ref.watch(taskRepositoryProvider),
+    ref,
   );
 });

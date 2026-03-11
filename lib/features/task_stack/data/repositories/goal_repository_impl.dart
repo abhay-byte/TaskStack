@@ -47,6 +47,7 @@ class GoalRepositoryImpl implements GoalRepository {
       ),
       durationHours: row.durationHours,
       createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
     );
   }
 
@@ -57,6 +58,7 @@ class GoalRepositoryImpl implements GoalRepository {
       type: Value(goal.type.name),
       durationHours: Value(goal.durationHours),
       createdAt: Value(goal.createdAt),
+      updatedAt: Value(goal.updatedAt),
     );
   }
 }

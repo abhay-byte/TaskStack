@@ -364,10 +364,11 @@ packages:
   fl_chart:
     dependency: "direct main"
     description:
-      name: fl_chart
-      sha256: "7ca9a40f4eb85949190e54087be8b4d6ac09dc4c54238d782a34cf1f7c011de9"
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: main
+      resolved-ref: ea7ccf5af5562a0e92e852ed7be6ca9363a719d5
+      url: "https://github.com/imaNNeo/fl_chart.git"
+    source: git
     version: "1.1.1"
   flutter:
     dependency: "direct main"

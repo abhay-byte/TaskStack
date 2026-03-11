@@ -11,6 +11,7 @@ class GoalsTable extends Table {
   /// Duration of the goal in hours. Null means no set time.
   IntColumn get durationHours => integer().nullable()();
   DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
 
   @override
   Set<Column> get primaryKey => {id};

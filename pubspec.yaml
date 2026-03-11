@@ -92,3 +92,9 @@ flutter:
 
   assets:
     - assets/images/
+
+dependency_overrides:
+  fl_chart:
+    git:
+      url: https://github.com/imaNNeo/fl_chart.git
+      ref: main

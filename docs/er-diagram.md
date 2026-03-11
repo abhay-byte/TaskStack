@@ -8,7 +8,7 @@
 
 ## Local Schema (SQLite via Drift)
 
-> Source: `lib/database/tables/` + `lib/database/app_database.dart` (schema v3).
+> Source: `lib/database/tables/` + `lib/database/app_database.dart` (schema v4).
 
 ```mermaid
 erDiagram
@@ -19,6 +19,7 @@ erDiagram
         TEXT     type            "default: project"
         INT      durationHours   "nullable — no set time if null"
         DATETIME createdAt
+        DATETIME updatedAt       "last-write-wins sync timestamp"
     }
 
     tasks {
@@ -202,5 +203,6 @@ This means task queries never need a join to retrieve tags, at the cost of tag r
 | 1 | Local | Initial: `tasks`, `tags`, `daily_summaries` |
 | 2 | Local | Added `tasks.graphicImage` column |
 | 3 | Local | Added `goals` table + `tasks.goalId` column |
-| 4 | Cloud | Initial cloud schema: `users`, `groups`, `group_members`, `group_invites` |
-| 5 | Cloud | Phase 10: added `goals` + `tasks` tables (user-scoped mirrors of Drift schema) |
+| 4 | Local | Added `goals.updatedAt` column (last-write-wins sync support) |
+| 5 | Cloud | Initial cloud schema: `users`, `groups`, `group_members`, `group_invites` |
+| 6 | Cloud | Phase 10: added `goals` + `tasks` tables (user-scoped mirrors of Drift schema) |

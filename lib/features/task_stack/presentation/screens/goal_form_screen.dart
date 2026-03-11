@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import 'package:taskstack/features/task_stack/domain/entities/goal.dart';
 import 'package:taskstack/features/task_stack/data/repositories/goal_repository_impl.dart';
+import 'package:taskstack/features/sync/data/repositories/sync_repository_impl.dart';
 import 'package:taskstack/core/constants/app_spacing.dart';
 
 class GoalFormScreen extends ConsumerStatefulWidget {
@@ -107,13 +108,15 @@ class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
 
     try {
       final repository = ref.read(goalRepositoryProvider);
-      
+      final now = DateTime.now();
+
       final goal = Goal(
         id: _existingGoal?.id ?? const Uuid().v4(),
         title: _titleCtrl.text.trim(),
         type: _selectedType,
         durationHours: _calculateDurationHours(),
-        createdAt: _existingGoal?.createdAt ?? DateTime.now(),
+        createdAt: _existingGoal?.createdAt ?? now,
+        updatedAt: now,
       );
       
       if (_existingGoal != null) {
@@ -121,6 +124,10 @@ class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
       } else {
         await repository.insertGoal(goal);
       }
+
+      // Push to cloud immediately after local write
+      ref.read(syncRepositoryProvider).pushLocalToCloud();
+
       if (mounted) context.pop();
     } catch (e) {
       if (mounted) {

@@ -2182,6 +2182,17 @@ class $GoalsTableTable extends GoalsTable
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2189,6 +2200,7 @@ class $GoalsTableTable extends GoalsTable
     type,
     durationHours,
     createdAt,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2238,6 +2250,14 @@ class $GoalsTableTable extends GoalsTable
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
     return context;
   }
 
@@ -2271,6 +2291,11 @@ class $GoalsTableTable extends GoalsTable
             DriftSqlType.dateTime,
             data['${effectivePrefix}created_at'],
           )!,
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.dateTime,
+            data['${effectivePrefix}updated_at'],
+          )!,
     );
   }
 
@@ -2288,12 +2313,14 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
   /// Duration of the goal in hours. Null means no set time.
   final int? durationHours;
   final DateTime createdAt;
+  final DateTime updatedAt;
   const GoalsTableData({
     required this.id,
     required this.title,
     required this.type,
     this.durationHours,
     required this.createdAt,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2305,6 +2332,7 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
       map['duration_hours'] = Variable<int>(durationHours);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
 
@@ -2318,6 +2346,7 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
               ? const Value.absent()
               : Value(durationHours),
       createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -2332,6 +2361,7 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
       type: serializer.fromJson<String>(json['type']),
       durationHours: serializer.fromJson<int?>(json['durationHours']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
   @override
@@ -2343,6 +2373,7 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
       'type': serializer.toJson<String>(type),
       'durationHours': serializer.toJson<int?>(durationHours),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
 
@@ -2352,6 +2383,7 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
     String? type,
     Value<int?> durationHours = const Value.absent(),
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) => GoalsTableData(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -2359,6 +2391,7 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
     durationHours:
         durationHours.present ? durationHours.value : this.durationHours,
     createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   GoalsTableData copyWithCompanion(GoalsTableCompanion data) {
     return GoalsTableData(
@@ -2370,6 +2403,7 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
               ? data.durationHours.value
               : this.durationHours,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -2380,13 +2414,15 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
           ..write('title: $title, ')
           ..write('type: $type, ')
           ..write('durationHours: $durationHours, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, title, type, durationHours, createdAt);
+  int get hashCode =>
+      Object.hash(id, title, type, durationHours, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2395,7 +2431,8 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
           other.title == this.title &&
           other.type == this.type &&
           other.durationHours == this.durationHours &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
@@ -2404,6 +2441,7 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
   final Value<String> type;
   final Value<int?> durationHours;
   final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
   final Value<int> rowid;
   const GoalsTableCompanion({
     this.id = const Value.absent(),
@@ -2411,6 +2449,7 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
     this.type = const Value.absent(),
     this.durationHours = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   GoalsTableCompanion.insert({
@@ -2419,16 +2458,19 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
     this.type = const Value.absent(),
     this.durationHours = const Value.absent(),
     required DateTime createdAt,
+    required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        title = Value(title),
-       createdAt = Value(createdAt);
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
   static Insertable<GoalsTableData> custom({
     Expression<String>? id,
     Expression<String>? title,
     Expression<String>? type,
     Expression<int>? durationHours,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2437,6 +2479,7 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
       if (type != null) 'type': type,
       if (durationHours != null) 'duration_hours': durationHours,
       if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2447,6 +2490,7 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
     Value<String>? type,
     Value<int?>? durationHours,
     Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
     return GoalsTableCompanion(
@@ -2455,6 +2499,7 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
       type: type ?? this.type,
       durationHours: durationHours ?? this.durationHours,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2477,6 +2522,9 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2491,6 +2539,7 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
           ..write('type: $type, ')
           ..write('durationHours: $durationHours, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3544,6 +3593,7 @@ typedef $$GoalsTableTableCreateCompanionBuilder =
       Value<String> type,
       Value<int?> durationHours,
       required DateTime createdAt,
+      required DateTime updatedAt,
       Value<int> rowid,
     });
 typedef $$GoalsTableTableUpdateCompanionBuilder =
@@ -3553,6 +3603,7 @@ typedef $$GoalsTableTableUpdateCompanionBuilder =
       Value<String> type,
       Value<int?> durationHours,
       Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
       Value<int> rowid,
     });
 
@@ -3587,6 +3638,11 @@ class $$GoalsTableTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3624,6 +3680,11 @@ class $$GoalsTableTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$GoalsTableTableAnnotationComposer
@@ -3651,6 +3712,9 @@ class $$GoalsTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$GoalsTableTableTableManager
@@ -3689,6 +3753,7 @@ class $$GoalsTableTableTableManager
                 Value<String> type = const Value.absent(),
                 Value<int?> durationHours = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => GoalsTableCompanion(
                 id: id,
@@ -3696,6 +3761,7 @@ class $$GoalsTableTableTableManager
                 type: type,
                 durationHours: durationHours,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3705,6 +3771,7 @@ class $$GoalsTableTableTableManager
                 Value<String> type = const Value.absent(),
                 Value<int?> durationHours = const Value.absent(),
                 required DateTime createdAt,
+                required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => GoalsTableCompanion.insert(
                 id: id,
@@ -3712,6 +3779,7 @@ class $$GoalsTableTableTableManager
                 type: type,
                 durationHours: durationHours,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper:
