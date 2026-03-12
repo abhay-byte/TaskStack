@@ -26,7 +26,8 @@ class _RenderWakeInterceptor extends Interceptor {
     if ((statusCode == 502 ||
             statusCode == 503 ||
             statusCode == 504 ||
-            err.type == DioExceptionType.connectionTimeout) &&
+            err.type == DioExceptionType.connectionTimeout ||
+            err.type == DioExceptionType.receiveTimeout) &&
         attempt < maxRetries) {
       err.requestOptions.extra['_retryCount'] = attempt + 1;
       debugPrint('[API] Retrying (attempt ${attempt + 1}/$maxRetries)...');
@@ -54,7 +55,7 @@ final apiClientProvider = Provider<Dio>((ref) {
       connectTimeout: const Duration(
         seconds: 120,
       ), // Increased for Render cold start
-      receiveTimeout: const Duration(seconds: 60),
+      receiveTimeout: const Duration(seconds: 120), // Increased for Render cold start
       headers: {'Content-Type': 'application/json'},
     ),
   );
