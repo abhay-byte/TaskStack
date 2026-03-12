@@ -39,11 +39,13 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(tasksTable, tasksTable.goalId);
       }
       if (from < 4) {
-        // Add updatedAt column to goals; existing rows default to createdAt value
-        await m.addColumn(goalsTable, goalsTable.updatedAt);
-        // Back-fill existing goals so updatedAt = createdAt
+        // m.addColumn() emits no DEFAULT clause, which SQLite rejects for NOT NULL.
+        // Use raw SQL with DEFAULT 0 so the ALTER succeeds, then backfill from createdAt.
         await customStatement(
-          'UPDATE goals SET updated_at = created_at WHERE updated_at IS NULL',
+          'ALTER TABLE "goals" ADD COLUMN "updated_at" INTEGER NOT NULL DEFAULT 0',
+        );
+        await customStatement(
+          'UPDATE "goals" SET "updated_at" = "created_at"',
         );
       }
     },

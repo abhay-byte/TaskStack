@@ -258,6 +258,8 @@ Upsert an array of tasks (last-write-wins on `updated_at`).
 
 > **Bug fix (2026-03-11):** `GoalsTable` and `Goal` entity were missing an `updatedAt` field. The sync code mirrored `createdAt` as `updated_at`, so the backend's last-write-wins guard (`WHERE EXCLUDED.updated_at > goals.updated_at`) silently rejected every re-sync after the first insert — goal edits never reached the cloud. Fixed by adding `updatedAt` to the local schema (migration v4), updating sync push/pull to use the real timestamp, and triggering `pushLocalToCloud()` after goal create/edit/delete.
 
+> **Bug fix (2026-03-12):** Migration v4 crashed on existing devices with `SqliteException(1): Cannot add a NOT NULL column with default value NULL`. Drift's `m.addColumn()` emits no `DEFAULT` clause, which SQLite rejects for `NOT NULL` columns on existing tables. Fixed by replacing `m.addColumn()` with a raw `customStatement('ALTER TABLE "goals" ADD COLUMN "updated_at" INTEGER NOT NULL DEFAULT 0')` followed by a backfill `UPDATE` from `created_at`.
+
 
 ---
 
