@@ -77,6 +77,31 @@ Login with email + password. Returns a JWT token.
 
 ---
 
+### `DELETE /auth/account`
+Permanently delete the authenticated user's account and all associated data (tasks, goals, group memberships, invites). Executed in a single Postgres transaction with rollback on failure.
+
+**Requires auth**
+
+**200 OK:** `{ "deleted": true }`  
+**401** missing/invalid token · **500** database error
+
+---
+
+### `GET /auth/delete-account`
+Public HTML page explaining how users can request account deletion. No auth required.
+
+Used as the **Delete Account URL** in Google Play Console (Data Safety section).
+
+**URL:** `https://taskstack-api.onrender.com/auth/delete-account`
+
+**200 OK:** HTML page with:
+- Step-by-step in-app deletion instructions
+- List of data deleted (tasks, goals, groups, profile)
+- List of data retained (local device data)
+- Contact email fallback
+
+---
+
 ## Users
 
 > All routes require `Authorization: Bearer <token>`

@@ -61,9 +61,20 @@ This allows syncing daily recurring tasks (365 instances) without hitting query 
 
 ---
 
+## ✅ Phase 12: Delete Account — COMPLETE
+
+**What was built:**
+- **Backend `DELETE /auth/account`**: Authenticated endpoint that deletes the user and all associated data (tasks, goals, group memberships, invites) in a single Postgres transaction with rollback on failure. Route: `DELETE /auth/account` (requires `Authorization: Bearer <token>`).
+- **Backend `GET /auth/delete-account`**: Public HTML info page served directly from the API. Lists in-app deletion steps, what data is deleted vs. retained, and a contact email fallback. URL: `https://taskstack-api.onrender.com/auth/delete-account` — used as the **Delete Account URL** in Google Play Console under Data Safety.
+- **Flutter `AuthRepository.deleteAccount()`**: Added to the abstract interface and implemented in `AuthRepositoryImpl` — calls `DELETE /auth/account` with stored token, then clears secure storage.
+- **Flutter `AuthNotifier.deleteAccount()`**: Calls the repository, transitions state to `AuthLoading` → `AuthUnauthenticated`. On error, restores prior authenticated state and rethrows so the UI can show an error snackbar.
+- **Settings Screen — Danger Zone section**: A new "Danger Zone" section (shown only for authenticated users) with a red `Delete Account` tile. Tapping it opens a confirmation dialog with a destructive red button. On success, navigates to `/login` with a success toast.
+
+---
+
 ## 🚀 Up Next: Future Enhancements (Post v1.0)
 
-- Signed release APK (requires keystore — manual step)
+- ~~Signed release APK~~ ✅ Done (keystore at `~/repos/keys/`)
 - Flavour `productFlavours` in `build.gradle.kts`
 - Headless background isolate for persistent notifications
 - Deeper analytics: streak tracking, category breakdowns

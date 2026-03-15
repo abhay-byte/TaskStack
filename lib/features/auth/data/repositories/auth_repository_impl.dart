@@ -58,6 +58,17 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> deleteAccount() async {
+    final token = await _storage.read(key: _kToken);
+    await _dio.delete(
+      '/auth/account',
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+    await _storage.delete(key: _kToken);
+    await _storage.delete(key: _kUser);
+  }
+
+  @override
   Future<AuthUser?> currentUser() async {
     final raw = await _storage.read(key: _kUser);
     if (raw == null) return null;

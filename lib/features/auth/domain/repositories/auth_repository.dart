@@ -18,6 +18,9 @@ abstract class AuthRepository {
   /// Clear token + user from secure storage.
   Future<void> logout();
 
+  /// Permanently delete the account and all associated cloud data.
+  Future<void> deleteAccount();
+
   /// Returns the currently stored user, or null if not logged in.
   Future<AuthUser?> currentUser();
 

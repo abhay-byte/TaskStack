@@ -179,6 +179,22 @@ class SettingsScreen extends ConsumerWidget {
                 ),
           ),
 
+          // ── Danger Zone ───────────────────────────────────────────────────────
+          if (isAuthenticated) ...[
+            _SectionHeader('Danger Zone'),
+            ListTile(
+              leading: Icon(Icons.delete_forever_outlined, color: cs.error),
+              title: Text(
+                'Delete Account',
+                style: TextStyle(color: cs.error, fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text(
+                'Permanently delete your account and all cloud data.',
+              ),
+              onTap: () => _confirmDeleteAccount(context, ref),
+            ),
+          ],
+
           const SizedBox(height: AppSpacing.xxl),
         ],
       ),
@@ -208,6 +224,54 @@ class SettingsScreen extends ConsumerWidget {
     );
     if (confirmed == true) {
       await ref.read(authNotifierProvider.notifier).logout();
+    }
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
+    // Step 1 — primary warning
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Delete Account?'),
+            content: const Text(
+              'This will permanently delete your account and all your cloud data '
+              '(tasks, goals, groups). This cannot be undone.\n\n'
+              'Local data on this device will not be affected.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(ctx).colorScheme.error,
+                ),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Delete Account'),
+              ),
+            ],
+          ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(authNotifierProvider.notifier).deleteAccount();
+      if (context.mounted) {
+        context.go('/login');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account deleted successfully.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete account: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 

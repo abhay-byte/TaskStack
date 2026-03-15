@@ -116,6 +116,22 @@ class AuthNotifier extends Notifier<AuthState> {
     state = const AuthUnauthenticated();
   }
 
+  /// Permanently delete the account and all cloud data, then sign out locally.
+  Future<void> deleteAccount() async {
+    state = const AuthLoading();
+    try {
+      await _repo.deleteAccount();
+      ref.read(isGuestModeProvider.notifier).state = false;
+      state = const AuthUnauthenticated();
+    } on DioException catch (e) {
+      final msg = _parseError(e);
+      // Restore authenticated state so user can try again
+      final user = await _repo.currentUser();
+      state = user != null ? AuthAuthenticated(user) : AuthUnauthenticated(msg);
+      rethrow;
+    }
+  }
+
   /// Update cached user after profile edits
   void updateUser(AuthUser user) {
     if (state is AuthAuthenticated) {
