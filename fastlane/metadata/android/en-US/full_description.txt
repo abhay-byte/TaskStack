@@ -1,0 +1,9 @@
+TaskStack is a powerful task management app designed for individuals and teams.
+
+✅ Create and manage tasks with priorities and due dates
+👥 Collaborate in groups — assign tasks, track progress together
+🔔 Smart reminders to keep you on track
+📊 Clean dashboard to visualize your workload
+🔒 Secure authentication and user profiles
+
+Whether you're managing personal to-dos or coordinating team projects, TaskStack keeps everything organized in one place.

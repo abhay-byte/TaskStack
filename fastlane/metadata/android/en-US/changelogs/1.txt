@@ -1,0 +1,5 @@
+Initial release of TaskStack.
+- Task creation and management with priorities and due dates
+- Group collaboration with task assignment
+- Smart reminders and notifications
+- User profiles and secure authentication
