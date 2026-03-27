@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:taskstack/features/groups/data/repositories/group_repository_impl.dart';
 import 'package:taskstack/features/groups/domain/entities/group.dart';
@@ -21,11 +20,8 @@ class GroupNotifier extends Notifier<AsyncValue<List<Group>>> {
     try {
       final groups = await _repo.fetchMyGroups();
       state = AsyncValue.data(groups);
-    } on DioException catch (e) {
-      state = AsyncValue.error(
-        e.response?.data['error'] ?? e.message ?? 'Network error',
-        StackTrace.current,
-      );
+    } catch (e, st) {
+      state = AsyncValue.error(e.toString().replaceFirst('Exception: ', ''), st);
     }
   }
 
@@ -56,10 +52,8 @@ class GroupNotifier extends Notifier<AsyncValue<List<Group>>> {
     try {
       await _repo.inviteByUsername(groupId, username);
       return true;
-    } on DioException catch (e) {
-      return Future.error(
-        e.response?.data['error'] ?? e.message ?? 'Network error',
-      );
+    } catch (e) {
+      return Future.error(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 }
@@ -99,11 +93,8 @@ class InviteNotifier extends Notifier<AsyncValue<List<Invite>>> {
     try {
       final invites = await _repo.fetchInvites();
       state = AsyncValue.data(invites);
-    } on DioException catch (e) {
-      state = AsyncValue.error(
-        e.response?.data['error'] ?? e.message ?? 'Network error',
-        StackTrace.current,
-      );
+    } catch (e, st) {
+      state = AsyncValue.error(e.toString().replaceFirst('Exception: ', ''), st);
     }
   }
 

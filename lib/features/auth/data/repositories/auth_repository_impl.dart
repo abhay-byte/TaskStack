@@ -1,19 +1,23 @@
-import 'dart:convert';
-import 'package:dio/dio.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:taskstack/core/config/app_config.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:taskstack/firebase_options.dart';
 import 'package:taskstack/features/auth/domain/entities/auth_user.dart';
 import 'package:taskstack/features/auth/domain/repositories/auth_repository.dart';
 
-const _kToken = 'auth_token';
-const _kUser = 'auth_user';
 
 class AuthRepositoryImpl implements AuthRepository {
-  AuthRepositoryImpl(this._dio, this._storage);
+  AuthRepositoryImpl(this._auth, this._firestore);
 
-  final Dio _dio;
-  final FlutterSecureStorage _storage;
+  final FirebaseAuth _auth;
+  final FirebaseFirestore _firestore;
+
+  late final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: DefaultFirebaseOptions.webClientId,
+  );
+
+  // ── Register ───────────────────────────────────────────────────────────────
 
   @override
   Future<AuthUser> register({
@@ -22,138 +26,285 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
     String? displayName,
   }) async {
-    final res = await _dio.post(
-      '/auth/register',
-      data: {
+    // Validate username format
+    final usernameRegex = RegExp(r'^[a-zA-Z0-9_]{3,30}$');
+    if (!usernameRegex.hasMatch(username)) {
+      throw Exception('Username must be 3-30 chars, letters/numbers/underscore only.');
+    }
+
+    // Atomically reserve username via Firestore transaction
+    final usernameDoc = _firestore.collection('usernames').doc(username);
+    final UserCredential cred;
+
+    try {
+      cred = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+    } on FirebaseAuthException catch (e) {
+      throw Exception(_authError(e));
+    }
+
+    final uid = cred.user!.uid;
+    final now = FieldValue.serverTimestamp();
+    final resolvedDisplay = (displayName != null && displayName.isNotEmpty)
+        ? displayName
+        : username;
+
+    try {
+      // Use a batch: reserve username + create user profile atomically
+      final batch = _firestore.batch();
+      final userDoc = _firestore.collection('users').doc(uid);
+
+      batch.set(usernameDoc, {'uid': uid});
+      batch.set(userDoc, {
+        'uid': uid,
         'username': username,
         'email': email,
-        'password': password,
-        if (displayName != null && displayName.isNotEmpty)
-          'displayName': displayName,
-      },
+        'displayName': resolvedDisplay,
+        'bio': null,
+        'avatarUrl': null,
+        'isPublic': false,
+        'createdAt': now,
+      });
+      await batch.commit();
+    } catch (e) {
+      // Roll back Firebase Auth user if Firestore write fails
+      await cred.user!.delete();
+      rethrow;
+    }
+
+    return AuthUser(
+      id: uid,
+      username: username,
+      email: email,
+      displayName: resolvedDisplay,
     );
-    final user = AuthUser.fromJson(res.data['user'] as Map<String, dynamic>);
-    await _persist(res.data['token'] as String, user);
-    return user;
   }
+
+  // ── Google Sign-In ─────────────────────────────────────────────────────────
+
+  @override
+  Future<AuthUser> signInWithGoogle({String? username}) async {
+    // Trigger the Google Sign-In flow
+    final googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) throw Exception('Google sign-in cancelled.');
+
+    final googleAuth = await googleUser.authentication;
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    final userCred = await _auth.signInWithCredential(credential);
+    final uid = userCred.user!.uid;
+    final isNewUser = userCred.additionalUserInfo?.isNewUser ?? false;
+
+    if (isNewUser) {
+      // First time — create Firestore profile
+      final resolvedUsername = username != null && username.isNotEmpty
+          ? username
+          : _sanitizeUsername(googleUser.displayName ?? googleUser.email) +
+              uid.substring(0, 4);
+
+      final resolvedDisplay = googleUser.displayName?.isNotEmpty == true
+          ? googleUser.displayName!
+          : resolvedUsername;
+
+      // Reserve username + create profile atomically
+      final usernameDoc =
+          _firestore.collection('usernames').doc(resolvedUsername);
+      final userDoc = _firestore.collection('users').doc(uid);
+      final batch = _firestore.batch();
+      batch.set(usernameDoc, {'uid': uid});
+      batch.set(userDoc, {
+        'uid': uid,
+        'username': resolvedUsername,
+        'email': googleUser.email,
+        'displayName': resolvedDisplay,
+        'avatarUrl': googleUser.photoUrl,
+        'bio': null,
+        'isPublic': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      await batch.commit();
+
+      return AuthUser(
+        id: uid,
+        username: resolvedUsername,
+        email: googleUser.email,
+        displayName: resolvedDisplay,
+        avatarUrl: googleUser.photoUrl,
+      );
+    } else {
+      // Returning user — just read profile
+      return await _fetchProfile(uid);
+    }
+  }
+
+  // ── Login ──────────────────────────────────────────────────────────────────
 
   @override
   Future<AuthUser> login({
     required String email,
     required String password,
   }) async {
-    final res = await _dio.post(
-      '/auth/login',
-      data: {'email': email, 'password': password},
-    );
-    final user = AuthUser.fromJson(res.data['user'] as Map<String, dynamic>);
-    await _persist(res.data['token'] as String, user);
-    return user;
+    try {
+      final cred = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return await _fetchProfile(cred.user!.uid);
+    } on FirebaseAuthException catch (e) {
+      throw Exception(_authError(e));
+    }
   }
+
+  // ── Logout ─────────────────────────────────────────────────────────────────
 
   @override
   Future<void> logout() async {
-    await _storage.delete(key: _kToken);
-    await _storage.delete(key: _kUser);
+    await _googleSignIn.signOut(); // clear Google credential state
+    await _auth.signOut();
   }
+
+  // ── Delete Account ─────────────────────────────────────────────────────────
 
   @override
   Future<void> deleteAccount() async {
-    final token = await _storage.read(key: _kToken);
-    await _dio.delete(
-      '/auth/account',
-      options: Options(headers: {'Authorization': 'Bearer $token'}),
-    );
-    await _storage.delete(key: _kToken);
-    await _storage.delete(key: _kUser);
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Not logged in.');
+    final uid = user.uid;
+
+    // Fetch username before deleting profile
+    final userSnap = await _firestore.collection('users').doc(uid).get();
+    final username = userSnap.data()?['username'] as String?;
+
+    // Delete all sub-collections and top-level docs
+    await _deleteCollection(_firestore.collection('users').doc(uid).collection('tasks'));
+    await _deleteCollection(_firestore.collection('users').doc(uid).collection('goals'));
+
+    // Remove from all groups
+    final memberSnaps = await _firestore
+        .collection('group_members')
+        .where('userId', isEqualTo: uid)
+        .get();
+    final batch = _firestore.batch();
+    for (final doc in memberSnaps.docs) {
+      batch.delete(doc.reference);
+    }
+
+    // Remove invites
+    final inviteSnaps = await _firestore
+        .collection('invites')
+        .where('invitedUserId', isEqualTo: uid)
+        .get();
+    for (final doc in inviteSnaps.docs) {
+      batch.delete(doc.reference);
+    }
+
+    // Delete user profile + username reservation
+    batch.delete(_firestore.collection('users').doc(uid));
+    if (username != null) {
+      batch.delete(_firestore.collection('usernames').doc(username));
+    }
+    await batch.commit();
+
+    // Delete Firebase Auth account last
+    await user.delete();
   }
+
+  // ── Current User ───────────────────────────────────────────────────────────
 
   @override
   Future<AuthUser?> currentUser() async {
-    final raw = await _storage.read(key: _kUser);
-    if (raw == null) return null;
-    return AuthUser.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-  }
-
-  @override
-  Future<bool> get isLoggedIn async =>
-      (await _storage.read(key: _kToken)) != null;
-
-  @override
-  Future<String?> token() => _storage.read(key: _kToken);
-
-  Future<void> _persist(String token, AuthUser user) async {
-    await _storage.write(key: _kToken, value: token);
-    await _storage.write(key: _kUser, value: jsonEncode(user.toJson()));
-  }
-}
-
-// ── Providers ─────────────────────────────────────────────────────────────────
-
-final _storageProvider = Provider<FlutterSecureStorage>(
-  (_) => const FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-  ),
-);
-
-/// Retries up to [maxRetries] times when the server returns 502
-/// (Render free-tier cold-start bounce). Waits [delay] between attempts.
-/// Must be constructed with the parent [Dio] instance so retries go through
-/// the full interceptor chain (including this interceptor) — not a bare Dio().
-class _RenderWakeInterceptor extends Interceptor {
-  _RenderWakeInterceptor(
-    this._dio, {
-    this.maxRetries = 10,
-    this.delay = const Duration(seconds: 15),
-  });
-  final Dio _dio;
-  final int maxRetries;
-  final Duration delay;
-
-  @override
-  void onError(DioException err, ErrorInterceptorHandler handler) async {
-    final statusCode = err.response?.statusCode;
-    final attempt = (err.requestOptions.extra['_retryCount'] as int?) ?? 0;
-
-    if ((statusCode == 502 || statusCode == 503 || statusCode == 504) &&
-        attempt < maxRetries) {
-      err.requestOptions.extra['_retryCount'] = attempt + 1;
-      await Future.delayed(delay);
-      try {
-        // Use the parent Dio (with this interceptor attached) so subsequent
-        // 502s are also retried up to maxRetries total.
-        final response = await _dio.fetch(err.requestOptions);
-        handler.resolve(response);
-      } catch (e) {
-        handler.next(err);
-      }
-      return;
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    try {
+      return await _fetchProfile(user.uid);
+    } catch (_) {
+      return null;
     }
-    handler.next(err);
+  }
+
+  // ── Auth State Stream ──────────────────────────────────────────────────────
+
+  @override
+  Stream<AuthUser?> get authStateChanges {
+    return _auth.authStateChanges().asyncMap((user) async {
+      if (user == null) return null;
+      try {
+        return await _fetchProfile(user.uid);
+      } catch (_) {
+        return null;
+      }
+    });
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  Future<AuthUser> _fetchProfile(String uid) async {
+    final doc = await _firestore.collection('users').doc(uid).get();
+    final data = doc.data();
+    if (data == null) throw Exception('User profile not found.');
+    return AuthUser(
+      id: uid,
+      username: data['username'] as String? ?? '',
+      email: data['email'] as String? ?? '',
+      displayName: data['displayName'] as String? ?? '',
+      avatarUrl: data['avatarUrl'] as String?,
+      bio: data['bio'] as String?,
+      isPublic: data['isPublic'] as bool? ?? false,
+    );
+  }
+
+  Future<void> _deleteCollection(CollectionReference col) async {
+    QuerySnapshot snap;
+    do {
+      snap = await col.limit(100).get();
+      final batch = _firestore.batch();
+      for (final doc in snap.docs) {
+        batch.delete(doc.reference);
+      }
+      if (snap.docs.isNotEmpty) await batch.commit();
+    } while (snap.docs.length == 100);
+  }
+
+  String _sanitizeUsername(String raw) {
+    return raw
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9_]'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .substring(0, raw.length.clamp(0, 20));
+  }
+
+  String _authError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'email-already-in-use':
+        return 'Email already taken.';
+      case 'invalid-email':
+        return 'Invalid email address.';
+      case 'weak-password':
+        return 'Password is too weak (min 8 chars).';
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'Invalid credentials.';
+      case 'user-disabled':
+        return 'Account has been disabled.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      default:
+        return e.message ?? 'Authentication error.';
+    }
   }
 }
 
-/// Base Dio instance — interceptor added in api_client.dart which wraps this.
-/// Timeouts are generous (90 s) to survive Render free-tier cold starts.
-/// _RenderWakeInterceptor retries on 502/503/504 up to 6× (≈30 s window).
-final _baseDioProvider = Provider<Dio>((ref) {
-  final dio = Dio(
-    BaseOptions(
-      baseUrl: AppConfig.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 90),
-      receiveTimeout: const Duration(seconds: 90),
-      headers: {'Content-Type': 'application/json'},
-    ),
-  );
-  dio.interceptors.add(_RenderWakeInterceptor(dio));
-  return dio;
-});
+// ── Providers ──────────────────────────────────────────────────────────────────
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepositoryImpl(
-    ref.watch(_baseDioProvider),
-    ref.watch(_storageProvider),
+    FirebaseAuth.instance,
+    FirebaseFirestore.instance,
   );
 });
-
-final storageProvider = _storageProvider;

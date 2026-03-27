@@ -22,10 +22,4 @@ class AppConfig {
         'staging' => 'taskstack_staging.db',
         _ => 'taskstack.db',
       };
-
-  /// REST API base URL — override via --dart-define=API_BASE_URL=...
-  static const apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://taskstack-api.onrender.com',
-  );
 }

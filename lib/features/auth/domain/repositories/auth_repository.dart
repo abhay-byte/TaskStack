@@ -15,18 +15,19 @@ abstract class AuthRepository {
     required String password,
   });
 
-  /// Clear token + user from secure storage.
+  /// Sign in with Google. Creates a Firestore profile on first sign-in.
+  /// [username] is required only when registering a new Google account.
+  Future<AuthUser> signInWithGoogle({String? username});
+
+  /// Sign out the current user (and clears Google credential state).
   Future<void> logout();
 
   /// Permanently delete the account and all associated cloud data.
   Future<void> deleteAccount();
 
-  /// Returns the currently stored user, or null if not logged in.
+  /// Returns the currently logged-in user, or null if not authenticated.
   Future<AuthUser?> currentUser();
 
-  /// True if a JWT is stored.
-  Future<bool> get isLoggedIn;
-
-  /// Returns the stored raw JWT token, or null.
-  Future<String?> token();
+  /// Stream that emits auth state changes (user or null).
+  Stream<AuthUser?> get authStateChanges;
 }

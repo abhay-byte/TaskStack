@@ -1,4 +1,5 @@
-import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:taskstack/core/providers/guest_mode_provider.dart';
 import 'package:taskstack/features/auth/domain/entities/auth_user.dart';
@@ -41,22 +42,32 @@ class AuthGuest extends AuthState {
 class AuthNotifier extends Notifier<AuthState> {
   @override
   AuthState build() {
-    _restore();
+    // Listen to Firebase auth state changes reactively
+    _listenToAuthStream();
     return const AuthInitial();
   }
 
   AuthRepository get _repo => ref.read(authRepositoryProvider);
   SyncRepository get _sync => ref.read(syncRepositoryProvider);
 
-  /// Restore session on cold start
-  Future<void> _restore() async {
-    final user = await _repo.currentUser();
-    if (user != null) {
-      state = AuthAuthenticated(user);
-      _sync.pullCloudToLocal(); // fire-and-forget pull on session restore
-    } else {
-      state = const AuthUnauthenticated();
-    }
+  void _listenToAuthStream() {
+    // Subscribes to Firebase authStateChanges — fires on login/logout/token-refresh
+    ref.onDispose(
+      FirebaseAuth.instance.authStateChanges().listen((firebaseUser) async {
+        if (state is AuthLoading) return; // Let explicit calls finish first
+        if (firebaseUser == null) {
+          if (state is! AuthGuest) {
+            state = const AuthUnauthenticated();
+          }
+        } else {
+          final user = await _repo.currentUser();
+          if (user != null && state is! AuthAuthenticated) {
+            state = AuthAuthenticated(user);
+            _sync.pullCloudToLocal(); // fire-and-forget on session restore
+          }
+        }
+      }).cancel,
+    );
   }
 
   /// Enter guest / offline mode — skips authentication entirely.
@@ -73,15 +84,38 @@ class AuthNotifier extends Notifier<AuthState> {
       ref.read(isGuestModeProvider.notifier).state = false;
       state = AuthAuthenticated(user);
       if (wasGuest) {
-        _sync.pushLocalToCloud(); // migrate guest data to cloud
+        _sync.pushLocalToCloud();
       } else {
-        _sync.pullCloudToLocal(); // fire-and-forget pull on login
+        _sync.pullCloudToLocal();
       }
-    } on DioException catch (e) {
-      final msg = _parseError(e);
-      state = AuthUnauthenticated(msg);
-    } catch (_) {
-      state = const AuthUnauthenticated('An unexpected error occurred.');
+    } on FirebaseAuthException catch (e) {
+      state = AuthUnauthenticated(e.message ?? 'Authentication error.');
+    } catch (e) {
+      state = AuthUnauthenticated(e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Future<void> signInWithGoogle() async {
+    final wasGuest = state is AuthGuest;
+    state = const AuthLoading();
+    try {
+      final user = await _repo.signInWithGoogle();
+      ref.read(isGuestModeProvider.notifier).state = false;
+      state = AuthAuthenticated(user);
+      if (wasGuest) {
+        _sync.pushLocalToCloud();
+      } else {
+        _sync.pullCloudToLocal();
+      }
+    } on FirebaseAuthException catch (e) {
+      state = AuthUnauthenticated(e.message ?? 'Google sign-in error.');
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      if (msg.contains('cancelled')) {
+        state = const AuthUnauthenticated(); // silent cancel
+      } else {
+        state = AuthUnauthenticated(msg);
+      }
     }
   }
 
@@ -102,11 +136,10 @@ class AuthNotifier extends Notifier<AuthState> {
       ref.read(isGuestModeProvider.notifier).state = false;
       state = AuthAuthenticated(user);
       _sync.pushLocalToCloud(); // push local data (including any guest data)
-    } on DioException catch (e) {
-      final msg = _parseError(e);
-      state = AuthUnauthenticated(msg);
-    } catch (_) {
-      state = const AuthUnauthenticated('An unexpected error occurred.');
+    } on FirebaseAuthException catch (e) {
+      state = AuthUnauthenticated(e.message ?? 'Authentication error.');
+    } catch (e) {
+      state = AuthUnauthenticated(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 
@@ -123,10 +156,10 @@ class AuthNotifier extends Notifier<AuthState> {
       await _repo.deleteAccount();
       ref.read(isGuestModeProvider.notifier).state = false;
       state = const AuthUnauthenticated();
-    } on DioException catch (e) {
-      final msg = _parseError(e);
+    } catch (e) {
       // Restore authenticated state so user can try again
       final user = await _repo.currentUser();
+      final msg = e.toString().replaceFirst('Exception: ', '');
       state = user != null ? AuthAuthenticated(user) : AuthUnauthenticated(msg);
       rethrow;
     }
@@ -137,14 +170,6 @@ class AuthNotifier extends Notifier<AuthState> {
     if (state is AuthAuthenticated) {
       state = AuthAuthenticated(user);
     }
-  }
-
-  String _parseError(DioException e) {
-    final data = e.response?.data;
-    if (data is Map && data.containsKey('error')) {
-      return data['error'].toString();
-    }
-    return e.message ?? 'Network error.';
   }
 }
 
