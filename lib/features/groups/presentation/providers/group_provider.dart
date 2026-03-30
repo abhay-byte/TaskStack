@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:taskstack/features/groups/data/repositories/group_repository_impl.dart';
 import 'package:taskstack/features/groups/domain/entities/group.dart';
 import 'package:taskstack/features/groups/domain/entities/invite.dart';
@@ -21,6 +22,8 @@ class GroupNotifier extends Notifier<AsyncValue<List<Group>>> {
       final groups = await _repo.fetchMyGroups();
       state = AsyncValue.data(groups);
     } catch (e, st) {
+      debugPrint('[Groups] load failed: $e');
+      debugPrintStack(stackTrace: st);
       state = AsyncValue.error(e.toString().replaceFirst('Exception: ', ''), st);
     }
   }
@@ -33,8 +36,8 @@ class GroupNotifier extends Notifier<AsyncValue<List<Group>>> {
       );
       state = AsyncValue.data([group, ...state.value ?? []]);
       return true;
-    } catch (_) {
-      return false;
+    } catch (e) {
+      return Future.error(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 
@@ -94,6 +97,8 @@ class InviteNotifier extends Notifier<AsyncValue<List<Invite>>> {
       final invites = await _repo.fetchInvites();
       state = AsyncValue.data(invites);
     } catch (e, st) {
+      debugPrint('[Groups] invites load failed: $e');
+      debugPrintStack(stackTrace: st);
       state = AsyncValue.error(e.toString().replaceFirst('Exception: ', ''), st);
     }
   }

@@ -64,6 +64,10 @@ class AuthNotifier extends Notifier<AuthState> {
           if (user != null && state is! AuthAuthenticated) {
             state = AuthAuthenticated(user);
             _sync.pullCloudToLocal(); // fire-and-forget on session restore
+          } else if (user == null && state is AuthInitial) {
+            state = const AuthUnauthenticated(
+              'Could not restore your profile. Please sign in again.',
+            );
           }
         }
       }).cancel,
@@ -95,11 +99,11 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  Future<void> signInWithGoogle() async {
+  Future<void> signInWithGoogle({String? preferredUsername}) async {
     final wasGuest = state is AuthGuest;
     state = const AuthLoading();
     try {
-      final user = await _repo.signInWithGoogle();
+      final user = await _repo.signInWithGoogle(username: preferredUsername);
       ref.read(isGuestModeProvider.notifier).state = false;
       state = AuthAuthenticated(user);
       if (wasGuest) {
@@ -110,7 +114,7 @@ class AuthNotifier extends Notifier<AuthState> {
     } on FirebaseAuthException catch (e) {
       state = AuthUnauthenticated(e.message ?? 'Google sign-in error.');
     } catch (e) {
-      final msg = e.toString().replaceFirst('Exception: ', '');
+      final msg = _friendlyAuthError(e);
       if (msg.contains('cancelled')) {
         state = const AuthUnauthenticated(); // silent cancel
       } else {
@@ -170,6 +174,14 @@ class AuthNotifier extends Notifier<AuthState> {
     if (state is AuthAuthenticated) {
       state = AuthAuthenticated(user);
     }
+  }
+
+  String _friendlyAuthError(Object error) {
+    final msg = error.toString().replaceFirst('Exception: ', '');
+    if (msg.contains('ApiException: 10') || msg.contains('sign_in_failed')) {
+      return 'Google Sign-In is not configured for this Android build yet. Add this app\'s SHA-1 and SHA-256 to Firebase, then refresh google-services.json.';
+    }
+    return msg;
   }
 }
 
