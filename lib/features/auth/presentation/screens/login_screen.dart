@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskstack/features/auth/presentation/providers/auth_provider.dart';
+import 'package:taskstack/features/auth/presentation/widgets/auth_screen_scaffold.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -32,12 +33,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         setState(() => _showWakeHint = true);
       }
     });
-    await ref.read(authNotifierProvider.notifier).login(
-          email: _emailCtrl.text.trim(),
-          password: _passCtrl.text,
-        );
+    await ref
+        .read(authNotifierProvider.notifier)
+        .login(email: _emailCtrl.text.trim(), password: _passCtrl.text);
     if (mounted) setState(() => _showWakeHint = false);
     // GoRouter redirect handles navigation on AuthAuthenticated
+  }
+
+  Future<void> _submitGoogle() async {
+    await ref.read(authNotifierProvider.notifier).signInWithGoogle();
   }
 
   @override
@@ -49,145 +53,122 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     ref.listen(authNotifierProvider, (_, next) {
       if (next is AuthUnauthenticated && next.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.errorMessage!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
       }
     });
 
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+    return AuthScreenScaffold(
+      title: 'Welcome back',
+      subtitle:
+          'Sign in with email or Google to sync tasks, groups, and your profile across devices.',
+      footer: TextButton.icon(
+        onPressed:
+            isLoading
+                ? null
+                : () {
+                  ref.read(authNotifierProvider.notifier).continueAsGuest();
+                  context.go('/');
+                },
+        icon: const Icon(Icons.person_outline),
+        label: const Text('Continue as guest for offline mode'),
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            GoogleAuthButton(
+              label: 'Continue with Google',
+              isLoading: isLoading,
+              onPressed: _submitGoogle,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'If this Google account already exists, we’ll sign you in. If not, TaskStack will create it for you.',
+              textAlign: TextAlign.center,
+              style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: 24),
+            const AuthSectionDivider(label: 'or use email'),
+            const SizedBox(height: 24),
+            TextFormField(
+              controller: _emailCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                prefixIcon: Icon(Icons.email_outlined),
+              ),
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Email is required';
+                if (!v.contains('@')) return 'Enter a valid email';
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _passCtrl,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscure
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                  ),
+                  onPressed: () => setState(() => _obscure = !_obscure),
+                ),
+              ),
+              obscureText: _obscure,
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => _submit(),
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Password is required';
+                return null;
+              },
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: isLoading ? null : _submit,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+              ),
+              child:
+                  isLoading
+                      ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Text('Sign In'),
+            ),
+            if (isLoading && _showWakeHint) ...[
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // ── Logo ────────────────────────────────────────────────
-                  Center(
-                    child: Image.asset(
-                      'assets/images/app_icon.png',
-                      width: 72,
-                      height: 72,
-                    ),
+                  Icon(
+                    Icons.cloud_sync_outlined,
+                    size: 16,
+                    color: cs.onSurfaceVariant,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(width: 6),
                   Text(
-                    'Welcome back',
-                    style: tt.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    'Sign in to your TaskStack account',
-                    style: tt.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 36),
-
-                  // ── Email ───────────────────────────────────────────────
-                  TextFormField(
-                    controller: _emailCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email_outlined),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Email is required';
-                      if (!v.contains('@')) return 'Enter a valid email';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ── Password ────────────────────────────────────────────
-                  TextFormField(
-                    controller: _passCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscure
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined),
-                        onPressed: () =>
-                            setState(() => _obscure = !_obscure),
-                      ),
-                    ),
-                    obscureText: _obscure,
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _submit(),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Password is required';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 28),
-
-                  // ── Submit ──────────────────────────────────────────────
-                  FilledButton(
-                    onPressed: isLoading ? null : _submit,
-                    child: isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Sign In'),
-                  ),
-                  if (isLoading && _showWakeHint) ...
-                    [
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.cloud_sync_outlined,
-                              size: 16,
-                              color: cs.onSurfaceVariant),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Waking up server… please wait',
-                            style: tt.bodySmall
-                                ?.copyWith(color: cs.onSurfaceVariant),
-                          ),
-                        ],
-                      ),
-                    ],
-                  const SizedBox(height: 16),
-
-                  // ── Sign Up link ────────────────────────────────────────
-                  TextButton(
-                    onPressed: () => context.go('/signup'),
-                    child: const Text("Don't have an account? Sign up"),
-                  ),
-
-                  // ── Guest mode ──────────────────────────────────────────
-                  const Divider(height: 32),
-                  TextButton.icon(
-                    onPressed: isLoading
-                        ? null
-                        : () {
-                            ref
-                                .read(authNotifierProvider.notifier)
-                                .continueAsGuest();
-                            context.go('/');
-                          },
-                    icon: const Icon(Icons.person_outline),
-                    label: const Text('Continue as Guest'),
-                    style: TextButton.styleFrom(
-                      foregroundColor:
-                          Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                    'Waking up server... please wait',
+                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                   ),
                 ],
               ),
+            ],
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: isLoading ? null : () => context.go('/signup'),
+              child: const Text("Don't have an account? Create one"),
             ),
-          ),
+          ],
         ),
       ),
     );

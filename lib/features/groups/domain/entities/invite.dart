@@ -17,11 +17,47 @@ class Invite {
   final DateTime createdAt;
 
   factory Invite.fromJson(Map<String, dynamic> json) => Invite(
-        id: json['id'] as String,
-        status: json['status'] as String,
-        groupId: json['group_id'] as String,
-        groupName: json['group_name'] as String,
-        inviterUsername: json['inviter_username'] as String,
-        createdAt: DateTime.parse(json['created_at'] as String),
+        id: _stringValue(json, 'id'),
+        status: _stringValue(json, 'status'),
+        groupId:
+            _nullableStringValue(json, 'group_id') ??
+            _nullableStringValue(json, 'groupId') ??
+            '',
+        groupName:
+            _nullableStringValue(json, 'group_name') ??
+            _nullableStringValue(json, 'groupName') ??
+            '',
+        inviterUsername:
+            _nullableStringValue(json, 'inviter_username') ??
+            _nullableStringValue(json, 'inviterUsername') ??
+            '',
+        createdAt:
+            _dateTimeValue(json['created_at']) ??
+            _dateTimeValue(json['createdAt']) ??
+            DateTime.now(),
       );
+}
+
+String _stringValue(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  return value?.toString() ?? '';
+}
+
+String? _nullableStringValue(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return null;
+  final text = value.toString();
+  return text.isEmpty ? null : text;
+}
+
+DateTime? _dateTimeValue(Object? value) {
+  if (value == null) return null;
+  if (value is DateTime) return value;
+  if (value is String) return DateTime.tryParse(value);
+  if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+  try {
+    final date = (value as dynamic).toDate();
+    if (date is DateTime) return date;
+  } catch (_) {}
+  return null;
 }

@@ -26,16 +26,22 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
-    final ok = await ref
-        .read(groupNotifierProvider.notifier)
-        .create(_nameCtrl.text.trim(), _descCtrl.text.trim());
+    String? error;
+    var ok = false;
+    try {
+      ok = await ref
+          .read(groupNotifierProvider.notifier)
+          .create(_nameCtrl.text.trim(), _descCtrl.text.trim());
+    } catch (e) {
+      error = e.toString().replaceFirst('Exception: ', '');
+    }
     setState(() => _saving = false);
     if (!mounted) return;
     if (ok) {
       context.pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to create group.')),
+        SnackBar(content: Text(error ?? 'Failed to create group.')),
       );
     }
   }
