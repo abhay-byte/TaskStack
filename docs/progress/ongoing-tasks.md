@@ -75,6 +75,13 @@ This preserves deletions across sign-out/sign-in without risking a fresh login w
 
 ---
 
+### Issue 7: Task Delete Tombstones Were Not Pushed Immediately — RESOLVED
+**Problem:** Even after adding delete tombstones, task deletion itself did not trigger a sync push. If the user refreshed or signed back in before another save happened, pull could still resurrect the deleted cloud task.
+
+**Fix:** `DeleteTaskUseCase` now triggers `pushLocalToCloud()` immediately after local deletion succeeds, so task tombstones reach Firestore right away instead of waiting for a later unrelated save.
+
+---
+
 ## ✅ Phase 12: Delete Account — COMPLETE
 
 **What was built:**
