@@ -2,6 +2,7 @@ import 'package:uuid/uuid.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/features/task_stack/domain/repositories/task_repository.dart';
 import 'package:taskstack/features/notifications/notification_scheduler.dart';
+import 'package:taskstack/features/sync/domain/repositories/sync_repository.dart';
 
 const _uuid = Uuid();
 
@@ -58,13 +59,25 @@ class CreateTaskUseCase {
     for (var i = 1; i <= 365 * 2; i++) {
       DateTime nextDate;
       if (parent.recurrenceType == RecurrenceType.daily) {
-        nextDate = DateTime(parent.taskDate.year, parent.taskDate.month, parent.taskDate.day + i);
+        nextDate = DateTime(
+          parent.taskDate.year,
+          parent.taskDate.month,
+          parent.taskDate.day + i,
+        );
         if (instances.length >= 365) break; // 1 year limit
       } else if (parent.recurrenceType == RecurrenceType.weekly) {
-        nextDate = DateTime(parent.taskDate.year, parent.taskDate.month, parent.taskDate.day + (7 * i));
+        nextDate = DateTime(
+          parent.taskDate.year,
+          parent.taskDate.month,
+          parent.taskDate.day + (7 * i),
+        );
         if (instances.length >= 104) break; // 2 years limit
       } else if (parent.recurrenceType == RecurrenceType.custom) {
-        nextDate = DateTime(parent.taskDate.year, parent.taskDate.month, parent.taskDate.day + i);
+        nextDate = DateTime(
+          parent.taskDate.year,
+          parent.taskDate.month,
+          parent.taskDate.day + i,
+        );
         if (!parent.customRecurrenceDays.contains(nextDate.weekday)) {
           continue; // skip days that aren't selected
         }
@@ -179,9 +192,10 @@ class UpdateTaskUseCase {
 }
 
 class DeleteTaskUseCase {
-  DeleteTaskUseCase(this._repository, this._scheduler);
+  DeleteTaskUseCase(this._repository, this._scheduler, this._syncRepository);
   final TaskRepository _repository;
   final NotificationScheduler _scheduler;
+  final SyncRepository _syncRepository;
 
   Future<void> execute(
     Task task, {
@@ -200,6 +214,7 @@ class DeleteTaskUseCase {
     } else {
       await _repository.deleteTask(task.id);
     }
+    await _syncRepository.pushLocalToCloud();
   }
 }
 

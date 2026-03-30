@@ -74,6 +74,7 @@ final deleteTaskUseCaseProvider = Provider<DeleteTaskUseCase>((ref) {
   return DeleteTaskUseCase(
     ref.watch(taskRepositoryProvider),
     ref.watch(notificationSchedulerProvider),
+    ref.watch(syncRepositoryProvider),
   );
 });
 
