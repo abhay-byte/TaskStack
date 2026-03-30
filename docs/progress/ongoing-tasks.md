@@ -93,6 +93,19 @@ This preserves deletions across sign-out/sign-in without risking a fresh login w
 
 ---
 
+## ✅ Stack Day Todo Sheet — COMPLETE
+
+**What was built:**
+- Added a `Todo` action on the Stack page that opens a compact day-specific bottom sheet.
+- The sheet is scoped to the currently focused stack date and shows only **unscheduled tasks** for that day.
+- Users can add quick one-day todo items directly from the sheet without opening the full task form.
+- Todo items can be marked done or undone inline from the sheet.
+- Completion state changes now push sync immediately, so day-todo updates persist more reliably across refresh/sign-in.
+
+**Data model note:** This feature reuses the existing `tasks` table. Day todos are just tasks with `taskDate = selected day` and `startMinutes = null`, so the list naturally resets when the user opens another day.
+
+---
+
 ## 🚀 Up Next: Future Enhancements (Post v1.0)
 
 - ~~Signed release APK~~ ✅ Done (keystore at `~/repos/keys/`)

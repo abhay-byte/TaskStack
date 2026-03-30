@@ -8,7 +8,7 @@
 
 ## Local Schema (SQLite via Drift)
 
-> Source: `lib/database/tables/` + `lib/database/app_database.dart` (schema v4).
+> Source: `lib/database/tables/` + `lib/database/app_database.dart` (schema v5).
 
 ```mermaid
 erDiagram
@@ -62,6 +62,11 @@ erDiagram
         INT   totalDurationCompleted        "default 0 (minutes)"
         REAL  productivityScore             "nullable 0.0–1.0"
         TEXT  tagBreakdownJson              "JSON map tag→minutes, default {}"
+    }
+
+    deleted_tasks {
+        TEXT     id         PK  "task id tombstone"
+        DATETIME deletedAt      "UTC delete marker for cloud sync"
     }
 
     goals ||--o{ tasks : "has"
@@ -172,6 +177,15 @@ erDiagram
 | `tasks` → `tasks` | Self-referencing | `tasks.parentTaskId` links recurring instances to their template |
 | `tasks` ↔ `tags` | Denormalised | Tags stored inline as JSON array (`tagsJson`); `tags` table holds the master tag registry |
 | `daily_summaries` | Standalone | Materialised analytics cache keyed by date; no FK |
+| `deleted_tasks` | Standalone | Local tombstones preserve deletions until sync pushes `deletedAt` markers to cloud |
+
+### Day Todo View
+
+The Stack page's day-only Todo sheet does **not** introduce a separate todo table.
+
+- Day todos reuse `tasks` rows whose `taskDate` matches the selected calendar day.
+- Todo items are simply **unscheduled tasks** (`startMinutes = null`).
+- Because the list is date-scoped, opening the Todo sheet on the next day naturally shows a fresh list for that day.
 
 ### Cloud (Postgres / Aiven)
 
@@ -204,5 +218,6 @@ This means task queries never need a join to retrieve tags, at the cost of tag r
 | 2 | Local | Added `tasks.graphicImage` column |
 | 3 | Local | Added `goals` table + `tasks.goalId` column |
 | 4 | Local | Added `goals.updatedAt` column (last-write-wins sync support) |
-| 5 | Cloud | Initial cloud schema: `users`, `groups`, `group_members`, `group_invites` |
-| 6 | Cloud | Phase 10: added `goals` + `tasks` tables (user-scoped mirrors of Drift schema) |
+| 5 | Local | Added `deleted_tasks` tombstone table for delete sync |
+| 6 | Cloud | Initial cloud schema: `users`, `groups`, `group_members`, `group_invites` |
+| 7 | Cloud | Phase 10: added `goals` + `tasks` tables (user-scoped mirrors of Drift schema) |

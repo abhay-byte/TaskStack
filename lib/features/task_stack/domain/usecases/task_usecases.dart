@@ -94,7 +94,6 @@ class CreateTaskUseCase {
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
           status: TaskStatus.pending,
-          completedAt: null,
         ),
       );
     }
@@ -108,7 +107,7 @@ class CreateTaskUseCase {
     final instances = <Task>[];
     final interval = parent.repeatIntervalMinutes!;
     var nextStart = parent.startMinutes! + interval;
-    final endOfDay = 23 * 60 + 59;
+    const endOfDay = 23 * 60 + 59;
     var index = 1;
 
     while (nextStart + (parent.durationMinutes ?? 30) <= endOfDay) {
@@ -120,7 +119,6 @@ class CreateTaskUseCase {
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
           status: TaskStatus.pending,
-          completedAt: null,
         ),
       );
       nextStart += interval;
@@ -128,6 +126,36 @@ class CreateTaskUseCase {
       if (index > 48) break; // safety cap
     }
     return instances;
+  }
+}
+
+class CreateDayTodoUseCase {
+  CreateDayTodoUseCase(this._createTask, this._syncRepository);
+  final CreateTaskUseCase _createTask;
+  final SyncRepository _syncRepository;
+
+  Future<void> execute({
+    required String title,
+    required DateTime taskDate,
+  }) async {
+    final normalizedDate = DateTime(
+      taskDate.year,
+      taskDate.month,
+      taskDate.day,
+    );
+    final now = DateTime.now();
+
+    await _createTask.execute(
+      Task(
+        id: '',
+        title: title.trim(),
+        createdAt: now,
+        updatedAt: now,
+        taskDate: normalizedDate,
+        notificationEnabled: false,
+      ),
+    );
+    await _syncRepository.pushLocalToCloud();
   }
 }
 
@@ -209,7 +237,6 @@ class DeleteTaskUseCase {
       await _repository.deleteRecurringTasksFromDate(
         actualParentId,
         task.taskDate,
-        inclusive: true,
       );
     } else {
       await _repository.deleteTask(task.id);
@@ -219,8 +246,9 @@ class DeleteTaskUseCase {
 }
 
 class CompleteTaskUseCase {
-  CompleteTaskUseCase(this._repository);
+  CompleteTaskUseCase(this._repository, this._syncRepository);
   final TaskRepository _repository;
+  final SyncRepository _syncRepository;
 
   Future<void> execute(Task task) async {
     // Validate deadline
@@ -250,10 +278,12 @@ class CompleteTaskUseCase {
       status: TaskStatus.done.name,
       completedAt: DateTime.now(),
     );
+    await _syncRepository.pushLocalToCloud();
   }
 
   Future<void> undo(String id) async {
     await _repository.updateStatus(id, status: TaskStatus.pending.name);
+    await _syncRepository.pushLocalToCloud();
   }
 }
 
@@ -265,8 +295,6 @@ class DuplicateTaskUseCase {
     final copy = original.copyWith(
       id: _uuid.v4(),
       status: TaskStatus.pending,
-      completedAt: null,
-      parentTaskId: null,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );

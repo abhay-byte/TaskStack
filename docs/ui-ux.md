@@ -8,7 +8,7 @@
 
 ## Navigation Architecture
 
-TaskStack uses a **bottom navigation bar** (Material 3 `NavigationBar`) as the primary nav surface for 3 top-level destinations, with modal routes for task creation, detail, and settings.
+TaskStack uses a **bottom navigation bar** (Material 3 `NavigationBar`) as the primary nav surface for the app shell, with modal routes and sheets for quick task flows.
 
 ```
 Root
@@ -17,6 +17,7 @@ Root
 ├── [Bottom Nav] Settings           → /settings
 │
 ├── [Modal] Task Create             → /task/new
+├── [Bottom Sheet] Day Todo        → Stack app-bar `Todo`
 ├── [Modal] Task Edit               → /task/:id/edit
 ├── [Screen] Task Detail            → /task/:id
 │
@@ -190,11 +191,19 @@ Root
 **Interactions:**
 - Swipe left/right on date bar → navigate to prev/next day
 - Tap `[Today]` → jump date to current day + scroll to now
+- Tap `[Todo]` → open the day-only Todo sheet for the currently focused date
 - Tap task card → `TaskDetailScreen`
 - Long-press task card → contextual menu (Edit / Duplicate / Delete)
 - Swipe task card right → mark done (with confirmation haptic)
 - Tap `[+]` FAB → `TaskFormScreen` (create new)
 - Tap `[▾ Unscheduled]` → expand unscheduled tasks section
+
+#### Day Todo Sheet
+
+- Opens from the Stack page and is always scoped to the currently focused date.
+- Shows only unscheduled tasks for that calendar day.
+- Supports quick add and mark-done without opening the full task form.
+- Opening the sheet on a different day naturally shows that day's own todo list.
 
 ---
 
