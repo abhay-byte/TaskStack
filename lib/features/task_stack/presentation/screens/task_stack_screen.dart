@@ -6,6 +6,7 @@ import 'package:taskstack/features/auth/presentation/providers/auth_provider.dar
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/features/task_stack/domain/usecases/task_usecases.dart';
 import 'package:taskstack/features/task_stack/presentation/providers/task_providers.dart';
+import 'package:taskstack/features/task_stack/presentation/screens/day_todo_sheet.dart';
 import 'package:taskstack/features/task_stack/presentation/widgets/task_card_widget.dart';
 import 'package:taskstack/features/task_stack/presentation/widgets/time_indicator_widget.dart';
 import 'package:taskstack/core/constants/app_spacing.dart';
@@ -16,6 +17,7 @@ import 'package:taskstack/features/sync/data/repositories/sync_repository_impl.d
 const double _kPixelsPerHour = 120.0;
 const double _kMinuteHeight = _kPixelsPerHour / 60;
 const double _kDayBlockHeight = 24 * _kPixelsPerHour;
+const double _kDayFocusAnchor = 0.35;
 
 class TaskStackScreen extends ConsumerStatefulWidget {
   const TaskStackScreen({super.key});
@@ -56,11 +58,13 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   void _onScroll() {
     if (!_scrollController.hasClients || _initialDate == null) return;
 
-    // Determine which day index is most visible (centered on the screen)
+    // Determine which day the user is focused on using the same anchor
+    // that `_scrollToNow()` uses, instead of the viewport center.
     final scrollOffset = _scrollController.offset;
     final viewportHeight = _scrollController.position.viewportDimension;
     final visibleIndex =
-        ((scrollOffset + viewportHeight / 2) / _kDayBlockHeight).floor();
+        ((scrollOffset + viewportHeight * _kDayFocusAnchor) / _kDayBlockHeight)
+            .floor();
 
     if (visibleIndex != _currentVisibleIndex) {
       _currentVisibleIndex = visibleIndex;
@@ -104,7 +108,7 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
     final dayBaseOffset = (10000 + daysOffset) * _kDayBlockHeight;
     final timeOffset =
         (now.hour * 60 + now.minute) * _kMinuteHeight -
-        MediaQuery.of(context).size.height * 0.35;
+        MediaQuery.of(context).size.height * _kDayFocusAnchor;
 
     _scrollController.animateTo(
       dayBaseOffset + timeOffset.clamp(0.0, _kDayBlockHeight),
@@ -129,6 +133,11 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
         ),
         actions: [
           const SyncStatusIndicator(),
+          TextButton.icon(
+            onPressed: () => DayTodoSheet.open(context, date: _composeDate()),
+            icon: const Icon(Icons.checklist_rounded, size: 18),
+            label: const Text('Todo'),
+          ),
           if (!isToday)
             TextButton.icon(
               onPressed: () {
@@ -260,11 +269,30 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/task/new', extra: selectedDate),
+        onPressed: () => context.push('/task/new', extra: _composeDate()),
         tooltip: 'Add Task',
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  DateTime _composeDate() {
+    if (!_scrollController.hasClients || _initialDate == null) {
+      final now = DateTime.now();
+      return DateTime(now.year, now.month, now.day);
+    }
+
+    final focusOffset =
+        _scrollController.offset +
+        _scrollController.position.viewportDimension * _kDayFocusAnchor;
+    final visibleIndex = (focusOffset / _kDayBlockHeight).floor();
+    final daysOffset = visibleIndex - 10000;
+    final date = DateTime(
+      _initialDate!.year,
+      _initialDate!.month,
+      _initialDate!.day + daysOffset,
+    );
+    return DateTime(date.year, date.month, date.day);
   }
 
   bool _isToday(DateTime d) {
@@ -286,17 +314,7 @@ class _DayViewBlock extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncTasks = ref.watch(tasksForDateProvider(pageDate));
-    final tasks = asyncTasks.value ?? [];
-
-    // Process tasks locally to sort and split
-    final sortedTasks = [...tasks]..sort((a, b) {
-      if (a.startMinutes == null && b.startMinutes == null) return 0;
-      if (a.startMinutes == null) return 1;
-      if (b.startMinutes == null) return -1;
-      return a.startMinutes!.compareTo(b.startMinutes!);
-    });
-
+    final sortedTasks = ref.watch(sortedTasksForDateProvider(pageDate));
     final scheduled = sortedTasks.where((t) => t.startMinutes != null).toList();
     final unscheduled =
         sortedTasks.where((t) => t.startMinutes == null).toList();
@@ -649,7 +667,7 @@ class _PositionedTaskCard extends ConsumerWidget {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx, null),
+                onPressed: () => Navigator.pop(ctx),
                 child: const Text('Cancel'),
               ),
               TextButton(

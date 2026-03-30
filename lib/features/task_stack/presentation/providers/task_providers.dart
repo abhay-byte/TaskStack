@@ -25,9 +25,11 @@ final tasksForDateProvider = StreamProvider.family<List<Task>, DateTime>((
   return ref.watch(taskRepositoryProvider).watchTasksForDate(date);
 });
 
-/// Sorted tasks for the currently selected date.
-final sortedTasksProvider = Provider<List<Task>>((ref) {
-  final date = ref.watch(selectedStackDateProvider);
+/// Sorted tasks for any given date.
+final sortedTasksForDateProvider = Provider.family<List<Task>, DateTime>((
+  ref,
+  date,
+) {
   final async = ref.watch(tasksForDateProvider(date));
   final tasks = async.value ?? [];
   return [...tasks]..sort((a, b) {
@@ -36,6 +38,12 @@ final sortedTasksProvider = Provider<List<Task>>((ref) {
     if (b.startMinutes == null) return -1;
     return a.startMinutes!.compareTo(b.startMinutes!);
   });
+});
+
+/// Sorted tasks for the currently selected date.
+final sortedTasksProvider = Provider<List<Task>>((ref) {
+  final date = ref.watch(selectedStackDateProvider);
+  return ref.watch(sortedTasksForDateProvider(date));
 });
 
 /// Scheduled tasks only (have a start time).
@@ -47,11 +55,28 @@ final scheduledTasksProvider = Provider<List<Task>>((ref) {
 });
 
 /// Unscheduled tasks (no start time).
+final unscheduledTasksForDateProvider = Provider.family<List<Task>, DateTime>((
+  ref,
+  date,
+) {
+  final tasks =
+      ref
+          .watch(tasksForDateProvider(date))
+          .value
+          ?.where((t) => t.startMinutes == null)
+          .toList() ??
+      [];
+  tasks.sort((a, b) {
+    if (a.isDone != b.isDone) return a.isDone ? 1 : -1;
+    return b.createdAt.compareTo(a.createdAt);
+  });
+  return tasks;
+});
+
+/// Unscheduled tasks (no start time) for the currently selected date.
 final unscheduledTasksProvider = Provider<List<Task>>((ref) {
-  return ref
-      .watch(sortedTasksProvider)
-      .where((t) => t.startMinutes == null)
-      .toList();
+  final date = ref.watch(selectedStackDateProvider);
+  return ref.watch(unscheduledTasksForDateProvider(date));
 });
 
 // ── Use Case Providers ────────────────────────────────────────────────────
@@ -60,6 +85,13 @@ final createTaskUseCaseProvider = Provider<CreateTaskUseCase>((ref) {
   return CreateTaskUseCase(
     ref.watch(taskRepositoryProvider),
     ref.watch(notificationSchedulerProvider),
+  );
+});
+
+final createDayTodoUseCaseProvider = Provider<CreateDayTodoUseCase>((ref) {
+  return CreateDayTodoUseCase(
+    ref.watch(createTaskUseCaseProvider),
+    ref.watch(syncRepositoryProvider),
   );
 });
 
@@ -79,7 +111,10 @@ final deleteTaskUseCaseProvider = Provider<DeleteTaskUseCase>((ref) {
 });
 
 final completeTaskUseCaseProvider = Provider<CompleteTaskUseCase>((ref) {
-  return CompleteTaskUseCase(ref.watch(taskRepositoryProvider));
+  return CompleteTaskUseCase(
+    ref.watch(taskRepositoryProvider),
+    ref.watch(syncRepositoryProvider),
+  );
 });
 
 final duplicateTaskUseCaseProvider = Provider<DuplicateTaskUseCase>((ref) {
