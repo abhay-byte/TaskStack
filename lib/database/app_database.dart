@@ -25,11 +25,19 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (m) => m.createAll(),
+    onCreate: (m) async {
+      await m.createAll();
+      await customStatement('''
+        CREATE TABLE IF NOT EXISTS deleted_tasks (
+          id TEXT NOT NULL PRIMARY KEY,
+          deleted_at INTEGER NOT NULL
+        )
+      ''');
+    },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.addColumn(tasksTable, tasksTable.graphicImage);
@@ -44,9 +52,15 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           'ALTER TABLE "goals" ADD COLUMN "updated_at" INTEGER NOT NULL DEFAULT 0',
         );
-        await customStatement(
-          'UPDATE "goals" SET "updated_at" = "created_at"',
-        );
+        await customStatement('UPDATE "goals" SET "updated_at" = "created_at"');
+      }
+      if (from < 5) {
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS deleted_tasks (
+            id TEXT NOT NULL PRIMARY KEY,
+            deleted_at INTEGER NOT NULL
+          )
+        ''');
       }
     },
     beforeOpen: (details) async {
