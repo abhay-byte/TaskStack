@@ -37,22 +37,37 @@ class TaskRepositoryImpl implements TaskRepository {
   Future<void> updateTask(Task task) => _dao.updateTask(_taskToCompanion(task));
 
   @override
-  Future<void> deleteTask(String id) => _dao.deleteTaskById(id);
+  Future<void> deleteTask(String id) async {
+    await _dao.recordTaskDeletions([id]);
+    await _dao.deleteTaskById(id);
+  }
 
   @override
-  Future<void> deleteRecurringFamily(String parentId) =>
-      _dao.deleteRecurringFamily(parentId);
+  Future<void> deleteRecurringFamily(String parentId) async {
+    final ids = await _dao.getRecurringFamilyTaskIds(parentId);
+    await _dao.recordTaskDeletions(ids);
+    await _dao.deleteRecurringFamily(parentId);
+  }
 
   @override
   Future<void> deleteRecurringTasksFromDate(
     String parentId,
     DateTime date, {
     bool inclusive = true,
-  }) => _dao.deleteRecurringTasksFromDate(
-    parentId,
-    _dateString(date),
-    inclusive: inclusive,
-  );
+  }) async {
+    final dateStr = _dateString(date);
+    final ids = await _dao.getRecurringTaskIdsFromDate(
+      parentId,
+      dateStr,
+      inclusive: inclusive,
+    );
+    await _dao.recordTaskDeletions(ids);
+    await _dao.deleteRecurringTasksFromDate(
+      parentId,
+      dateStr,
+      inclusive: inclusive,
+    );
+  }
 
   @override
   Future<List<Task>> getTasksInRange(DateTime from, DateTime to) async {

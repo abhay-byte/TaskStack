@@ -44,6 +44,7 @@ class SyncRepositoryImpl implements SyncRepository {
     try {
       await _pushGoals();
       await _pushTasks();
+      await _pushTaskDeletions();
       ref.read(syncStatusProvider.notifier).state = SyncStatus.idle;
       debugPrint('[Sync] Push completed successfully');
     } on FirebaseException catch (e) {
@@ -89,8 +90,8 @@ class SyncRepositoryImpl implements SyncRepository {
 
   Future<void> _pushTasks() async {
     final tasks = await taskDao.getAllTasks();
-    if (tasks.isEmpty) return;
     final uid = _uid!;
+    if (tasks.isEmpty) return;
     final chunks = _chunk(tasks, 400);
     for (final chunk in chunks) {
       final batch = firestore.batch();
@@ -123,11 +124,55 @@ class SyncRepositoryImpl implements SyncRepository {
           'goalId': t.goalId,
           'createdAt': t.createdAt.toUtc().toIso8601String(),
           'updatedAt': t.updatedAt.toUtc().toIso8601String(),
+          'deletedAt': null,
         }, SetOptions(merge: true));
       }
       await batch.commit();
     }
     debugPrint('[Sync] Pushed ${tasks.length} tasks');
+  }
+
+  Future<void> _pushTaskDeletions() async {
+    final uid = _uid!;
+    final tombstones = await taskDao.getDeletedTaskTombstones();
+    if (tombstones.isEmpty) return;
+
+    final liveTaskIds =
+        (await taskDao.getAllTasks()).map((task) => task.id).toSet();
+    final pendingDeletes =
+        tombstones
+            .where((tombstone) => !liveTaskIds.contains(tombstone.id))
+            .toList();
+
+    final staleLocalMarks = tombstones
+        .where((tombstone) => liveTaskIds.contains(tombstone.id))
+        .map((t) => t.id);
+    await taskDao.clearDeletedTaskMarks(staleLocalMarks);
+
+    if (pendingDeletes.isEmpty) return;
+
+    final chunks = _chunk(pendingDeletes, 400);
+    for (final chunk in chunks) {
+      final batch = firestore.batch();
+      for (final tombstone in chunk) {
+        final ref = firestore
+            .collection('users')
+            .doc(uid)
+            .collection('tasks')
+            .doc(tombstone.id);
+        batch.set(ref, {
+          'id': tombstone.id,
+          'deletedAt': tombstone.deletedAt.toUtc().toIso8601String(),
+          'updatedAt': tombstone.deletedAt.toUtc().toIso8601String(),
+        }, SetOptions(merge: true));
+      }
+      await batch.commit();
+    }
+
+    await taskDao.clearDeletedTaskMarks(
+      pendingDeletes.map((tombstone) => tombstone.id),
+    );
+    debugPrint('[Sync] Pushed ${pendingDeletes.length} task deletions');
   }
 
   // ── PULL: cloud → local ────────────────────────────────────────────────────
@@ -163,11 +208,8 @@ class SyncRepositoryImpl implements SyncRepository {
 
   Future<void> _pullGoals() async {
     final uid = _uid!;
-    final snap = await firestore
-        .collection('users')
-        .doc(uid)
-        .collection('goals')
-        .get();
+    final snap =
+        await firestore.collection('users').doc(uid).collection('goals').get();
     for (final doc in snap.docs) {
       final m = doc.data();
       await goalDao.insertGoal(
@@ -186,20 +228,23 @@ class SyncRepositoryImpl implements SyncRepository {
 
   Future<void> _pullTasks() async {
     final uid = _uid!;
-    final snap = await firestore
-        .collection('users')
-        .doc(uid)
-        .collection('tasks')
-        .get();
+    final snap =
+        await firestore.collection('users').doc(uid).collection('tasks').get();
 
     for (final doc in snap.docs) {
       final m = doc.data();
       DateTime? parseDt(dynamic v) =>
           v == null ? null : DateTime.parse(v as String);
+      final taskId = (m['id'] as String?) ?? doc.id;
+
+      if (m['deletedAt'] != null) {
+        await taskDao.deleteTaskById(taskId);
+        continue;
+      }
 
       await taskDao.upsertTask(
         TasksTableCompanion(
-          id: Value(m['id'] as String),
+          id: Value(taskId),
           title: Value(m['title'] as String),
           description: Value(m['description'] as String?),
           purpose: Value(m['purpose'] as String?),
@@ -216,15 +261,13 @@ class SyncRepositoryImpl implements SyncRepository {
           recurrenceType: Value(m['recurrenceType'] as String? ?? 'none'),
           recurrenceRule: Value(m['recurrenceRule'] as String?),
           repeatIntervalMinutes: Value(m['repeatIntervalMinutes'] as int?),
-          notificationEnabled:
-              Value(m['notificationEnabled'] as bool? ?? true),
-          notificationOffsetMinutes:
-              Value(m['notificationOffsetMinutes'] as int? ?? 5),
+          notificationEnabled: Value(m['notificationEnabled'] as bool? ?? true),
+          notificationOffsetMinutes: Value(
+            m['notificationOffsetMinutes'] as int? ?? 5,
+          ),
           status: Value(m['status'] as String? ?? 'pending'),
           completedAt: Value(parseDt(m['completedAt'])),
-          taskDate: Value(
-            (m['taskDate'] as String).substring(0, 10),
-          ),
+          taskDate: Value((m['taskDate'] as String).substring(0, 10)),
           parentTaskId: Value(m['parentTaskId'] as String?),
           goalId: Value(m['goalId'] as String?),
           createdAt: Value(DateTime.parse(m['createdAt'] as String)),
@@ -238,7 +281,9 @@ class SyncRepositoryImpl implements SyncRepository {
   List<List<T>> _chunk<T>(List<T> list, int size) {
     final chunks = <List<T>>[];
     for (var i = 0; i < list.length; i += size) {
-      chunks.add(list.sublist(i, i + size < list.length ? i + size : list.length));
+      chunks.add(
+        list.sublist(i, i + size < list.length ? i + size : list.length),
+      );
     }
     return chunks;
   }

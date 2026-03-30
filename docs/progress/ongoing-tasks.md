@@ -61,6 +61,20 @@ This allows syncing daily recurring tasks (365 instances) without hitting query 
 
 ---
 
+### Issue 6: Deleted Tasks Reappeared After Sign-Out / Sign-In — RESOLVED
+**Problem:** Deleting a task removed it locally, but sync only ever upserted task documents to Firestore. Since deletes were never propagated, signing out and back in would pull the old cloud task back onto the device.
+
+**Fix:**
+- Added a local `deleted_tasks` tombstone table in Drift/SQLite migration `schemaVersion = 5`.
+- Task deletes now record tombstones before removing the local row.
+- Sync push now sends tombstones to Firestore as `deletedAt` markers.
+- Sync pull now treats `deletedAt` as authoritative and removes the local task instead of restoring it.
+- Local tombstones are cleared once their delete has been pushed successfully.
+
+This preserves deletions across sign-out/sign-in without risking a fresh login wiping cloud data.
+
+---
+
 ## ✅ Phase 12: Delete Account — COMPLETE
 
 **What was built:**
