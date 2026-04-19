@@ -131,6 +131,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                     return goalsAsync.when(
                       data: (goals) {
                         return DropdownButtonFormField<String?>(
+                          key: const Key('task-form-goal-dropdown'),
                           decoration: const InputDecoration(
                             labelText: 'Link to Goal / Project',
                             border: OutlineInputBorder(),
@@ -204,6 +205,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _ColorPicker(
+                  key: const Key('task-form-color-picker'),
                   selectedColor:
                       form.colorArgb != null ? Color(form.colorArgb!) : null,
                   onSelected: (c) => notifier.updateColor(c?.toARGB32()),
@@ -214,6 +216,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                 Text('Tags', style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: AppSpacing.sm),
                 _TagInput(
+                  key: const Key('task-form-tags'),
                   controller: _tagCtrl,
                   tags: form.tags,
                   onAdd: (tag) {
@@ -232,6 +235,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
 
                 // ── Start Time ────────────────────────────────────────────────────
                 _FormSection(
+                  key: const Key('task-form-start-time'),
                   icon: Icons.access_time,
                   label: 'Start Time',
                   value:
@@ -269,6 +273,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
 
                 // ── End Time ──────────────────────────────────────────────────────
                 _FormSection(
+                  key: const Key('task-form-end-time'),
                   icon: Icons.timer_off_outlined,
                   label: 'End Time',
                   value: () {
@@ -371,6 +376,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                 if (form.recurrenceType == RecurrenceType.repeatToday) ...[
                   const SizedBox(height: AppSpacing.sm),
                   _FormSection(
+                    key: const Key('task-form-repeat-interval'),
                     icon: Icons.repeat,
                     label: 'Repeat every',
                     value: '${form.repeatIntervalMinutes} minutes',
@@ -411,6 +417,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
 
                 // ── Notifications ─────────────────────────────────────────────────
                 SwitchListTile(
+                  key: const Key('task-form-notification'),
                   title: const Text('Notification'),
                   subtitle: const Text('Get reminded before this task'),
                   value: form.notificationEnabled,
@@ -421,6 +428,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                 if (form.notificationEnabled) ...[
                   const SizedBox(height: AppSpacing.sm),
                   _FormSection(
+                    key: const Key('task-form-reminder'),
                     icon: Icons.alarm,
                     label: 'Remind me',
                     value: _offsetLabel(form.notificationOffsetMinutes),
@@ -572,6 +580,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     final isSelected = form.customRecurrenceDays.contains(day);
     final cs = Theme.of(context).colorScheme;
     return FilterChip(
+      key: ValueKey('task-form-day-$day'),
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => notifier.toggleCustomDay(day),
@@ -592,6 +601,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
 
 class _FormSection extends StatelessWidget {
   const _FormSection({
+    super.key,
     required this.icon,
     required this.label,
     required this.value,
@@ -621,7 +631,7 @@ class _FormSection extends StatelessWidget {
 }
 
 class _ColorPicker extends StatelessWidget {
-  const _ColorPicker({this.selectedColor, required this.onSelected});
+  const _ColorPicker({super.key, this.selectedColor, required this.onSelected});
   final Color? selectedColor;
   final void Function(Color?) onSelected;
 
@@ -633,6 +643,7 @@ class _ColorPicker extends StatelessWidget {
       children: [
         // None option
         GestureDetector(
+          key: const Key('task-form-color-none'),
           onTap: () => onSelected(null),
           child: Container(
             width: 36,
@@ -650,25 +661,30 @@ class _ColorPicker extends StatelessWidget {
             child: const Icon(Icons.block, size: 18),
           ),
         ),
-        ...AppColors.taskAccentColors.map(
-          (c) => GestureDetector(
-            onTap: () => onSelected(c),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: c,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color:
-                      selectedColor?.toARGB32() == c.toARGB32()
-                          ? Theme.of(context).colorScheme.onSurface
-                          : Colors.transparent,
-                  width: 3,
+        ...AppColors.taskAccentColors.asMap().entries.map(
+          (entry) {
+            final index = entry.key;
+            final c = entry.value;
+            return GestureDetector(
+              key: Key('task-form-color-$index'),
+              onTap: () => onSelected(c),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: c,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color:
+                        selectedColor?.toARGB32() == c.toARGB32()
+                            ? Theme.of(context).colorScheme.onSurface
+                            : Colors.transparent,
+                    width: 3,
+                  ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ],
     );
@@ -677,6 +693,7 @@ class _ColorPicker extends StatelessWidget {
 
 class _TagInput extends StatelessWidget {
   const _TagInput({
+    super.key,
     required this.controller,
     required this.tags,
     required this.onAdd,
@@ -694,11 +711,13 @@ class _TagInput extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextField(
+          key: const Key('task-form-tag-input'),
           controller: controller,
           decoration: InputDecoration(
             hintText: 'Add tag (max 5)',
             border: const OutlineInputBorder(),
             suffixIcon: IconButton(
+              key: const Key('task-form-tag-add'),
               icon: const Icon(Icons.add),
               onPressed: () {
                 final t = controller.text.trim().toLowerCase();
@@ -719,6 +738,7 @@ class _TagInput extends StatelessWidget {
                 tags
                     .map(
                       (tag) => InputChip(
+                        key: ValueKey('task-form-tag-$tag'),
                         label: Text('#$tag'),
                         onDeleted: () => onRemove(tag),
                       ),
