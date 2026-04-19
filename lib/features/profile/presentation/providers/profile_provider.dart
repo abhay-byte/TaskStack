@@ -59,20 +59,38 @@ class ProfileRepository {
   Future<List<Task>> fetchUserTasks(String userId) async {
     await _visibleUserDoc(userId);
 
-    final snap =
-        await _firestore
-            .collection('users')
-            .doc(userId)
-            .collection('tasks')
-            .get();
-    final tasks = <Task>[];
-    for (final doc in snap.docs) {
-      final data = doc.data();
-      if (data['deletedAt'] != null) continue;
-      tasks.add(_taskFromFirestore(doc.id, data));
+    if (userId == _uid) {
+      return _fetchPrivateTasks(userId);
     }
 
-    tasks.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    final sharedGroupIds = await _sharedGroupIdsFor(userId);
+    if (sharedGroupIds.isEmpty) {
+      throw Exception('Profile is private.');
+    }
+
+    final tasksById = <String, Task>{};
+    for (final groupId in sharedGroupIds) {
+      final snap =
+          await _firestore
+              .collection('groups')
+              .doc(groupId)
+              .collection('member_tasks')
+              .where('userId', isEqualTo: userId)
+              .get();
+
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        if (data['deletedAt'] != null) continue;
+        final task = _taskFromFirestore(doc.id, data);
+        final existing = tasksById[task.id];
+        if (existing == null || task.updatedAt.isAfter(existing.updatedAt)) {
+          tasksById[task.id] = task;
+        }
+      }
+    }
+
+    final tasks = tasksById.values.toList()
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return tasks;
   }
 
@@ -101,6 +119,29 @@ class ProfileRepository {
             .where('userId', isEqualTo: userId)
             .get();
     return groups.docs.map((d) => d.data()['groupId'] as String).toSet();
+  }
+
+  Future<List<Task>> _fetchPrivateTasks(String userId) async {
+    final snap =
+        await _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('tasks')
+            .get();
+    final tasks = <Task>[];
+    for (final doc in snap.docs) {
+      final data = doc.data();
+      if (data['deletedAt'] != null) continue;
+      tasks.add(_taskFromFirestore(doc.id, data));
+    }
+    tasks.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return tasks;
+  }
+
+  Future<Set<String>> _sharedGroupIdsFor(String userId) async {
+    final myGroupIds = await _groupIdsFor(_uid);
+    final theirGroupIds = await _groupIdsFor(userId);
+    return myGroupIds.intersection(theirGroupIds);
   }
 
   Task _taskFromFirestore(String id, Map<String, dynamic> data) {

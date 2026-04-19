@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gap/gap.dart';
 import 'package:taskstack/features/auth/presentation/providers/auth_provider.dart';
 import 'package:taskstack/features/groups/presentation/providers/group_provider.dart';
+import 'package:taskstack/core/widgets/animated_graphic.dart';
 
 class GroupsListScreen extends ConsumerWidget {
   const GroupsListScreen({super.key});
@@ -16,38 +18,51 @@ class GroupsListScreen extends ConsumerWidget {
     // ── Guest gate ──────────────────────────────────────────────────────────
     if (isGuest) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Social')),
+        appBar: AppBar(
+          title: const Text('Social'),
+          titleTextStyle: tt.titleLarge?.copyWith(color: cs.onSurface),
+        ),
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(24),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.cloud_off_rounded,
-                    size: 72, color: cs.onSurfaceVariant),
-                const SizedBox(height: 24),
+                const SizedBox(
+                  height: 240,
+                  child: AnimatedGraphic(
+                    assetPath: 'assets/images/dashboard_illustration.svg',
+                  ),
+                ),
+                const Gap(32),
                 Text(
-                  'Sign in to use Social',
-                  style: tt.titleLarge,
+                  'Connect & Collaborate',
+                  style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                const Gap(12),
                 Text(
-                  'Groups, invites, and profiles are only available when you have an account.',
-                  style: tt.bodyMedium
-                      ?.copyWith(color: cs.onSurfaceVariant),
+                  'Join groups to share tasks, track group habits, and achieve goals together.',
+                  style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 28),
+                const Gap(40),
                 FilledButton.icon(
                   onPressed: () => context.go('/login'),
                   icon: const Icon(Icons.login),
-                  label: const Text('Sign In'),
+                  label: const Text('Sign In to Start'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(220, 56),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const Gap(12),
                 TextButton(
                   onPressed: () => context.go('/signup'),
-                  child: const Text('Create an account'),
+                  child: Text(
+                    'Create a new account',
+                    style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ],
             ),
@@ -57,116 +72,196 @@ class GroupsListScreen extends ConsumerWidget {
     }
 
     final groupsAsync = ref.watch(groupNotifierProvider);
-    final pendingCount =
-        ref.watch(inviteNotifierProvider.notifier).pendingCount;
+    final pendingCount = ref.watch(inviteNotifierProvider.notifier).pendingCount;
 
     return Scaffold(
+      backgroundColor: cs.surface,
       appBar: AppBar(
         title: const Text('My Groups'),
+        titleTextStyle: tt.titleLarge?.copyWith(color: cs.onSurface),
+        centerTitle: false,
+        scrolledUnderElevation: 0,
         actions: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.mail_outline),
-                tooltip: 'Invites',
-                onPressed: () => _showInvitesSheet(context, ref),
-              ),
-              if (pendingCount > 0)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: cs.error,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      '$pendingCount',
-                      style: TextStyle(
-                          color: cs.onError,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-            ],
+          IconButton(
+            icon: Badge.count(
+              count: pendingCount,
+              isLabelVisible: pendingCount > 0,
+              backgroundColor: cs.error,
+              child: const Icon(Icons.mail_outline),
+            ),
+            tooltip: 'Invites',
+            onPressed: () => _showInvitesSheet(context, ref),
           ),
+          const Gap(8),
         ],
       ),
       body: groupsAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline, size: 48, color: cs.error),
-              const SizedBox(height: 12),
-              Text('$e'),
-              const SizedBox(height: 12),
-              FilledButton.tonal(
-                onPressed: () =>
-                    ref.read(groupNotifierProvider.notifier).load(),
-                child: const Text('Retry'),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: cs.errorContainer),
+                const Gap(16),
+                Text('Couldn\'t load groups', style: tt.titleLarge),
+                const Gap(8),
+                Text(
+                  e.toString(),
+                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                  textAlign: TextAlign.center,
+                ),
+                const Gap(24),
+                FilledButton.tonalIcon(
+                  onPressed: () => ref.read(groupNotifierProvider.notifier).load(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Try Again'),
+                ),
+              ],
+            ),
           ),
         ),
         data: (groups) {
           if (groups.isEmpty) {
             return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.group_outlined,
-                      size: 64, color: cs.outlineVariant),
-                  const SizedBox(height: 16),
-                  Text('No groups yet',
-                      style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Text('Create one or join via invite code',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(color: cs.onSurfaceVariant)),
-                  const SizedBox(height: 24),
-                  FilledButton.tonal(
-                    onPressed: () => context.push('/groups/join'),
-                    child: const Text('Join with Code'),
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: cs.primaryContainer.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.group_outlined, size: 80, color: cs.primary),
+                    ),
+                    const Gap(24),
+                    Text('No Groups Yet', style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                    const Gap(12),
+                    Text(
+                      'Groups help you stay accountable with friends. Create one or join with a code!',
+                      style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant),
+                      textAlign: TextAlign.center,
+                    ),
+                    const Gap(32),
+                    FilledButton.tonalIcon(
+                      onPressed: () => context.push('/groups/join'),
+                      icon: const Icon(Icons.qr_code_scanner),
+                      label: const Text('Join with Code'),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(200, 48),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }
           return RefreshIndicator(
-            onRefresh: () =>
-                ref.read(groupNotifierProvider.notifier).load(),
-            child: ListView.builder(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            onRefresh: () => ref.read(groupNotifierProvider.notifier).load(),
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
               itemCount: groups.length,
+              separatorBuilder: (_, __) => const Gap(12),
               itemBuilder: (context, i) {
                 final g = groups[i];
+                final isOwner = g.role == 'owner';
+                
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: cs.primaryContainer,
-                      child: Text(
-                        g.name.substring(0, 1).toUpperCase(),
-                        style: TextStyle(color: cs.onPrimaryContainer),
+                  elevation: 0,
+                  color: cs.surfaceContainerLow,
+                  margin: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(color: cs.outlineVariant.withOpacity(0.5), width: 1),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => context.push('/groups/${g.id}'),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [cs.primaryContainer, cs.secondaryContainer],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Center(
+                              child: Text(
+                                g.name.substring(0, 1).toUpperCase(),
+                                style: tt.headlineSmall?.copyWith(
+                                  color: cs.onPrimaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const Gap(16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  g.name,
+                                  style: tt.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                if (g.description != null) ...[
+                                  const Gap(4),
+                                  Text(
+                                    g.description!,
+                                    style: tt.bodyMedium?.copyWith(
+                                      color: cs.onSurfaceVariant,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                                const Gap(8),
+                                Row(
+                                  children: [
+                                    Icon(Icons.people_outline, size: 16, color: cs.onSurfaceVariant),
+                                    const Gap(4),
+                                    Text(
+                                      '${g.members.length} members',
+                                      style: tt.labelMedium?.copyWith(color: cs.onSurfaceVariant),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Gap(8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isOwner ? cs.primary : cs.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              isOwner ? 'OWNER' : 'MEMBER',
+                              style: tt.labelSmall?.copyWith(
+                                color: isOwner ? cs.onPrimary : cs.onSurfaceVariant,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    title: Text(g.name),
-                    subtitle: g.description != null
-                        ? Text(g.description!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis)
-                        : null,
-                    trailing: Chip(label: Text(g.role ?? 'member')),
-                    onTap: () => context.push('/groups/${g.id}'),
                   ),
                 );
               },
@@ -176,19 +271,23 @@ class GroupsListScreen extends ConsumerWidget {
       ),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           FloatingActionButton.small(
             heroTag: 'join',
-            tooltip: 'Scan QR / Enter Code',
+            tooltip: 'Join via QR or Code',
+            backgroundColor: cs.secondaryContainer,
+            foregroundColor: cs.onSecondaryContainer,
             onPressed: () => context.push('/groups/join'),
             child: const Icon(Icons.qr_code_scanner),
           ),
-          const SizedBox(height: 8),
+          const Gap(16),
           FloatingActionButton.extended(
             heroTag: 'create',
             onPressed: () => context.push('/groups/new'),
             icon: const Icon(Icons.add),
             label: const Text('New Group'),
+            elevation: 4,
           ),
         ],
       ),
@@ -199,6 +298,8 @@ class GroupsListScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (_) => _InvitesSheet(ref: ref),
     );
   }
@@ -215,66 +316,97 @@ class _InvitesSheet extends ConsumerWidget {
     final invitesAsync = ref.watch(inviteNotifierProvider);
     final notifier = ref.read(inviteNotifierProvider.notifier);
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.5,
-      maxChildSize: 0.9,
-      minChildSize: 0.3,
+      initialChildSize: 0.7,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
       expand: false,
       builder: (ctx, ctrl) => Column(
         children: [
-          const SizedBox(height: 8),
+          const Gap(12),
           Container(
-            width: 40,
+            width: 32,
             height: 4,
             decoration: BoxDecoration(
               color: cs.outlineVariant,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
+          const Gap(24),
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text('Pending Invites',
-                style: Theme.of(context).textTheme.titleLarge),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Text('Pending Invites', style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                const Spacer(),
+                if (invitesAsync.hasValue && invitesAsync.value!.isNotEmpty)
+                  Badge(
+                    label: Text('${invitesAsync.value!.length}'),
+                    largeSize: 20,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+              ],
+            ),
           ),
+          const Gap(16),
           Expanded(
             child: invitesAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('$e')),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Error: $e')),
               data: (invites) {
                 if (invites.isEmpty) {
                   return Center(
-                    child: Text('No pending invites',
-                        style: TextStyle(color: cs.onSurfaceVariant)),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.mail_outline, size: 64, color: cs.outlineVariant),
+                        const Gap(16),
+                        Text(
+                          'No pending invites',
+                          style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
                   );
                 }
-                return ListView.builder(
+                return ListView.separated(
                   controller: ctrl,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   itemCount: invites.length,
+                  separatorBuilder: (_, __) => const Gap(12),
                   itemBuilder: (_, i) {
                     final inv = invites[i];
-                    return ListTile(
-                      title: Text(inv.groupName),
-                      subtitle: Text('From @${inv.inviterUsername}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.close,
-                                color: cs.error),
-                            tooltip: 'Reject',
-                            onPressed: () =>
-                                notifier.reject(inv.id),
+                    return Card(
+                      elevation: 0,
+                      color: cs.surfaceContainerLow,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: cs.outlineVariant.withOpacity(0.5)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: ListTile(
+                          title: Text(inv.groupName, style: tt.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          subtitle: Text('Invited by @${inv.inviterUsername}', style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton.filledTonal(
+                                icon: Icon(Icons.close, color: cs.error, size: 20),
+                                onPressed: () => notifier.reject(inv.id),
+                                tooltip: 'Reject',
+                              ),
+                              const Gap(8),
+                              IconButton.filled(
+                                icon: const Icon(Icons.check, size: 20),
+                                onPressed: () => notifier.accept(inv.id),
+                                tooltip: 'Accept',
+                              ),
+                            ],
                           ),
-                          IconButton(
-                            icon: Icon(Icons.check,
-                                color: cs.primary),
-                            tooltip: 'Accept',
-                            onPressed: () =>
-                                notifier.accept(inv.id),
-                          ),
-                        ],
+                        ),
                       ),
                     );
                   },

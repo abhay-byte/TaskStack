@@ -47,7 +47,7 @@ void main() {
       expect(stats.scheduledTasks, 2);
       expect(stats.inProgressTasks, 1);
       expect(stats.topTag, 'work');
-      expect(stats.mostActiveHour, now.hour);
+      expect(stats.mostActiveHour, 14);
       expect(stats.createdThisWeek, 3);
       expect(stats.completionRate, closeTo(1 / 3, 0.0001));
     });

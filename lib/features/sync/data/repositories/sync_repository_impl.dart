@@ -92,6 +92,7 @@ class SyncRepositoryImpl implements SyncRepository {
     final tasks = await taskDao.getAllTasks();
     final uid = _uid!;
     if (tasks.isEmpty) return;
+    final groupIds = await _groupIdsForUser(uid);
     final chunks = _chunk(tasks, 400);
     for (final chunk in chunks) {
       final batch = firestore.batch();
@@ -126,6 +127,40 @@ class SyncRepositoryImpl implements SyncRepository {
           'updatedAt': t.updatedAt.toUtc().toIso8601String(),
           'deletedAt': null,
         }, SetOptions(merge: true));
+
+        for (final groupId in groupIds) {
+          final groupTaskRef = firestore
+              .collection('groups')
+              .doc(groupId)
+              .collection('member_tasks')
+              .doc('${uid}_${t.id}');
+          batch.set(groupTaskRef, {
+            'id': t.id,
+            'userId': uid,
+            'title': t.title,
+            'description': t.description,
+            'purpose': t.purpose,
+            'iconId': t.iconId,
+            'colorArgb': t.colorArgb != null ? t.colorArgb! & 0xFFFFFFFF : null,
+            'graphicImage': t.graphicImage,
+            'tagsJson': t.tagsJson,
+            'startMinutes': t.startMinutes,
+            'durationMinutes': t.durationMinutes,
+            'recurrenceType': t.recurrenceType,
+            'recurrenceRule': t.recurrenceRule,
+            'repeatIntervalMinutes': t.repeatIntervalMinutes,
+            'notificationEnabled': t.notificationEnabled,
+            'notificationOffsetMinutes': t.notificationOffsetMinutes,
+            'status': t.status,
+            'completedAt': t.completedAt?.toUtc().toIso8601String(),
+            'createdAt': t.createdAt.toUtc().toIso8601String(),
+            'updatedAt': t.updatedAt.toUtc().toIso8601String(),
+            'parentTaskId': t.parentTaskId,
+            'goalId': t.goalId,
+            'taskDate': t.taskDate,
+            'deletedAt': null,
+          }, SetOptions(merge: true));
+        }
       }
       await batch.commit();
     }
@@ -136,6 +171,7 @@ class SyncRepositoryImpl implements SyncRepository {
     final uid = _uid!;
     final tombstones = await taskDao.getDeletedTaskTombstones();
     if (tombstones.isEmpty) return;
+    final groupIds = await _groupIdsForUser(uid);
 
     final liveTaskIds =
         (await taskDao.getAllTasks()).map((task) => task.id).toSet();
@@ -165,6 +201,20 @@ class SyncRepositoryImpl implements SyncRepository {
           'deletedAt': tombstone.deletedAt.toUtc().toIso8601String(),
           'updatedAt': tombstone.deletedAt.toUtc().toIso8601String(),
         }, SetOptions(merge: true));
+
+        for (final groupId in groupIds) {
+          final groupTaskRef = firestore
+              .collection('groups')
+              .doc(groupId)
+              .collection('member_tasks')
+              .doc('${uid}_${tombstone.id}');
+          batch.set(groupTaskRef, {
+            'id': tombstone.id,
+            'userId': uid,
+            'deletedAt': tombstone.deletedAt.toUtc().toIso8601String(),
+            'updatedAt': tombstone.deletedAt.toUtc().toIso8601String(),
+          }, SetOptions(merge: true));
+        }
       }
       await batch.commit();
     }
@@ -173,6 +223,18 @@ class SyncRepositoryImpl implements SyncRepository {
       pendingDeletes.map((tombstone) => tombstone.id),
     );
     debugPrint('[Sync] Pushed ${pendingDeletes.length} task deletions');
+  }
+
+  Future<List<String>> _groupIdsForUser(String uid) async {
+    final snaps =
+        await firestore
+            .collection('group_members')
+            .where('userId', isEqualTo: uid)
+            .get();
+    return snaps.docs
+        .map((doc) => doc.data()['groupId'] as String)
+        .where((groupId) => groupId.isNotEmpty)
+        .toList();
   }
 
   // ── PULL: cloud → local ────────────────────────────────────────────────────
