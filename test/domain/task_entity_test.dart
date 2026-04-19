@@ -9,6 +9,7 @@ Task _makeTask({
   int? startMinutes,
   int? durationMinutes,
   RecurrenceType recurrenceType = RecurrenceType.none,
+  String? recurrenceRule,
   TaskStatus status = TaskStatus.pending,
   DateTime? completedAt,
   DateTime? taskDate,
@@ -20,6 +21,7 @@ Task _makeTask({
     startMinutes: startMinutes,
     durationMinutes: durationMinutes,
     recurrenceType: recurrenceType,
+    recurrenceRule: recurrenceRule,
     status: status,
     completedAt: completedAt,
     createdAt: now,
@@ -119,6 +121,25 @@ void main() {
       final task = _makeTask(recurrenceType: RecurrenceType.none);
       final repeated = task.copyWith(recurrenceType: RecurrenceType.repeatToday);
       expect(repeated.recurrenceType, RecurrenceType.repeatToday);
+    });
+  });
+
+  group('Task custom recurrence parsing', () {
+    test('customRecurrenceDays parses valid weekday values and ignores junk', () {
+      final custom = _makeTask(recurrenceType: RecurrenceType.custom).copyWith(
+        recurrenceRule: '1, 3, 5, 0, 8, abc, 7',
+      );
+
+      expect(custom.customRecurrenceDays, [1, 3, 5, 7]);
+    });
+
+    test('customRecurrenceDays is empty when recurrence is not custom', () {
+      final task = _makeTask(
+        recurrenceType: RecurrenceType.daily,
+        recurrenceRule: '1,3,5',
+      );
+
+      expect(task.customRecurrenceDays, isEmpty);
     });
   });
 }
