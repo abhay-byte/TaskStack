@@ -1,0 +1,5 @@
+TaskStack 1.0.3
+
+Changes:
+- Removed advertising ID permission for privacy compliance
+- Disabled advertising ID collection in Firebase Analytics
