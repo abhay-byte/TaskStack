@@ -1,0 +1,24 @@
+TaskStack 1.0.1
+
+New Features:
+- Member profile dashboard
+- Day todo sheet for stack
+- Delete account endpoint and settings UI
+- Play Store metadata and screenshots
+
+Improvements:
+- Migrated to direct Firebase SDK (Auth + Firestore + RTDB)
+- Release signing configured, targetSdk 36, APK optimizations
+- Expanded task form coverage
+
+Bug Fixes:
+- Fixed member timeline sync
+- Fixed group invite QR rendering
+- Fixed deleted task sync resurrection
+- Fixed task reminders not firing
+- Fixed parent recurring tasks spilling over to next day
+- Fixed sync retry with exponential backoff for cold-start errors
+- Fixed batch processing for bulk task sync
+- Fixed SQLite migration v4 crash
+- Fixed cloud sync for logged-in users
+- Fixed guest navigation flow

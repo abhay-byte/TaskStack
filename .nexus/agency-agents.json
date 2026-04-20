@@ -1,0 +1,10 @@
+{
+  "category": "strategy",
+  "enabled": true,
+  "installed_path": "/home/abhay/repos/TaskStack/AGENCY.md",
+  "name": "⚙️ Phase 2 Playbook — Foundation & Scaffolding",
+  "slug": "phase-2-foundation",
+  "source_path": "/tmp/nexus-agency-agents-1776563540360-124593/repo/strategy/playbooks/phase-2-foundation.md",
+  "source_repo": "https://github.com/msitarzewski/agency-agents.git",
+  "version": 1
+}
