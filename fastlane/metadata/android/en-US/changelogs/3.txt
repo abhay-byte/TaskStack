@@ -1,0 +1,4 @@
+TaskStack 1.0.2
+
+Bug Fixes:
+- Added advertising ID declaration for Play Store compliance
