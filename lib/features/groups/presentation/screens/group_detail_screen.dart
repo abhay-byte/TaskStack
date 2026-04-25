@@ -1,7 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
+import 'package:taskstack/features/groups/domain/entities/group.dart';
 import 'package:taskstack/features/groups/presentation/providers/group_provider.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
@@ -94,6 +96,59 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     );
   }
 
+  Future<void> _confirmDeleteGroup(BuildContext context, Group group) async {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: Icon(Icons.delete_forever_outlined, color: cs.error, size: 32),
+        title: const Text('Delete Group?'),
+        content: Text(
+          'This will permanently delete "${group.name}" and remove all members. This action cannot be undone.',
+          style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: cs.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref.read(groupNotifierProvider.notifier).delete(group.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Group deleted'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: cs.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final groupAsync = ref.watch(groupDetailProvider(widget.groupId));
@@ -121,6 +176,35 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
             tooltip: 'Invite Member',
             onPressed: _showInviteDialog,
           ),
+          if (groupAsync.hasValue)
+            Builder(builder: (context) {
+              final group = groupAsync.value!;
+              final currentUid = FirebaseAuth.instance.currentUser?.uid;
+              final isOwner = group.members.any(
+                (m) => m.id == currentUid && m.role == 'owner',
+              );
+              if (!isOwner) return const SizedBox.shrink();
+              return PopupMenuButton<String>(
+                offset: const Offset(0, 40),
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, color: Colors.red),
+                        Gap(12),
+                        Text('Delete group'),
+                      ],
+                    ),
+                  ),
+                ],
+                onSelected: (value) {
+                  if (value == 'delete') {
+                    _confirmDeleteGroup(context, group);
+                  }
+                },
+              );
+            }),
           const Gap(8),
         ],
       ),

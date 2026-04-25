@@ -59,6 +59,18 @@ class GroupNotifier extends Notifier<AsyncValue<List<Group>>> {
       return Future.error(e.toString().replaceFirst('Exception: ', ''));
     }
   }
+
+  Future<void> delete(String groupId) async {
+    try {
+      await _repo.deleteGroup(groupId);
+      final current = state.value ?? [];
+      state = AsyncValue.data(
+        current.where((g) => g.id != groupId).toList(),
+      );
+    } catch (e) {
+      return Future.error(e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
 }
 
 final groupNotifierProvider =

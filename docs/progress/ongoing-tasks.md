@@ -106,6 +106,30 @@ This preserves deletions across sign-out/sign-in without risking a fresh login w
 
 ---
 
+## ✅ Group Delete by Owner — COMPLETE
+
+**Context:** Users could create groups but had no way to delete them.
+
+**What was built:**
+- `GroupRepository.deleteGroup(groupId)` — verifies ownership via `group_members` role check, then cascades:
+  1. Deletes the group doc from `groups`
+  2. Queries + deletes all `group_members` docs where `groupId == groupId`
+  3. Queries + deletes all `invites` docs where `groupId == groupId`
+  4. Deletes the invite-code mapping from RTDB `inviteCodes/<code>` (best-effort)
+  - Batched into chunks of 400 to stay under Firestore's 500-write batch limit.
+- `GroupNotifier.delete(groupId)` — calls repo, then optimistically filters the deleted group out of the local list so the UI updates instantly.
+- `GroupsListScreen` — owner group cards now show a `PopupMenuButton` (⋮) with a red "Delete group" item.
+- `GroupDetailScreen` — owner app bar now shows a `PopupMenuButton` with "Delete group". After deletion, auto-pops back to the list.
+- Both entry points show a Material 3 `AlertDialog` with the group name and a red destructive "Delete" button.
+
+**Trade-offs:** Client-side cascade delete chosen over Cloud Function to avoid Firebase Functions infrastructure for v1.0. Risk of partial delete on crash is acceptable for non-critical group data.
+
+**Verification:**
+- `flutter analyze` → 0 new errors (136 pre-existing info/warnings unchanged)
+- `flutter run -d CPH2691` → installed and launched successfully on physical device
+
+---
+
 ## 🚀 Up Next: Future Enhancements (Post v1.0)
 
 - ~~Signed release APK~~ ✅ Done (keystore at `~/repos/keys/`)

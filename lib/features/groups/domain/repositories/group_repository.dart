@@ -12,4 +12,6 @@ abstract class GroupRepository {
   Future<List<Invite>> fetchInvites();
   Future<void> acceptInvite(String inviteId);
   Future<void> rejectInvite(String inviteId);
+
+  Future<void> deleteGroup(String groupId);
 }

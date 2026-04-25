@@ -12,8 +12,14 @@ service cloud.firestore {
 
     function isGroupMember(groupId) {
       return signedIn() && exists(
-        /databases/$(database)/documents/group_members/$(groupId)_$(request.auth.uid)
+        /databases/$(database)/documents/group_members/$(groupId + "_" + request.auth.uid)
       );
+    }
+
+    function groupCreatedBy(groupId) {
+      return get(
+        /databases/$(database)/documents/groups/$(groupId)
+      ).data.createdBy;
     }
 
     match /users/{uid} {
@@ -42,7 +48,8 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if signedIn()
         && request.resource.data.createdBy == request.auth.uid;
-      allow update, delete: if signedIn();
+      allow update, delete: if signedIn()
+        && resource.data.createdBy == request.auth.uid;
 
       match /member_tasks/{taskId} {
         allow read: if isGroupMember(groupId);
@@ -60,14 +67,18 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid;
 
       allow update, delete: if signedIn()
-        && resource.data.userId == request.auth.uid;
+        && (
+          resource.data.userId == request.auth.uid ||
+          groupCreatedBy(resource.data.groupId) == request.auth.uid
+        );
     }
 
     match /invites/{inviteId} {
       allow read: if signedIn()
         && (
           resource.data.invitedUserId == request.auth.uid ||
-          resource.data.invitedBy == request.auth.uid
+          resource.data.invitedBy == request.auth.uid ||
+          groupCreatedBy(resource.data.groupId) == request.auth.uid
         );
 
       allow create: if signedIn()
@@ -76,7 +87,8 @@ service cloud.firestore {
       allow update, delete: if signedIn()
         && (
           resource.data.invitedUserId == request.auth.uid ||
-          resource.data.invitedBy == request.auth.uid
+          resource.data.invitedBy == request.auth.uid ||
+          groupCreatedBy(resource.data.groupId) == request.auth.uid
         );
     }
   }

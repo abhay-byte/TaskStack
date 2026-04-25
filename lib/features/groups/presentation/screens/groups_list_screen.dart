@@ -244,20 +244,55 @@ class GroupsListScreen extends ConsumerWidget {
                             ),
                           ),
                           const Gap(8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isOwner ? cs.primary : cs.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              isOwner ? 'OWNER' : 'MEMBER',
-                              style: tt.labelSmall?.copyWith(
-                                color: isOwner ? cs.onPrimary : cs.onSurfaceVariant,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: isOwner ? cs.primary : cs.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  isOwner ? 'OWNER' : 'MEMBER',
+                                  style: tt.labelSmall?.copyWith(
+                                    color: isOwner ? cs.onPrimary : cs.onSurfaceVariant,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
                               ),
-                            ),
+                              if (isOwner)
+                                PopupMenuButton<String>(
+                                  icon: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(Icons.more_vert, color: cs.onSurfaceVariant, size: 20),
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  offset: const Offset(0, 32),
+                                  itemBuilder: (_) => [
+                                    const PopupMenuItem(
+                                      value: 'delete',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.delete_outline, color: Colors.red),
+                                          Gap(12),
+                                          Text('Delete group'),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                  onSelected: (value) {
+                                    if (value == 'delete') {
+                                      _confirmDeleteGroup(context, ref, g);
+                                    }
+                                  },
+                                ),
+                            ],
                           ),
                         ],
                       ),
@@ -288,6 +323,57 @@ class GroupsListScreen extends ConsumerWidget {
             icon: const Icon(Icons.add),
             label: const Text('New Group'),
             elevation: 4,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteGroup(BuildContext context, WidgetRef ref, dynamic group) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: Icon(Icons.delete_forever_outlined, color: cs.error, size: 32),
+        title: const Text('Delete Group?'),
+        content: Text(
+          'This will permanently delete "${group.name}" and remove all members. This action cannot be undone.',
+          style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await ref.read(groupNotifierProvider.notifier).delete(group.id);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Group deleted'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: cs.error,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
+            },
+            style: FilledButton.styleFrom(backgroundColor: cs.error),
+            child: const Text('Delete'),
           ),
         ],
       ),

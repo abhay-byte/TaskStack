@@ -218,6 +218,13 @@ class GroupRepositoryImpl implements GroupRepository {
       'status': 'pending',
       'createdAt': FieldValue.serverTimestamp(),
     });
+
+    // Track invite ID on the group doc so the owner can clean it up on delete.
+    try {
+      await _firestore.collection('groups').doc(groupId).update({
+        'inviteIds': FieldValue.arrayUnion([inviteId]),
+      });
+    } catch (_) {}
   }
 
   // ── Invites ────────────────────────────────────────────────────────────────
@@ -284,6 +291,64 @@ class GroupRepositoryImpl implements GroupRepository {
       throw Exception('Invite not found or already processed.');
     }
     await inviteRef.update({'status': 'rejected'});
+  }
+
+  @override
+  Future<void> deleteGroup(String groupId) async {
+    // ── Verify ownership ───────────────────────────────────────────────────
+    final membershipDoc =
+        await _firestore
+            .collection('group_members')
+            .doc('${groupId}_$_uid')
+            .get();
+    if (!membershipDoc.exists || membershipDoc.data()?['role'] != 'owner') {
+      throw Exception('Only the group owner can delete this group.');
+    }
+
+    final groupSnap =
+        await _firestore.collection('groups').doc(groupId).get();
+    if (!groupSnap.exists) throw Exception('Group not found.');
+    final groupData = groupSnap.data()!;
+    final inviteCode = groupData['inviteCode'] as String?;
+
+    // Collect invite IDs tracked on the group doc (avoids querying invites
+    // by groupId, which Firestore rules reject).
+    final trackedInviteIds =
+        (groupData['inviteIds'] as List<dynamic>?)
+            ?.cast<String>() ??
+        <String>[];
+
+    // ── Collect group_members to delete ────────────────────────────────────
+    final memberSnaps =
+        await _firestore
+            .collection('group_members')
+            .where('groupId', isEqualTo: groupId)
+            .get();
+
+    // Firestore batches are capped at 500 writes. Most groups are tiny,
+    // but split into chunks to stay safely under the limit.
+    const batchLimit = 400;
+    final allDeletes = <DocumentReference>[
+      _firestore.collection('groups').doc(groupId),
+      ...memberSnaps.docs.map((d) => d.reference),
+      ...trackedInviteIds.map((id) => _firestore.collection('invites').doc(id)),
+    ];
+
+    for (var i = 0; i < allDeletes.length; i += batchLimit) {
+      final batch = _firestore.batch();
+      final chunk = allDeletes.skip(i).take(batchLimit);
+      for (final ref in chunk) {
+        batch.delete(ref);
+      }
+      await batch.commit();
+    }
+
+    // ── Clean up RTDB invite code mapping (best-effort) ────────────────────
+    if (inviteCode != null && inviteCode.isNotEmpty) {
+      try {
+        await _rtdb.ref('inviteCodes/$inviteCode').remove();
+      } catch (_) {}
+    }
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
