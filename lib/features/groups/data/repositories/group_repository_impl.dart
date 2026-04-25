@@ -50,12 +50,38 @@ class GroupRepositoryImpl implements GroupRepository {
       debugPrint(
         '[Groups] Loaded group $groupId from membership ${memberDoc.id}: group=$g membership=$data',
       );
+
+      // Fetch members for accurate count in list view
+      final groupMemberSnaps =
+          await _firestore
+              .collection('group_members')
+              .where('groupId', isEqualTo: groupId)
+              .get();
+
+      final members = <Map<String, dynamic>>[];
+      for (final m in groupMemberSnaps.docs) {
+        final mData = m.data();
+        final userSnap =
+            await _firestore.collection('users').doc(mData['userId']).get();
+        if (!userSnap.exists) continue;
+        final u = userSnap.data()!;
+        members.add({
+          'id': mData['userId'],
+          'username': u['username'],
+          'display_name': u['displayName'],
+          'avatar_url': u['avatarUrl'],
+          'role': mData['role'],
+          'joined_at': mData['joinedAt'],
+        });
+      }
+
       groups.add(
         Group.fromJson({
           ...g,
           'id': groupId,
           'role': _stringOrNull(data['role']) ?? 'member',
           'joined_at': data['joinedAt'],
+          'members': members,
         }),
       );
     }
