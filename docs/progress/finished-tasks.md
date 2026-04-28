@@ -301,3 +301,42 @@ Users can now use TaskStack fully offline without creating an account.
 - `task_providers.dart` (`TaskFormNotifier.save()`): added guard — returns `false` and sets `state.error` with a descriptive message if `repeatIntervalMinutes < durationMinutes`.
 - `task_form_screen.dart`: added an inline `errorContainer` banner that appears immediately below the "Repeat every" row when the interval would cause overlap, before the user even taps Save.
 
+---
+
+## ✅ Phase 13: Goals Page Rehaul
+
+**Problem:** The Goals & Projects page was minimal — no icon/image selection, no time tracking visuals, no 30-day timeline, and the form lacked options for distinguishing goals from projects.
+
+**What was built:**
+- **Database**: Schema bumped to v6. Added `icon_id`, `graphic_image`, `color_argb`, `is_goal` columns to `goals` table with migration backfill defaults.
+- **Goal entity**: Expanded with `iconId`, `graphicImage`, `colorArgb`, `isGoal` fields.
+- **GoalDao**: New queries — `watchTasksForGoal`, `getTasksForGoalInRange`, `getCommittedMinutesForGoal` (sums completed task durations).
+- **GoalRepository**: New `watchTasksForGoal` and `getCommittedMinutesForGoal` methods.
+- **GoalsListScreen** (M3 redesign):
+  - Title: "Goals" (was "Goals & Projects")
+  - Cards use `surfaceContainerLow` with 12dp radius
+  - Custom icon from Material Symbols + accent colour circle avatar
+  - `isGoal` label shows "Project Goal" / "Habit" / "Ongoing Goal" vs "Project"
+  - Linear progress bar with committed/total hours, percentage, and "X hrs remaining"
+  - 30-day timeline strip: coloured dots for completed tasks, grey for pending, empty for no tasks
+- **GoalFormScreen** (M3 redesign):
+  - Title: "New Goal" / "Edit Goal"
+  - `isGoal` Switch with explanatory helper text
+  - Icon picker: 20 curated Material Symbols in a wrap grid
+  - Colour picker: 12 M3 semantic accent colours in circular chips
+  - Duration fields auto-hide when "Ongoing" type is selected
+- **Firebase sync**: `_pushGoals` and `_pullGoals` now sync `iconId`, `graphicImage`, `colorArgb`, and `isGoal` to Firestore.
+- **Tests**:
+  - `test/database/goal_dao_test.dart` — 5 tests
+  - `test/features/task_stack/data/repositories/goal_repository_impl_test.dart` — 6 tests
+  - `test/widgets/goals_list_screen_test.dart` — 5 tests
+  - `test/widgets/goal_form_screen_test.dart` — 5 tests
+  - All 74 tests passing
+
+**Build verification:**
+| Check | Result |
+|---|---|
+| `flutter analyze` | ✅ 0 new errors |
+| `flutter test` | ✅ 74 tests passing |
+| `flutter build apk --debug` | ✅ `app-debug.apk` |
+

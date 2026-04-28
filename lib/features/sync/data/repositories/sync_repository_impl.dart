@@ -79,6 +79,10 @@ class SyncRepositoryImpl implements SyncRepository {
           'title': g.title,
           'type': g.type,
           'durationHours': g.durationHours,
+          'iconId': g.iconId,
+          'graphicImage': g.graphicImage,
+          'colorArgb': g.colorArgb != null ? g.colorArgb! & 0xFFFFFFFF : null,
+          'isGoal': g.isGoal,
           'createdAt': g.createdAt.toUtc().toIso8601String(),
           'updatedAt': g.updatedAt.toUtc().toIso8601String(),
         }, SetOptions(merge: true));
@@ -274,12 +278,20 @@ class SyncRepositoryImpl implements SyncRepository {
         await firestore.collection('users').doc(uid).collection('goals').get();
     for (final doc in snap.docs) {
       final m = doc.data();
-      await goalDao.insertGoal(
+        await goalDao.insertGoal(
         GoalsTableCompanion(
           id: Value(m['id'] as String),
           title: Value(m['title'] as String),
           type: Value(m['type'] as String? ?? 'project'),
           durationHours: Value(m['durationHours'] as int?),
+          iconId: Value(m['iconId'] as String?),
+          graphicImage: Value(m['graphicImage'] as String?),
+          colorArgb: Value(
+            m['colorArgb'] == null
+                ? null
+                : int.parse(m['colorArgb'].toString()),
+          ),
+          isGoal: Value(m['isGoal'] as bool? ?? true),
           createdAt: Value(DateTime.parse(m['createdAt'] as String)),
           updatedAt: Value(DateTime.parse(m['updatedAt'] as String)),
         ),

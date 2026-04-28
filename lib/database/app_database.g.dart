@@ -2171,6 +2171,50 @@ class $GoalsTableTable extends GoalsTable
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _iconIdMeta = const VerificationMeta('iconId');
+  @override
+  late final GeneratedColumn<String> iconId = GeneratedColumn<String>(
+    'icon_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _graphicImageMeta = const VerificationMeta(
+    'graphicImage',
+  );
+  @override
+  late final GeneratedColumn<String> graphicImage = GeneratedColumn<String>(
+    'graphic_image',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _colorArgbMeta = const VerificationMeta(
+    'colorArgb',
+  );
+  @override
+  late final GeneratedColumn<int> colorArgb = GeneratedColumn<int>(
+    'color_argb',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isGoalMeta = const VerificationMeta('isGoal');
+  @override
+  late final GeneratedColumn<bool> isGoal = GeneratedColumn<bool>(
+    'is_goal',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_goal" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -2199,6 +2243,10 @@ class $GoalsTableTable extends GoalsTable
     title,
     type,
     durationHours,
+    iconId,
+    graphicImage,
+    colorArgb,
+    isGoal,
     createdAt,
     updatedAt,
   ];
@@ -2240,6 +2288,33 @@ class $GoalsTableTable extends GoalsTable
           data['duration_hours']!,
           _durationHoursMeta,
         ),
+      );
+    }
+    if (data.containsKey('icon_id')) {
+      context.handle(
+        _iconIdMeta,
+        iconId.isAcceptableOrUnknown(data['icon_id']!, _iconIdMeta),
+      );
+    }
+    if (data.containsKey('graphic_image')) {
+      context.handle(
+        _graphicImageMeta,
+        graphicImage.isAcceptableOrUnknown(
+          data['graphic_image']!,
+          _graphicImageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('color_argb')) {
+      context.handle(
+        _colorArgbMeta,
+        colorArgb.isAcceptableOrUnknown(data['color_argb']!, _colorArgbMeta),
+      );
+    }
+    if (data.containsKey('is_goal')) {
+      context.handle(
+        _isGoalMeta,
+        isGoal.isAcceptableOrUnknown(data['is_goal']!, _isGoalMeta),
       );
     }
     if (data.containsKey('created_at')) {
@@ -2286,6 +2361,23 @@ class $GoalsTableTable extends GoalsTable
         DriftSqlType.int,
         data['${effectivePrefix}duration_hours'],
       ),
+      iconId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}icon_id'],
+      ),
+      graphicImage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}graphic_image'],
+      ),
+      colorArgb: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}color_argb'],
+      ),
+      isGoal:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}is_goal'],
+          )!,
       createdAt:
           attachedDatabase.typeMapping.read(
             DriftSqlType.dateTime,
@@ -2312,6 +2404,18 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
 
   /// Duration of the goal in hours. Null means no set time.
   final int? durationHours;
+
+  /// Material Symbols icon name (e.g. 'flag', 'fitness_center').
+  final String? iconId;
+
+  /// SVG graphic identifier for hero/illustration.
+  final String? graphicImage;
+
+  /// Accent colour for the goal card.
+  final int? colorArgb;
+
+  /// Whether this is a Goal (true) or a Project (false).
+  final bool isGoal;
   final DateTime createdAt;
   final DateTime updatedAt;
   const GoalsTableData({
@@ -2319,6 +2423,10 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
     required this.title,
     required this.type,
     this.durationHours,
+    this.iconId,
+    this.graphicImage,
+    this.colorArgb,
+    required this.isGoal,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -2331,6 +2439,16 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
     if (!nullToAbsent || durationHours != null) {
       map['duration_hours'] = Variable<int>(durationHours);
     }
+    if (!nullToAbsent || iconId != null) {
+      map['icon_id'] = Variable<String>(iconId);
+    }
+    if (!nullToAbsent || graphicImage != null) {
+      map['graphic_image'] = Variable<String>(graphicImage);
+    }
+    if (!nullToAbsent || colorArgb != null) {
+      map['color_argb'] = Variable<int>(colorArgb);
+    }
+    map['is_goal'] = Variable<bool>(isGoal);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -2345,6 +2463,17 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
           durationHours == null && nullToAbsent
               ? const Value.absent()
               : Value(durationHours),
+      iconId:
+          iconId == null && nullToAbsent ? const Value.absent() : Value(iconId),
+      graphicImage:
+          graphicImage == null && nullToAbsent
+              ? const Value.absent()
+              : Value(graphicImage),
+      colorArgb:
+          colorArgb == null && nullToAbsent
+              ? const Value.absent()
+              : Value(colorArgb),
+      isGoal: Value(isGoal),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -2360,6 +2489,10 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
       title: serializer.fromJson<String>(json['title']),
       type: serializer.fromJson<String>(json['type']),
       durationHours: serializer.fromJson<int?>(json['durationHours']),
+      iconId: serializer.fromJson<String?>(json['iconId']),
+      graphicImage: serializer.fromJson<String?>(json['graphicImage']),
+      colorArgb: serializer.fromJson<int?>(json['colorArgb']),
+      isGoal: serializer.fromJson<bool>(json['isGoal']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -2372,6 +2505,10 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
       'title': serializer.toJson<String>(title),
       'type': serializer.toJson<String>(type),
       'durationHours': serializer.toJson<int?>(durationHours),
+      'iconId': serializer.toJson<String?>(iconId),
+      'graphicImage': serializer.toJson<String?>(graphicImage),
+      'colorArgb': serializer.toJson<int?>(colorArgb),
+      'isGoal': serializer.toJson<bool>(isGoal),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -2382,6 +2519,10 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
     String? title,
     String? type,
     Value<int?> durationHours = const Value.absent(),
+    Value<String?> iconId = const Value.absent(),
+    Value<String?> graphicImage = const Value.absent(),
+    Value<int?> colorArgb = const Value.absent(),
+    bool? isGoal,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => GoalsTableData(
@@ -2390,6 +2531,10 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
     type: type ?? this.type,
     durationHours:
         durationHours.present ? durationHours.value : this.durationHours,
+    iconId: iconId.present ? iconId.value : this.iconId,
+    graphicImage: graphicImage.present ? graphicImage.value : this.graphicImage,
+    colorArgb: colorArgb.present ? colorArgb.value : this.colorArgb,
+    isGoal: isGoal ?? this.isGoal,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -2402,6 +2547,13 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
           data.durationHours.present
               ? data.durationHours.value
               : this.durationHours,
+      iconId: data.iconId.present ? data.iconId.value : this.iconId,
+      graphicImage:
+          data.graphicImage.present
+              ? data.graphicImage.value
+              : this.graphicImage,
+      colorArgb: data.colorArgb.present ? data.colorArgb.value : this.colorArgb,
+      isGoal: data.isGoal.present ? data.isGoal.value : this.isGoal,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -2414,6 +2566,10 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
           ..write('title: $title, ')
           ..write('type: $type, ')
           ..write('durationHours: $durationHours, ')
+          ..write('iconId: $iconId, ')
+          ..write('graphicImage: $graphicImage, ')
+          ..write('colorArgb: $colorArgb, ')
+          ..write('isGoal: $isGoal, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -2421,8 +2577,18 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, title, type, durationHours, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+    id,
+    title,
+    type,
+    durationHours,
+    iconId,
+    graphicImage,
+    colorArgb,
+    isGoal,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2431,6 +2597,10 @@ class GoalsTableData extends DataClass implements Insertable<GoalsTableData> {
           other.title == this.title &&
           other.type == this.type &&
           other.durationHours == this.durationHours &&
+          other.iconId == this.iconId &&
+          other.graphicImage == this.graphicImage &&
+          other.colorArgb == this.colorArgb &&
+          other.isGoal == this.isGoal &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -2440,6 +2610,10 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
   final Value<String> title;
   final Value<String> type;
   final Value<int?> durationHours;
+  final Value<String?> iconId;
+  final Value<String?> graphicImage;
+  final Value<int?> colorArgb;
+  final Value<bool> isGoal;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -2448,6 +2622,10 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
     this.title = const Value.absent(),
     this.type = const Value.absent(),
     this.durationHours = const Value.absent(),
+    this.iconId = const Value.absent(),
+    this.graphicImage = const Value.absent(),
+    this.colorArgb = const Value.absent(),
+    this.isGoal = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2457,6 +2635,10 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
     required String title,
     this.type = const Value.absent(),
     this.durationHours = const Value.absent(),
+    this.iconId = const Value.absent(),
+    this.graphicImage = const Value.absent(),
+    this.colorArgb = const Value.absent(),
+    this.isGoal = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -2469,6 +2651,10 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
     Expression<String>? title,
     Expression<String>? type,
     Expression<int>? durationHours,
+    Expression<String>? iconId,
+    Expression<String>? graphicImage,
+    Expression<int>? colorArgb,
+    Expression<bool>? isGoal,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -2478,6 +2664,10 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
       if (title != null) 'title': title,
       if (type != null) 'type': type,
       if (durationHours != null) 'duration_hours': durationHours,
+      if (iconId != null) 'icon_id': iconId,
+      if (graphicImage != null) 'graphic_image': graphicImage,
+      if (colorArgb != null) 'color_argb': colorArgb,
+      if (isGoal != null) 'is_goal': isGoal,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -2489,6 +2679,10 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
     Value<String>? title,
     Value<String>? type,
     Value<int?>? durationHours,
+    Value<String?>? iconId,
+    Value<String?>? graphicImage,
+    Value<int?>? colorArgb,
+    Value<bool>? isGoal,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -2498,6 +2692,10 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
       title: title ?? this.title,
       type: type ?? this.type,
       durationHours: durationHours ?? this.durationHours,
+      iconId: iconId ?? this.iconId,
+      graphicImage: graphicImage ?? this.graphicImage,
+      colorArgb: colorArgb ?? this.colorArgb,
+      isGoal: isGoal ?? this.isGoal,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -2519,6 +2717,18 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
     if (durationHours.present) {
       map['duration_hours'] = Variable<int>(durationHours.value);
     }
+    if (iconId.present) {
+      map['icon_id'] = Variable<String>(iconId.value);
+    }
+    if (graphicImage.present) {
+      map['graphic_image'] = Variable<String>(graphicImage.value);
+    }
+    if (colorArgb.present) {
+      map['color_argb'] = Variable<int>(colorArgb.value);
+    }
+    if (isGoal.present) {
+      map['is_goal'] = Variable<bool>(isGoal.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2538,6 +2748,10 @@ class GoalsTableCompanion extends UpdateCompanion<GoalsTableData> {
           ..write('title: $title, ')
           ..write('type: $type, ')
           ..write('durationHours: $durationHours, ')
+          ..write('iconId: $iconId, ')
+          ..write('graphicImage: $graphicImage, ')
+          ..write('colorArgb: $colorArgb, ')
+          ..write('isGoal: $isGoal, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -3592,6 +3806,10 @@ typedef $$GoalsTableTableCreateCompanionBuilder =
       required String title,
       Value<String> type,
       Value<int?> durationHours,
+      Value<String?> iconId,
+      Value<String?> graphicImage,
+      Value<int?> colorArgb,
+      Value<bool> isGoal,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -3602,6 +3820,10 @@ typedef $$GoalsTableTableUpdateCompanionBuilder =
       Value<String> title,
       Value<String> type,
       Value<int?> durationHours,
+      Value<String?> iconId,
+      Value<String?> graphicImage,
+      Value<int?> colorArgb,
+      Value<bool> isGoal,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -3633,6 +3855,26 @@ class $$GoalsTableTableFilterComposer
 
   ColumnFilters<int> get durationHours => $composableBuilder(
     column: $table.durationHours,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get iconId => $composableBuilder(
+    column: $table.iconId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get graphicImage => $composableBuilder(
+    column: $table.graphicImage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get colorArgb => $composableBuilder(
+    column: $table.colorArgb,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isGoal => $composableBuilder(
+    column: $table.isGoal,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3676,6 +3918,26 @@ class $$GoalsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get iconId => $composableBuilder(
+    column: $table.iconId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get graphicImage => $composableBuilder(
+    column: $table.graphicImage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get colorArgb => $composableBuilder(
+    column: $table.colorArgb,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isGoal => $composableBuilder(
+    column: $table.isGoal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -3709,6 +3971,20 @@ class $$GoalsTableTableAnnotationComposer
     column: $table.durationHours,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get iconId =>
+      $composableBuilder(column: $table.iconId, builder: (column) => column);
+
+  GeneratedColumn<String> get graphicImage => $composableBuilder(
+    column: $table.graphicImage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get colorArgb =>
+      $composableBuilder(column: $table.colorArgb, builder: (column) => column);
+
+  GeneratedColumn<bool> get isGoal =>
+      $composableBuilder(column: $table.isGoal, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -3752,6 +4028,10 @@ class $$GoalsTableTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<int?> durationHours = const Value.absent(),
+                Value<String?> iconId = const Value.absent(),
+                Value<String?> graphicImage = const Value.absent(),
+                Value<int?> colorArgb = const Value.absent(),
+                Value<bool> isGoal = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -3760,6 +4040,10 @@ class $$GoalsTableTableTableManager
                 title: title,
                 type: type,
                 durationHours: durationHours,
+                iconId: iconId,
+                graphicImage: graphicImage,
+                colorArgb: colorArgb,
+                isGoal: isGoal,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -3770,6 +4054,10 @@ class $$GoalsTableTableTableManager
                 required String title,
                 Value<String> type = const Value.absent(),
                 Value<int?> durationHours = const Value.absent(),
+                Value<String?> iconId = const Value.absent(),
+                Value<String?> graphicImage = const Value.absent(),
+                Value<int?> colorArgb = const Value.absent(),
+                Value<bool> isGoal = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -3778,6 +4066,10 @@ class $$GoalsTableTableTableManager
                 title: title,
                 type: type,
                 durationHours: durationHours,
+                iconId: iconId,
+                graphicImage: graphicImage,
+                colorArgb: colorArgb,
+                isGoal: isGoal,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

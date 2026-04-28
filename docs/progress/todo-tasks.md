@@ -17,6 +17,16 @@
 - [x] Show "You're using TaskStack offline" `MaterialBanner` in `TaskStackScreen` for guests
 - [x] On login/register from guest: local Drift data pushed to cloud (`pushLocalToCloud` after login, full migration on register)
 
+## ✅ Phase 13: Goals Page Rehaul — COMPLETE
+- [x] Update Goal entity — add `iconId`, `graphicImage`, `colorArgb`, `isGoal`
+- [x] Update GoalsTable schema + migration to v6
+- [x] Update GoalDao — `watchTasksForGoal`, `getTasksForGoalInRange`, `getCommittedMinutesForGoal`
+- [x] Update GoalRepository — map new fields, committed-time queries
+- [x] Rehaul GoalsListScreen — M3 cards, progress bar, 30-day timeline, "Goals" title
+- [x] Rehaul GoalFormScreen — icon picker, colour picker, `isGoal` toggle, "New Goal" title
+- [x] Update Firebase sync — push/pull `iconId`, `graphicImage`, `colorArgb`, `isGoal`
+- [x] Write tests — DAO (5), repository (6), widgets (10) = 21 new tests, all passing
+
 ## 🔄 Current Issue: Sync 500 Error on Sleep Task
 - [ ] Investigate and fix 500 error when saving task "Sleep" with daily recurrence, time 11:00 PM to 6:30 AM
 

@@ -116,6 +116,14 @@ class _FakeGoalRepository implements GoalRepository {
   Stream<List<Goal>> watchAllGoals() async* {
     yield _goals;
   }
+
+  @override
+  Stream<List<GoalTaskInfo>> watchTasksForGoal(String goalId) async* {
+    yield [];
+  }
+
+  @override
+  Future<int?> getCommittedMinutesForGoal(String goalId) async => 0;
 }
 
 ProviderContainer _container({

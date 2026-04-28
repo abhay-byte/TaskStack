@@ -35,6 +35,29 @@ class GoalRepositoryImpl implements GoalRepository {
   @override
   Future<void> deleteGoalById(String id) => _dao.deleteGoalById(id);
 
+  @override
+  Stream<List<GoalTaskInfo>> watchTasksForGoal(String goalId) {
+    return _dao.watchTasksForGoal(goalId).map(
+          (rows) => rows
+              .map(
+                (r) => GoalTaskInfo(
+                  id: r.id,
+                  title: r.title,
+                  taskDate: r.taskDate,
+                  durationMinutes: r.durationMinutes,
+                  status: r.status,
+                  completedAt: r.completedAt,
+                ),
+              )
+              .toList(),
+        );
+  }
+
+  @override
+  Future<int?> getCommittedMinutesForGoal(String goalId) {
+    return _dao.getCommittedMinutesForGoal(goalId);
+  }
+
   // ── Mappers ──────────────────────────────────────────────────────────────
 
   Goal _rowToGoal(GoalsTableData row) {
@@ -46,6 +69,10 @@ class GoalRepositoryImpl implements GoalRepository {
         orElse: () => GoalType.project,
       ),
       durationHours: row.durationHours,
+      iconId: row.iconId,
+      graphicImage: row.graphicImage,
+      colorArgb: row.colorArgb,
+      isGoal: row.isGoal,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );
@@ -57,6 +84,10 @@ class GoalRepositoryImpl implements GoalRepository {
       title: Value(goal.title),
       type: Value(goal.type.name),
       durationHours: Value(goal.durationHours),
+      iconId: Value(goal.iconId),
+      graphicImage: Value(goal.graphicImage),
+      colorArgb: Value(goal.colorArgb),
+      isGoal: Value(goal.isGoal),
       createdAt: Value(goal.createdAt),
       updatedAt: Value(goal.updatedAt),
     );

@@ -25,7 +25,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -61,6 +61,20 @@ class AppDatabase extends _$AppDatabase {
             deleted_at INTEGER NOT NULL
           )
         ''');
+      }
+      if (from < 6) {
+        await customStatement(
+          'ALTER TABLE "goals" ADD COLUMN "icon_id" TEXT',
+        );
+        await customStatement(
+          'ALTER TABLE "goals" ADD COLUMN "graphic_image" TEXT',
+        );
+        await customStatement(
+          'ALTER TABLE "goals" ADD COLUMN "color_argb" INTEGER',
+        );
+        await customStatement(
+          'ALTER TABLE "goals" ADD COLUMN "is_goal" INTEGER NOT NULL DEFAULT 1',
+        );
       }
     },
     beforeOpen: (details) async {
