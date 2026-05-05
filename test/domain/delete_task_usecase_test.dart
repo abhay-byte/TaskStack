@@ -54,6 +54,19 @@ class _FakeTaskRepository implements TaskRepository {
 
   @override
   Future<void> updateTask(Task task) async {}
+
+  @override
+  Future<List<Task>> getRecurringParents() async => [];
+
+  @override
+  Future<List<String>> getInstanceDatesInRange(
+    String parentId,
+    DateTime from,
+    DateTime to,
+  ) async => [];
+
+  @override
+  Future<void> deleteOldPendingInstances(String parentId, DateTime before) async {}
 }
 
 class _FakeNotificationScheduler extends NotificationScheduler {

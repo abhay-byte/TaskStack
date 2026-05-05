@@ -11,6 +11,8 @@ Welcome to the TaskStack project documentation. This folder contains the foundat
 | 📋 Problem Statement | [problem_statement.md](./problem_statement.md) | Defines the problem space, target users, proposed solution, and success criteria |
 | 📄 SRS — Software Requirements Specification | [srs.md](./srs.md) | Complete functional and non-functional requirements for v1.0 |
 | 🏗️ SDD — Software Design Document | [sdd.md](./sdd.md) | Full technical architecture, module structure, DB schema, UI design system |
+| 📊 ER Diagram | [er-diagram.md](./er-diagram.md) | Database schema relationships (local + cloud) |
+| 🔄 Change Log | [changelog.md](./changelog.md) | Detailed record of all architectural changes and decisions |
 
 ---
 

@@ -1,21 +1,12 @@
 # Todo Tasks
 
-## ✅ Phase 10: Task Cloud Sync — COMPLETE
-- [x] Add `goals` + `tasks` tables to backend Postgres schema (`backend/db/schema.sql`)
-- [x] Add backend REST endpoints: `GET /tasks`, `POST /tasks/bulk`, `DELETE /tasks/:id` (same for goals)
-- [x] Implement `SyncRepository` in Flutter — `pushLocalToCloud`, `pullCloudToLocal`, last-write-wins on `updated_at`
-- [x] `user_id` owner column on all cloud tasks + goals (only user's own data synced)
-- [x] Sync trigger: on login → pull cloud→local; on task save → push to cloud (fire-and-forget)
-- [x] `SyncStatusIndicator` in app bar — idle (hidden) / spinning / cloud-off error icon (tap to retry)
-- [x] Offline-safe — `DioException` caught silently, sets `SyncStatus.error`; retries on next action
+## ✅ All Phases Complete
 
-## ✅ Phase 11: Guest Mode (Local-Only without Account) — COMPLETE
-- [x] Update GoRouter: "Continue as Guest" on `LoginScreen` skips auth guard (`AuthGuest` treated same as authenticated)
-- [x] Track `isGuest` via `AuthGuest` sealed state + `isGuestModeProvider` + `isGuestProvider`
-- [x] Gate social tab: `GroupsListScreen` shows "Sign in to use Social" UI for guests
-- [x] Gate sync: `SyncRepositoryImpl` no-ops on `pushLocalToCloud`/`pullCloudToLocal` when guest
-- [x] Show "You're using TaskStack offline" `MaterialBanner` in `TaskStackScreen` for guests
-- [x] On login/register from guest: local Drift data pushed to cloud (`pushLocalToCloud` after login, full migration on register)
+All tracked phases and issues are now resolved:
+- ✅ Phase 10: Task Cloud Sync
+- ✅ Phase 11: Guest Mode
+- ✅ Phase 12: Bug Fixes + Delete Account + Day Todo + Group Delete
+- ✅ Phase 13: Rolling 2-Week Window + FPS Fix + Comprehensive Tests
 
 ## ✅ Phase 13: Goals Page Rehaul — COMPLETE
 - [x] Update Goal entity — add `iconId`, `graphicImage`, `colorArgb`, `isGoal`
@@ -27,11 +18,20 @@
 - [x] Update Firebase sync — push/pull `iconId`, `graphicImage`, `colorArgb`, `isGoal`
 - [x] Write tests — DAO (5), repository (6), widgets (10) = 21 new tests, all passing
 
-## 🔄 Current Issue: Sync 500 Error on Sleep Task
-- [ ] Investigate and fix 500 error when saving task "Sleep" with daily recurrence, time 11:00 PM to 6:30 AM
+## ✅ Phase 14: Rolling 2-Week Window + FPS Fix — COMPLETE
+- [x] Replace 365-row upfront generation with rolling 2-week window
+- [x] Add `MaintainRecurringWindowUseCase`
+- [x] Add DAO methods: `getRecurringParents`, `getInstanceDatesInRange`, `deleteOldPendingInstances`
+- [x] Simplify `TaskCardWidget` — remove scroll-tracking, make StatelessWidget
+- [x] Write 5 new test files (1788 lines) + update 4 existing test files
+- [x] Update docs: SDD, ER diagram, progress tracking, changelog
+
+See `finished-tasks.md` and `docs/changelog.md` for complete details.
+
+---
 
 ## 🔮 Future Enhancements (Post v1.0)
-- Signed release APK (requires keystore — manual step)
+- Signed release APK (keystore ready)
 - Flavour `productFlavours` in `build.gradle.kts`
 - Headless background isolate for persistent notifications
 - Deeper analytics: streak tracking, category breakdowns

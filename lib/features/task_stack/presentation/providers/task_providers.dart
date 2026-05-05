@@ -121,6 +121,14 @@ final duplicateTaskUseCaseProvider = Provider<DuplicateTaskUseCase>((ref) {
   return DuplicateTaskUseCase(ref.watch(taskRepositoryProvider));
 });
 
+final maintainRecurringWindowUseCaseProvider =
+    Provider<MaintainRecurringWindowUseCase>((ref) {
+      return MaintainRecurringWindowUseCase(
+        ref.watch(taskRepositoryProvider),
+        ref.watch(notificationSchedulerProvider),
+      );
+    });
+
 // ── Task Form State ───────────────────────────────────────────────────────
 
 class TaskFormState {

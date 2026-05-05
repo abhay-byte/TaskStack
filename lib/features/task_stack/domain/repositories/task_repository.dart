@@ -19,4 +19,13 @@ abstract class TaskRepository {
     required String status,
     DateTime? completedAt,
   });
+
+  // ── Rolling window maintenance ──────────────────────────────────────────
+  Future<List<Task>> getRecurringParents();
+  Future<List<String>> getInstanceDatesInRange(
+    String parentId,
+    DateTime from,
+    DateTime to,
+  );
+  Future<void> deleteOldPendingInstances(String parentId, DateTime before);
 }

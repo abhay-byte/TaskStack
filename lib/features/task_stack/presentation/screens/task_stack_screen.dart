@@ -48,10 +48,19 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
 
     _scrollController.addListener(_onScroll);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToNow());
-    // Update time indicator every 30s
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToNow();
+      // Ensure recurring task window is populated on screen entry
+      ref.read(maintainRecurringWindowUseCaseProvider).execute();
+    });
+    // Update time indicator every 30s + refresh recurring window hourly
     _timer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      setState(() {});
+      final now = DateTime.now();
+      if (now.minute == 0) {
+        ref.read(maintainRecurringWindowUseCaseProvider).execute();
+      }
     });
   }
 

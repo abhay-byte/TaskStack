@@ -47,8 +47,6 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(tasksTable, tasksTable.goalId);
       }
       if (from < 4) {
-        // m.addColumn() emits no DEFAULT clause, which SQLite rejects for NOT NULL.
-        // Use raw SQL with DEFAULT 0 so the ALTER succeeds, then backfill from createdAt.
         await customStatement(
           'ALTER TABLE "goals" ADD COLUMN "updated_at" INTEGER NOT NULL DEFAULT 0',
         );
@@ -63,6 +61,7 @@ class AppDatabase extends _$AppDatabase {
         ''');
       }
       if (from < 6) {
+        // Goals page rehaul: add icon, graphic, color, is_goal columns
         await customStatement(
           'ALTER TABLE "goals" ADD COLUMN "icon_id" TEXT',
         );
@@ -75,6 +74,8 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           'ALTER TABLE "goals" ADD COLUMN "is_goal" INTEGER NOT NULL DEFAULT 1',
         );
+        // Rolling window: clean up old generated recurring instances
+        await _cleanupOldRecurringInstances();
       }
     },
     beforeOpen: (details) async {
@@ -82,6 +83,19 @@ class AppDatabase extends _$AppDatabase {
       await customStatement('PRAGMA journal_mode = WAL');
     },
   );
+
+  Future<void> _cleanupOldRecurringInstances() async {
+    final cutoff = DateTime.now().subtract(const Duration(days: 14));
+    final dateStr =
+        '${cutoff.year}-${cutoff.month.toString().padLeft(2, '0')}-${cutoff.day.toString().padLeft(2, '0')}';
+    await customStatement('''
+      DELETE FROM tasks
+      WHERE parent_task_id IS NOT NULL
+        AND task_date < ?
+        AND status = 'pending'
+        AND completed_at IS NULL
+    ''', [dateStr]);
+  }
 }
 
 LazyDatabase _openConnection() {

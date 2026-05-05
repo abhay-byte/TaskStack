@@ -82,6 +82,33 @@ class TaskRepositoryImpl implements TaskRepository {
     DateTime? completedAt,
   }) => _dao.updateStatus(id, status: status, completedAt: completedAt);
 
+  @override
+  Future<List<Task>> getRecurringParents() async {
+    final rows = await _dao.getRecurringParents();
+    return rows.map(_rowToTask).toList();
+  }
+
+  @override
+  Future<List<String>> getInstanceDatesInRange(
+    String parentId,
+    DateTime from,
+    DateTime to,
+  ) async {
+    return _dao.getInstanceDatesInRange(
+      parentId,
+      _dateString(from),
+      _dateString(to),
+    );
+  }
+
+  @override
+  Future<void> deleteOldPendingInstances(
+    String parentId,
+    DateTime before,
+  ) async {
+    await _dao.deleteOldPendingInstances(parentId, _dateString(before));
+  }
+
   // ── Mappers ──────────────────────────────────────────────────────────────
 
   Task _rowToTask(TasksTableData row) {

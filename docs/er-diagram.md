@@ -219,5 +219,34 @@ This means task queries never need a join to retrieve tags, at the cost of tag r
 | 3 | Local | Added `goals` table + `tasks.goalId` column |
 | 4 | Local | Added `goals.updatedAt` column (last-write-wins sync support) |
 | 5 | Local | Added `deleted_tasks` tombstone table for delete sync |
+| 6 | Local | Rolling window cleanup: deletes old generated recurring instances (>14 days, pending/uncompleted) |
 | 6 | Cloud | Initial cloud schema: `users`, `groups`, `group_members`, `group_invites` |
 | 7 | Cloud | Phase 10: added `goals` + `tasks` tables (user-scoped mirrors of Drift schema) |
+
+### Rolling Window Architecture (v6)
+
+**Problem:** Daily recurring tasks generated 365 rows upfront (parent + 364 children), causing:
+- Slow creation (batch 366 inserts)
+- Large sync payload (~164 KB per daily task)
+- Scroll performance degradation with many rows
+
+**Solution:** Rolling 2-week window (7 days back + 14 days forward = 21 days):
+- **Creation:** Only parent inserted; no future instances generated
+- **Maintenance:** `MaintainRecurringWindowUseCase` populates missing instances on-demand
+- **Trimming:** `deleteOldPendingInstances` removes outdated pending rows
+- **Lifecycle hooks:** Runs on app startup, every hour while open, after task CRUD
+
+**Implementation:**
+```dart
+// New DAO methods
+Future<List<TasksTableData>> getRecurringParents();
+Future<List<String>> getInstanceDatesInRange(String parentId, String from, String to);
+Future<int> deleteOldPendingInstances(String parentId, String beforeDate);
+
+// New use case
+class MaintainRecurringWindowUseCase {
+  static const _windowBackDays = 7;
+  static const _windowForwardDays = 14;
+  // ...
+}
+```

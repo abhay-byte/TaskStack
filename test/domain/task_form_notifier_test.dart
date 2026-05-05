@@ -55,6 +55,19 @@ class _FakeTaskRepository implements TaskRepository {
 
   @override
   Future<void> updateTask(Task task) async {}
+
+  @override
+  Future<List<Task>> getRecurringParents() async => [];
+
+  @override
+  Future<List<String>> getInstanceDatesInRange(
+    String parentId,
+    DateTime from,
+    DateTime to,
+  ) async => [];
+
+  @override
+  Future<void> deleteOldPendingInstances(String parentId, DateTime before) async {}
 }
 
 class _FakeNotificationScheduler extends NotificationScheduler {
@@ -158,11 +171,8 @@ void main() {
       expect(parent.title, 'Custom recurrence');
       expect(parent.recurrenceType, RecurrenceType.custom);
       expect(parent.recurrenceRule, '1,3,5');
-      expect(repository.insertedTasks.length, 314);
-      expect(
-        repository.insertedTasks.every((task) => task.recurrenceType == RecurrenceType.custom),
-        isTrue,
-      );
+      // Only parent is inserted; rolling window maintenance handles instances
+      expect(repository.insertedTasks.length, 1);
       expect(sync.pushCalls, 1);
     });
 
@@ -333,13 +343,11 @@ void main() {
     );
 
     test(
-      'saves daily, weekly, and custom recurring tasks with the expected fan-out',
+      'saves only parent for daily, weekly, and custom recurring tasks',
       () async {
         final cases = <({
           String name,
           Task task,
-          int expectedInserted,
-          int expectedScheduled,
         })>[
           (
             name: 'daily',
@@ -354,8 +362,6 @@ void main() {
               updatedAt: DateTime(2030, 1, 1, 12),
               taskDate: DateTime(2030, 1, 1),
             ),
-            expectedInserted: 366,
-            expectedScheduled: 21,
           ),
           (
             name: 'weekly',
@@ -370,8 +376,6 @@ void main() {
               updatedAt: DateTime(2030, 1, 1, 12),
               taskDate: DateTime(2030, 1, 1),
             ),
-            expectedInserted: 105,
-            expectedScheduled: 21,
           ),
           (
             name: 'custom',
@@ -387,8 +391,6 @@ void main() {
               updatedAt: DateTime(2026, 3, 30, 12),
               taskDate: DateTime(2026, 3, 30),
             ),
-            expectedInserted: 314,
-            expectedScheduled: 21,
           ),
           (
             name: 'custom-no-days',
@@ -403,8 +405,6 @@ void main() {
               updatedAt: DateTime(2026, 3, 30, 12),
               taskDate: DateTime(2026, 3, 30),
             ),
-            expectedInserted: 1,
-            expectedScheduled: 1,
           ),
         ];
 
@@ -416,14 +416,16 @@ void main() {
 
           await useCase.execute(testCase.task);
 
+          // Only the parent task is inserted; rolling window maintenance
+          // populates instances separately.
           expect(
             repository.insertedTasks,
-            hasLength(testCase.expectedInserted),
+            hasLength(1),
             reason: testCase.name,
           );
           expect(
             scheduler.scheduledTaskIds,
-            hasLength(testCase.expectedScheduled),
+            hasLength(1),
             reason: testCase.name,
           );
         }

@@ -340,3 +340,54 @@ Users can now use TaskStack fully offline without creating an account.
 | `flutter test` | ✅ 74 tests passing |
 | `flutter build apk --debug` | ✅ `app-debug.apk` |
 
+---
+
+## ✅ Phase 14 — Rolling 2-Week Window + FPS Fix
+
+### Architecture Change: Rolling Window for Recurring Tasks
+**Problem:** Creating a daily recurring task inserted 365 rows immediately, causing slow creation, 164 KB sync payloads, and degraded scroll performance.
+
+**Solution:** Rolling 2-week window (7 days back + 14 days forward):
+- **CreateTaskUseCase:** Only inserts parent task; no future instance generation
+- **MaintainRecurringWindowUseCase:** Populates missing instances on-demand, trims old pending rows
+- **Lifecycle hooks:** `TaskStackScreen.initState`, hourly timer, `TaskFormScreen._save`
+
+**Files changed:**
+- `task_usecases.dart` — Added `MaintainRecurringWindowUseCase`, removed 365-row generation from `CreateTaskUseCase` and `UpdateTaskUseCase`
+- `task_dao.dart` — Added `getRecurringParents()`, `getInstanceDatesInRange()`, `deleteOldPendingInstances()`
+- `task_repository.dart` / `task_repository_impl.dart` — Wired new DAO methods
+- `task_providers.dart` — Added `maintainRecurringWindowUseCaseProvider`
+- `app_database.dart` — Schema v6 migration also runs `_cleanupOldRecurringInstances()`
+- `task_stack_screen.dart` — Hooks window maintenance on startup + hourly
+- `task_form_screen.dart` — Triggers maintenance after save
+
+### Performance Fix: TaskCardWidget Scroll Effect Removed
+**Problem:** Each task card attached an `AnimatedBuilder` to `ScrollPosition`. 30 visible cards = 30 rebuilds per scroll frame, causing FPS drops.
+
+**Fix:** Removed per-card scroll-tracking sticky-header effect entirely. `TaskCardWidget` is now a simple `StatelessWidget` with static `Positioned(top: 0, ...)` content.
+
+**Files changed:**
+- `task_card_widget.dart` — Removed `_cardKey`, `_baseCardTop`, `_baseScrollOffset`, `_hasMeasured`, `_scrollPos`, `_measureBaseline()`, `_computeContentOffset()`, `AnimatedBuilder`. Replaced with static positioning.
+
+### Test Coverage
+**5 new test files:**
+- `test/domain/rolling_window_test.dart` — Core window behavior (390 lines)
+- `test/domain/window_edge_cases_test.dart` — 15 numbered edge cases (370 lines)
+- `test/domain/sync_offline_test.dart` — Offline/online sync matrix (581 lines)
+- `test/widgets/task_form_sync_test.dart` — Widget-level sync integration (247 lines)
+- `test/widgets/task_card_widget_test.dart` — Simplified widget tests (200 lines)
+
+**Updated test files:**
+- `test/domain/task_creation_usecase_test.dart` — Expects 1 insert for daily/weekly/custom
+- `test/domain/task_form_notifier_test.dart` — Expects 1 insert for custom recurrence
+- `test/widgets/task_form_screen_test.dart` — Added new repo interface methods
+- `test/domain/delete_task_usecase_test.dart` — Added new repo interface methods
+
+### Impact
+| Metric | Before | After |
+|--------|--------|-------|
+| Rows per daily task | 366 | ~21 max |
+| Firestore sync payload | ~164 KB | ~450 bytes |
+| Scroll rebuilds per frame | O(n) task cards | 0 (static) |
+| Create task latency | Slow (batch 366 inserts) | Instant (1 insert) |
+

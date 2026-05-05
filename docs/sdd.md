@@ -248,15 +248,52 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 6;  // v6: rolling window cleanup for recurring tasks
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
-      // Migrations will be added as schema evolves
+      if (from < 2) {
+        await m.addColumn(tasksTable, tasksTable.graphicImage);
+      }
+      if (from < 3) {
+        await m.createTable(goalsTable);
+        await m.addColumn(tasksTable, tasksTable.goalId);
+      }
+      if (from < 4) {
+        await customStatement(
+          'ALTER TABLE "goals" ADD COLUMN "updated_at" INTEGER NOT NULL DEFAULT 0',
+        );
+        await customStatement('UPDATE "goals" SET "updated_at" = "created_at"');
+      }
+      if (from < 5) {
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS deleted_tasks (
+            id TEXT NOT NULL PRIMARY KEY,
+            deleted_at INTEGER NOT NULL
+          )
+        ''');
+      }
+      if (from < 6) {
+        // Rolling window: clean up old generated recurring instances
+        await _cleanupOldRecurringInstances();
+      }
     },
   );
+}
+
+Future<void> _cleanupOldRecurringInstances() async {
+  final cutoff = DateTime.now().subtract(const Duration(days: 14));
+  final dateStr =
+      '${cutoff.year}-${cutoff.month.toString().padLeft(2, '0')}-${cutoff.day.toString().padLeft(2, '0')}';
+  await customStatement('''
+    DELETE FROM tasks
+    WHERE parent_task_id IS NOT NULL
+      AND task_date < ?
+      AND status = 'pending'
+      AND completed_at IS NULL
+  ''', [dateStr]);
 }
 ```
 
@@ -340,7 +377,7 @@ class CreateTaskUseCase {
       if (task.notificationEnabled && task.startTime != null) {
         await _scheduler.scheduleFor(task);
       }
-      // Handle repeat instances if recurrenceType == repeatToday
+      // Handle intra-day repeat instances if recurrenceType == repeatToday
       if (task.recurrenceType == RecurrenceType.repeatToday) {
         final instances = GenerateRepeatInstancesUseCase(task).execute();
         for (final instance in instances) {
@@ -350,9 +387,66 @@ class CreateTaskUseCase {
           }
         }
       }
+      // NOTE: daily/weekly/custom recurring tasks NO LONGER generate 365 rows here.
+      // A rolling 2-week window is maintained by MaintainRecurringWindowUseCase.
       return const Right(null);
     } catch (e) {
       return Left(DatabaseFailure(e.toString()));
+    }
+  }
+}
+
+/// Maintains a rolling 2-week window of recurring task instances.
+/// Window: 7 days back + 14 days forward = 21 days total.
+/// Old pending instances outside the window are trimmed.
+class MaintainRecurringWindowUseCase {
+  final TaskRepository _repository;
+  final NotificationScheduler _scheduler;
+
+  Future<void> execute({String? specificParentId}) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final windowStart = today.subtract(const Duration(days: 7));
+    final windowEnd = today.add(const Duration(days: 14));
+
+    final parents = specificParentId != null
+        ? [await _repository.getTaskById(specificParentId)].whereType<Task>()
+        : await _repository.getRecurringParents();
+
+    for (final parent in parents) {
+      if (parent.recurrenceType == RecurrenceType.none ||
+          parent.recurrenceType == RecurrenceType.repeatToday) continue;
+
+      // 1. Compute expected dates in window
+      final expected = _expectedDates(parent, windowStart, windowEnd);
+      if (expected.isEmpty) continue;
+
+      // 2. Find existing instances
+      final existing = await _repository.getInstanceDatesInRange(
+        parent.id, windowStart, windowEnd,
+      );
+      final existingSet = existing.map(DateTime.parse).map(_normalize).toSet();
+
+      // 3. Insert missing
+      final missing = expected.where((d) => !existingSet.contains(d));
+      final instances = missing.map((d) => parent.copyWith(
+        id: _uuid.v4(),
+        taskDate: d,
+        parentTaskId: parent.id,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        status: TaskStatus.pending,
+      )).toList();
+
+      if (instances.isNotEmpty) {
+        await _repository.insertTasks(instances);
+        for (final inst in instances.take(10)) {
+          if (inst.notificationEnabled) await _scheduler.scheduleFor(inst);
+        }
+      }
+
+      // 4. Trim old pending instances
+      await _repository.deleteOldPendingInstances(parent.id, windowStart);
     }
   }
 }
@@ -794,6 +888,11 @@ CREATE TABLE daily_summaries (
 | Version | Changes |
 |---|---|
 | 1 | Initial schema with tasks, tags, daily_summaries |
+| 2 | Added `tasks.graphicImage` column |
+| 3 | Added `goals` table + `tasks.goalId` column |
+| 4 | Added `goals.updatedAt` column (last-write-wins sync support) |
+| 5 | Added `deleted_tasks` tombstone table for delete sync |
+| 6 | Rolling window cleanup: deletes old generated recurring instances (pending/uncompleted only) |
 
 ---
 

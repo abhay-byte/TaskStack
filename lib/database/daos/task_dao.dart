@@ -190,6 +190,46 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
       ..where((t) => t.taskDate.isBetweenValues(from, to))).get();
   }
 
+  /// Get all recurring parent tasks (not child instances).
+  Future<List<TasksTableData>> getRecurringParents() {
+    return (select(tasksTable)
+          ..where(
+            (t) =>
+                t.recurrenceType.isNotIn(['none', 'repeatToday']) &
+                t.parentTaskId.isNull(),
+          ))
+        .get();
+  }
+
+  /// Get taskDates of existing child instances for a parent within a date range.
+  Future<List<String>> getInstanceDatesInRange(
+    String parentId,
+    String from,
+    String to,
+  ) {
+    return (select(tasksTable)
+          ..where(
+            (t) =>
+                t.parentTaskId.equals(parentId) &
+                t.taskDate.isBetweenValues(from, to),
+          ))
+        .map((row) => row.taskDate)
+        .get();
+  }
+
+  /// Delete old pending/uncompleted instances before a cutoff date.
+  Future<int> deleteOldPendingInstances(String parentId, String beforeDate) {
+    return (delete(tasksTable)
+          ..where(
+            (t) =>
+                t.parentTaskId.equals(parentId) &
+                t.taskDate.isSmallerThanValue(beforeDate) &
+                t.status.equals('pending') &
+                t.completedAt.isNull(),
+          ))
+        .go();
+  }
+
   /// Update status + completedAt.
   Future<void> updateStatus(
     String id, {

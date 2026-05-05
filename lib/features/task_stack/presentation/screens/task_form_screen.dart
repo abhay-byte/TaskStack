@@ -487,7 +487,11 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     final success = await ref
         .read(taskFormProvider.notifier)
         .save(date, scope: scope);
-    if (success && context.mounted) context.pop();
+    if (success) {
+      // Keep recurring window in sync after creating / editing a recurring task
+      await ref.read(maintainRecurringWindowUseCaseProvider).execute();
+      if (context.mounted) context.pop();
+    }
   }
 
   Future<RecurringScope?> _confirmRecurringEdit(BuildContext context) async {
