@@ -34,6 +34,7 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => context.push('/profile/me'),
           ),
 
+
           // ── Appearance ────────────────────────────────────────────────
           _SectionHeader('Appearance'),
 
@@ -456,25 +457,48 @@ class _ProfileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          radius: 24,
-          backgroundColor: cs.primaryContainer,
-          child: Icon(Icons.person, color: cs.onPrimaryContainer),
-        ),
-        title: Text(
-          'Local Profile',
-          style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          'Edit your display name',
-          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
-      ),
+    return Consumer(
+      builder: (context, ref, _) {
+        final prefs = ref.watch(sharedPreferencesProvider);
+        final displayName = prefs.getString('profile_display_name') ?? '';
+        final photoPath = prefs.getString('profile_photo_path');
+        final hasPhoto =
+            photoPath != null && photoPath.isNotEmpty && File(photoPath).existsSync();
+
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: ListTile(
+            leading: CircleAvatar(
+              radius: 24,
+              backgroundColor: cs.primaryContainer,
+              backgroundImage: hasPhoto ? FileImage(File(photoPath)) : null,
+              child: !hasPhoto
+                  ? (displayName.isNotEmpty
+                      ? Text(
+                          displayName[0].toUpperCase(),
+                          style: TextStyle(
+                            color: cs.onPrimaryContainer,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        )
+                      : Icon(Icons.person, color: cs.onPrimaryContainer))
+                  : null,
+            ),
+            title: Text(
+              displayName.isNotEmpty ? displayName : 'Local Profile',
+              style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              displayName.isNotEmpty
+                  ? 'Tap to edit profile'
+                  : 'Edit your display name & photo',
+              style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: onTap,
+          ),
+        );
+      },
     );
   }
 }

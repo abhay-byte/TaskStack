@@ -48,6 +48,7 @@ dependencies:
   smooth_page_indicator: ^2.0.1
   gap: ^3.0.1
   file_picker: ^10.3.10
+  image_picker: ^1.1.2
 
   cupertino_icons: ^1.0.8
   flutter_svg: ^2.2.3
