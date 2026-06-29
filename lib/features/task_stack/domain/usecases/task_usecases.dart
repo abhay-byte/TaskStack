@@ -2,7 +2,6 @@ import 'package:uuid/uuid.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/features/task_stack/domain/repositories/task_repository.dart';
 import 'package:taskstack/features/notifications/notification_scheduler.dart';
-import 'package:taskstack/features/sync/domain/repositories/sync_repository.dart';
 
 const _uuid = Uuid();
 
@@ -230,9 +229,8 @@ class MaintainRecurringWindowUseCase {
 }
 
 class CreateDayTodoUseCase {
-  CreateDayTodoUseCase(this._createTask, this._syncRepository);
+  CreateDayTodoUseCase(this._createTask);
   final CreateTaskUseCase _createTask;
-  final SyncRepository _syncRepository;
 
   Future<void> execute({
     required String title,
@@ -255,7 +253,6 @@ class CreateDayTodoUseCase {
         notificationEnabled: false,
       ),
     );
-    await _syncRepository.pushLocalToCloud();
   }
 }
 
@@ -300,10 +297,9 @@ class UpdateTaskUseCase {
 }
 
 class DeleteTaskUseCase {
-  DeleteTaskUseCase(this._repository, this._scheduler, this._syncRepository);
+  DeleteTaskUseCase(this._repository, this._scheduler);
   final TaskRepository _repository;
   final NotificationScheduler _scheduler;
-  final SyncRepository _syncRepository;
 
   Future<void> execute(
     Task task, {
@@ -321,14 +317,12 @@ class DeleteTaskUseCase {
     } else {
       await _repository.deleteTask(task.id);
     }
-    await _syncRepository.pushLocalToCloud();
   }
 }
 
 class CompleteTaskUseCase {
-  CompleteTaskUseCase(this._repository, this._syncRepository);
+  CompleteTaskUseCase(this._repository);
   final TaskRepository _repository;
-  final SyncRepository _syncRepository;
 
   Future<void> execute(Task task) async {
     // Validate deadline
@@ -358,12 +352,10 @@ class CompleteTaskUseCase {
       status: TaskStatus.done.name,
       completedAt: DateTime.now(),
     );
-    await _syncRepository.pushLocalToCloud();
   }
 
   Future<void> undo(String id) async {
     await _repository.updateStatus(id, status: TaskStatus.pending.name);
-    await _syncRepository.pushLocalToCloud();
   }
 }
 

@@ -1,16 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:taskstack/features/auth/presentation/providers/auth_provider.dart';
-import 'package:taskstack/features/auth/presentation/screens/login_screen.dart';
-import 'package:taskstack/features/auth/presentation/screens/signup_screen.dart';
-import 'package:taskstack/features/groups/presentation/screens/groups_list_screen.dart';
-import 'package:taskstack/features/groups/presentation/screens/create_group_screen.dart';
-import 'package:taskstack/features/groups/presentation/screens/group_detail_screen.dart';
-import 'package:taskstack/features/groups/presentation/screens/invite_screen.dart';
-import 'package:taskstack/features/groups/presentation/screens/join_group_screen.dart';
 import 'package:taskstack/features/profile/presentation/screens/my_profile_screen.dart';
-import 'package:taskstack/features/profile/presentation/screens/user_profile_screen.dart';
 import 'package:taskstack/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:taskstack/features/task_stack/presentation/screens/task_stack_screen.dart';
 import 'package:taskstack/features/task_stack/presentation/screens/task_detail_screen.dart';
@@ -25,14 +16,10 @@ import 'package:taskstack/features/task_stack/presentation/screens/goals_list_sc
 
 final _rootKey = GlobalKey<NavigatorState>();
 
-/// Paths that do NOT require authentication.
-const _publicPaths = {'/login', '/signup', '/onboarding'};
-
-/// Bridges Riverpod auth + settings state changes into a [ChangeNotifier]
-/// so GoRouter re-evaluates its redirect whenever either provider changes.
+/// Bridges Riverpod settings state changes into a [ChangeNotifier]
+/// so GoRouter re-evaluates its redirect whenever the provider changes.
 class _RouterRefreshNotifier extends ChangeNotifier {
   _RouterRefreshNotifier(Ref ref) {
-    ref.listen<AuthState>(authNotifierProvider, (_, __) => notifyListeners());
     ref.listen<AppSettings>(settingsProvider, (_, __) => notifyListeners());
   }
 }
@@ -44,43 +31,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootKey,
     initialLocation: '/',
     refreshListenable: refreshListenable,
-    redirect: (context, state) async {
+    redirect: (context, state) {
       final path = state.uri.path;
 
       // ── Onboarding guard ─────────────────────────────────────────────
       final isFirst = ref.read(settingsProvider).isFirstLaunch;
       if (isFirst && path != '/onboarding') return '/onboarding';
 
-      // ── Auth guard ───────────────────────────────────────────────────
-      final authState = ref.read(authNotifierProvider);
-
-      // Still initialising (AuthInitial) → do nothing yet
-      if (authState is AuthInitial) return null;
-
-      // Guest and Authenticated users both have access to the app shell
-      final loggedIn =
-          authState is AuthAuthenticated || authState is AuthGuest;
-      final isFullyAuthenticated = authState is AuthAuthenticated;
-      final isPublic = _publicPaths.contains(path);
-
-      if (!loggedIn && !isPublic) return '/login';
-      // Only redirect fully-authenticated users away from login/signup.
-      // Guests can navigate to login/signup to create or sign into an account.
-      if (isFullyAuthenticated && isPublic) return '/';
-
       return null;
     },
     routes: [
-      // ── Auth ───────────────────────────────────────────────────────────
-      GoRoute(
-        path: '/login',
-        builder: (_, __) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: '/signup',
-        builder: (_, __) => const SignupScreen(),
-      ),
-
       // ── Onboarding ─────────────────────────────────────────────────────
       GoRoute(
         path: '/onboarding',
@@ -93,7 +53,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: '/', builder: (_, __) => const TaskStackScreen()),
           GoRoute(path: '/goals', builder: (_, __) => const GoalsListScreen()),
-          GoRoute(path: '/social', builder: (_, __) => const GroupsListScreen()),
           GoRoute(path: '/analytics', builder: (_, __) => const AnalyticsScreen()),
           GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
         ],
@@ -127,35 +86,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             GoalFormScreen(goalId: state.pathParameters['id']),
       ),
 
-      // ── Groups ─────────────────────────────────────────────────────────
-      GoRoute(
-        path: '/groups/new',
-        builder: (_, __) => const CreateGroupScreen(),
-      ),
-      GoRoute(
-        path: '/groups/join',
-        builder: (_, __) => const JoinGroupScreen(),
-      ),
-      GoRoute(
-        path: '/groups/:id',
-        builder: (context, state) =>
-            GroupDetailScreen(groupId: state.pathParameters['id']!),
-      ),
-      GoRoute(
-        path: '/groups/:id/qr',
-        builder: (context, state) =>
-            InviteScreen(groupId: state.pathParameters['id']!),
-      ),
-
-      // ── Profiles ───────────────────────────────────────────────────────
+      // ── Profile ───────────────────────────────────────────────────────
       GoRoute(
         path: '/profile/me',
         builder: (_, __) => const MyProfileScreen(),
-      ),
-      GoRoute(
-        path: '/profile/:id',
-        builder: (context, state) =>
-            UserProfileScreen(userId: state.pathParameters['id']!),
       ),
     ],
   );

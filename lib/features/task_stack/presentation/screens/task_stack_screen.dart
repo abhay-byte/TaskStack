@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:taskstack/features/auth/presentation/providers/auth_provider.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/features/task_stack/domain/usecases/task_usecases.dart';
 import 'package:taskstack/features/task_stack/presentation/providers/task_providers.dart';
@@ -10,9 +9,6 @@ import 'package:taskstack/features/task_stack/presentation/screens/day_todo_shee
 import 'package:taskstack/features/task_stack/presentation/widgets/task_card_widget.dart';
 import 'package:taskstack/features/task_stack/presentation/widgets/time_indicator_widget.dart';
 import 'package:taskstack/core/constants/app_spacing.dart';
-import 'package:taskstack/features/sync/presentation/sync_status_indicator.dart';
-import 'package:taskstack/features/sync/domain/repositories/sync_repository.dart';
-import 'package:taskstack/features/sync/data/repositories/sync_repository_impl.dart';
 
 const double _kPixelsPerHour = 120.0;
 const double _kMinuteHeight = _kPixelsPerHour / 60;
@@ -131,7 +127,6 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
     final selectedDate = ref.watch(selectedStackDateProvider);
     final isToday = _isToday(selectedDate);
     final now = DateTime.now();
-    final isGuest = ref.watch(isGuestProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -141,7 +136,6 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
           height: 48,
         ),
         actions: [
-          const SyncStatusIndicator(),
           TextButton.icon(
             onPressed: () => DayTodoSheet.open(context, date: _composeDate()),
             icon: const Icon(Icons.checklist_rounded, size: 18),
@@ -167,69 +161,6 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
       ),
       body: Column(
         children: [
-          // ── Guest offline banner ──────────────────────────────────────
-          if (isGuest)
-            MaterialBanner(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              content: const Text("You're using TaskStack offline"),
-              leading: const Icon(Icons.cloud_off_rounded),
-              actions: [
-                TextButton(
-                  onPressed: () => context.go('/login'),
-                  child: const Text('Sign In'),
-                ),
-              ],
-            ),
-          // ── Sync error banner ──────────────────────────────────────────
-          if (!isGuest)
-            Consumer(
-              builder: (context, ref, _) {
-                final errorMsg = ref.watch(syncErrorMessageProvider);
-                if (errorMsg == null) return const SizedBox.shrink();
-                return MaterialBanner(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  backgroundColor: Theme.of(context).colorScheme.errorContainer,
-                  content: Text(
-                    errorMsg,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onErrorContainer,
-                    ),
-                  ),
-                  leading: Icon(
-                    Icons.cloud_off_rounded,
-                    color: Theme.of(context).colorScheme.onErrorContainer,
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        ref.read(syncRepositoryProvider).pushLocalToCloud();
-                      },
-                      child: Text(
-                        'Retry',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onErrorContainer,
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        ref.read(syncErrorMessageProvider.notifier).state =
-                            null;
-                      },
-                      child: Text(
-                        'Dismiss',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onErrorContainer,
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
           // Date navigation bar
           _DateNavBar(
             selectedDate: selectedDate,

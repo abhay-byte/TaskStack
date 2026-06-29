@@ -4,8 +4,6 @@ import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/features/task_stack/data/repositories/task_repository_impl.dart';
 import 'package:taskstack/features/task_stack/domain/usecases/task_usecases.dart';
 import 'package:taskstack/features/notifications/notification_scheduler.dart';
-import 'package:taskstack/features/sync/domain/repositories/sync_repository.dart';
-import 'package:taskstack/features/sync/data/repositories/sync_repository_impl.dart';
 
 // ── Date Providers ────────────────────────────────────────────────────────
 
@@ -89,10 +87,7 @@ final createTaskUseCaseProvider = Provider<CreateTaskUseCase>((ref) {
 });
 
 final createDayTodoUseCaseProvider = Provider<CreateDayTodoUseCase>((ref) {
-  return CreateDayTodoUseCase(
-    ref.watch(createTaskUseCaseProvider),
-    ref.watch(syncRepositoryProvider),
-  );
+  return CreateDayTodoUseCase(ref.watch(createTaskUseCaseProvider));
 });
 
 final updateTaskUseCaseProvider = Provider<UpdateTaskUseCase>((ref) {
@@ -106,15 +101,11 @@ final deleteTaskUseCaseProvider = Provider<DeleteTaskUseCase>((ref) {
   return DeleteTaskUseCase(
     ref.watch(taskRepositoryProvider),
     ref.watch(notificationSchedulerProvider),
-    ref.watch(syncRepositoryProvider),
   );
 });
 
 final completeTaskUseCaseProvider = Provider<CompleteTaskUseCase>((ref) {
-  return CompleteTaskUseCase(
-    ref.watch(taskRepositoryProvider),
-    ref.watch(syncRepositoryProvider),
-  );
+  return CompleteTaskUseCase(ref.watch(taskRepositoryProvider));
 });
 
 final duplicateTaskUseCaseProvider = Provider<DuplicateTaskUseCase>((ref) {
@@ -239,7 +230,6 @@ class TaskFormNotifier extends Notifier<TaskFormState> {
 
   CreateTaskUseCase get _create => ref.read(createTaskUseCaseProvider);
   UpdateTaskUseCase get _update => ref.read(updateTaskUseCaseProvider);
-  SyncRepository get _sync => ref.read(syncRepositoryProvider);
 
   void loadTask(Task task) {
     state = TaskFormState(
@@ -343,7 +333,6 @@ class TaskFormNotifier extends Notifier<TaskFormState> {
       } else {
         await _update.execute(task, scope: scope);
       }
-      _sync.pushLocalToCloud(); // fire-and-forget cloud sync
       return true;
     } catch (e) {
       state = state.copyWith(isSaving: false, error: e.toString());

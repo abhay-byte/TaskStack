@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
-import 'package:taskstack/features/auth/presentation/providers/auth_provider.dart';
 import 'package:taskstack/features/settings/presentation/providers/settings_provider.dart';
 import 'package:taskstack/features/task_stack/presentation/providers/task_providers.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
@@ -23,36 +22,17 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
     final cs = Theme.of(context).colorScheme;
-    final authState = ref.watch(authNotifierProvider);
-    final isGuest = authState is AuthGuest;
-    final isAuthenticated = authState is AuthAuthenticated;
-    final currentUser = isAuthenticated ? (authState).user : null;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
-          // ── Account ───────────────────────────────────────────────────
-          _SectionHeader('Account'),
+          // ── Profile ───────────────────────────────────────────────────
+          _SectionHeader('Profile'),
 
-          if (isAuthenticated)
-            _AccountCard(
-              displayName: currentUser!.displayName ?? currentUser.username,
-              username: '@${currentUser.username}',
-              avatarUrl: currentUser.avatarUrl,
-              onProfile: () => context.push('/profile/me'),
-              onLogout: () => _confirmLogout(context, ref),
-            )
-          else if (isGuest)
-            _GuestCard(
-              onSignIn: () => context.go('/login'),
-              onSignUp: () => context.go('/signup'),
-            )
-          else
-            _GuestCard(
-              onSignIn: () => context.go('/login'),
-              onSignUp: () => context.go('/signup'),
-            ),
+          _ProfileCard(
+            onTap: () => context.push('/profile/me'),
+          ),
 
           // ── Appearance ────────────────────────────────────────────────
           _SectionHeader('Appearance'),
@@ -166,7 +146,7 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.info_outlined),
             title: const Text('Version'),
-            trailing: const Text('1.0.2+3'),
+            trailing: const Text('1.0.3+4'),
           ),
 
           ListTile(
@@ -179,100 +159,10 @@ class SettingsScreen extends ConsumerWidget {
                 ),
           ),
 
-          // ── Danger Zone ───────────────────────────────────────────────────────
-          if (isAuthenticated) ...[
-            _SectionHeader('Danger Zone'),
-            ListTile(
-              leading: Icon(Icons.delete_forever_outlined, color: cs.error),
-              title: Text(
-                'Delete Account',
-                style: TextStyle(color: cs.error, fontWeight: FontWeight.w600),
-              ),
-              subtitle: const Text(
-                'Permanently delete your account and all cloud data.',
-              ),
-              onTap: () => _confirmDeleteAccount(context, ref),
-            ),
-          ],
-
           const SizedBox(height: AppSpacing.xxl),
         ],
       ),
     );
-  }
-
-  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (ctx) => AlertDialog(
-            title: const Text('Log out?'),
-            content: const Text(
-              'You will need to sign in again to access cloud features.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Log out'),
-              ),
-            ],
-          ),
-    );
-    if (confirmed == true) {
-      await ref.read(authNotifierProvider.notifier).logout();
-    }
-  }
-
-  Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
-    // Step 1 — primary warning
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (ctx) => AlertDialog(
-            title: const Text('Delete Account?'),
-            content: const Text(
-              'This will permanently delete your account and all your cloud data '
-              '(tasks, goals, groups). This cannot be undone.\n\n'
-              'Local data on this device will not be affected.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Theme.of(ctx).colorScheme.error,
-                ),
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Delete Account'),
-              ),
-            ],
-          ),
-    );
-    if (confirmed != true) return;
-    try {
-      await ref.read(authNotifierProvider.notifier).deleteAccount();
-      if (context.mounted) {
-        context.go('/login');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account deleted successfully.')),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to delete account: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    }
   }
 
   void _showAccentPicker(
@@ -555,22 +445,12 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ── Account card (logged-in) ───────────────────────────────────────────────────
+// ── Local profile card ───────────────────────────────────────────────────────
 
-class _AccountCard extends StatelessWidget {
-  const _AccountCard({
-    required this.displayName,
-    required this.username,
-    this.avatarUrl,
-    required this.onProfile,
-    required this.onLogout,
-  });
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard({required this.onTap});
 
-  final String displayName;
-  final String username;
-  final String? avatarUrl;
-  final VoidCallback onProfile;
-  final VoidCallback onLogout;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -578,159 +458,22 @@ class _AccountCard extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // Avatar
-            CircleAvatar(
-              radius: 26,
-              backgroundColor: cs.primaryContainer,
-              backgroundImage:
-                  avatarUrl != null && avatarUrl!.isNotEmpty
-                      ? NetworkImage(avatarUrl!)
-                      : null,
-              child:
-                  avatarUrl == null || avatarUrl!.isEmpty
-                      ? Text(
-                        displayName.substring(0, 1).toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 20,
-                          color: cs.onPrimaryContainer,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      )
-                      : null,
-            ),
-            const SizedBox(width: 14),
-            // Name + username
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    displayName,
-                    style: tt.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    username,
-                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                  ),
-                ],
-              ),
-            ),
-            // Actions
-            Column(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: onProfile,
-                  icon: const Icon(Icons.person_outline, size: 16),
-                  label: const Text('Profile'),
-                  style: OutlinedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextButton.icon(
-                  onPressed: onLogout,
-                  icon: Icon(Icons.logout, size: 16, color: cs.error),
-                  label: Text(
-                    'Log out',
-                    style: TextStyle(color: cs.error, fontSize: 12),
-                  ),
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+      child: ListTile(
+        leading: CircleAvatar(
+          radius: 24,
+          backgroundColor: cs.primaryContainer,
+          child: Icon(Icons.person, color: cs.onPrimaryContainer),
         ),
-      ),
-    );
-  }
-}
-
-// ── Account card (guest / logged-out) ─────────────────────────────────────────
-
-class _GuestCard extends StatelessWidget {
-  const _GuestCard({required this.onSignIn, required this.onSignUp});
-  final VoidCallback onSignIn;
-  final VoidCallback onSignUp;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: cs.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.person_off_outlined,
-                  color: cs.onSurfaceVariant,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Not signed in',
-                      style: tt.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      'Local data only — no cloud sync',
-                      style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: onSignIn,
-                    style: FilledButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    child: const Text('Sign In'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onSignUp,
-                    style: OutlinedButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    child: const Text('Create Account'),
-                  ),
-                ),
-              ],
-            ),
-          ],
+        title: Text(
+          'Local Profile',
+          style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
+        subtitle: Text(
+          'Edit your display name',
+          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
       ),
     );
   }

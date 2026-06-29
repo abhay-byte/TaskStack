@@ -11,9 +11,8 @@ class AppShell extends StatelessWidget {
     final currentIndex = switch (location) {
       '/'          => 0,
       '/goals'     => 1,
-      '/social'    => 2,
-      '/analytics' => 3,
-      '/settings'  => 4,
+      '/analytics' => 2,
+      '/settings'  => 3,
       _            => 0,
     };
 
@@ -25,9 +24,8 @@ class AppShell extends StatelessWidget {
           switch (index) {
             case 0: context.go('/');
             case 1: context.go('/goals');
-            case 2: context.go('/social');
-            case 3: context.go('/analytics');
-            case 4: context.go('/settings');
+            case 2: context.go('/analytics');
+            case 3: context.go('/settings');
           }
         },
         destinations: const [
@@ -40,11 +38,6 @@ class AppShell extends StatelessWidget {
             icon: Icon(Icons.flag_outlined),
             selectedIcon: Icon(Icons.flag),
             label: 'Goals',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.group_outlined),
-            selectedIcon: Icon(Icons.group),
-            label: 'Social',
           ),
           NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),
