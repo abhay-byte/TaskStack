@@ -4,11 +4,16 @@ import 'package:taskstack/core/theme/app_theme.dart';
 import 'package:taskstack/core/router/app_router.dart';
 import 'package:taskstack/features/settings/presentation/providers/settings_provider.dart';
 
-class TaskStackApp extends ConsumerWidget {
+class TaskStackApp extends ConsumerStatefulWidget {
   const TaskStackApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TaskStackApp> createState() => _TaskStackAppState();
+}
+
+class _TaskStackAppState extends ConsumerState<TaskStackApp> {
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final themeMode = switch (settings.themeMode) {
       1 => ThemeMode.light,

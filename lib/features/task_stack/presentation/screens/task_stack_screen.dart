@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/features/task_stack/domain/usecases/task_usecases.dart';
+import 'package:taskstack/features/task_stack/presentation/providers/goal_providers.dart';
 import 'package:taskstack/features/task_stack/presentation/providers/task_providers.dart';
 import 'package:taskstack/features/task_stack/presentation/screens/day_todo_sheet.dart';
 import 'package:taskstack/features/task_stack/presentation/widgets/task_card_widget.dart';
@@ -14,6 +15,8 @@ const double _kPixelsPerHour = 120.0;
 const double _kMinuteHeight = _kPixelsPerHour / 60;
 const double _kDayBlockHeight = 24 * _kPixelsPerHour;
 const double _kDayFocusAnchor = 0.35;
+const int _kCenterIndex = 10000;
+const double _kHourLabelWidth = 60;
 
 class TaskStackScreen extends ConsumerStatefulWidget {
   const TaskStackScreen({super.key});
@@ -24,35 +27,27 @@ class TaskStackScreen extends ConsumerStatefulWidget {
 
 class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   late final ScrollController _scrollController;
-  late Timer _timer;
+  Timer? _recurringTimer;
 
-  // Base date around which the infinite list revolves (Index 10000 = this date)
+  // Base date around which the infinite list revolves.
   DateTime? _initialDate;
-
-  // Track the currently visible day index so we don't spam state updates
-  int _currentVisibleIndex = 10000;
+  int _currentVisibleIndex = _kCenterIndex;
 
   @override
   void initState() {
     super.initState();
-
-    // Start at a large index so we can scroll up and down infinitely
-    const initialScrollOffset = 10000 * _kDayBlockHeight;
     _scrollController = ScrollController(
-      initialScrollOffset: initialScrollOffset,
+      initialScrollOffset: _kCenterIndex * _kDayBlockHeight,
     );
-
     _scrollController.addListener(_onScroll);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToNow();
-      // Ensure recurring task window is populated on screen entry
       ref.read(maintainRecurringWindowUseCaseProvider).execute();
     });
-    // Update time indicator every 30s + refresh recurring window hourly
-    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (!mounted) return;
-      setState(() {});
+
+    // Recurring-window maintenance only — does NOT call setState.
+    _recurringTimer = Timer.periodic(const Duration(minutes: 30), (_) {
       final now = DateTime.now();
       if (now.minute == 0) {
         ref.read(maintainRecurringWindowUseCaseProvider).execute();
@@ -62,9 +57,6 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
 
   void _onScroll() {
     if (!_scrollController.hasClients || _initialDate == null) return;
-
-    // Determine which day the user is focused on using the same anchor
-    // that `_scrollToNow()` uses, instead of the viewport center.
     final scrollOffset = _scrollController.offset;
     final viewportHeight = _scrollController.position.viewportDimension;
     final visibleIndex =
@@ -73,14 +65,12 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
 
     if (visibleIndex != _currentVisibleIndex) {
       _currentVisibleIndex = visibleIndex;
-      final daysOffset = visibleIndex - 10000;
+      final daysOffset = visibleIndex - _kCenterIndex;
       final newDate = DateTime(
         _initialDate!.year,
         _initialDate!.month,
         _initialDate!.day + daysOffset,
       );
-
-      // Update the date provider without rebuilding the whole list immediately
       Future.microtask(() {
         if (mounted) {
           ref.read(selectedStackDateProvider.notifier).state = newDate;
@@ -91,7 +81,7 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
 
   @override
   void dispose() {
-    _timer.cancel();
+    _recurringTimer?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -100,8 +90,6 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   void _scrollToNow() {
     if (!_scrollController.hasClients || _initialDate == null) return;
     final now = DateTime.now();
-
-    // Calculate the dynamic scroll target relative to the locked _initialDate
     final todayMidnight = DateTime.utc(now.year, now.month, now.day);
     final initialMidnight = DateTime.utc(
       _initialDate!.year,
@@ -109,14 +97,12 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
       _initialDate!.day,
     );
     final daysOffset = todayMidnight.difference(initialMidnight).inDays;
-
-    final dayBaseOffset = (10000 + daysOffset) * _kDayBlockHeight;
+    final dayBaseOffset = (_kCenterIndex + daysOffset) * _kDayBlockHeight;
     final timeOffset =
         (now.hour * 60 + now.minute) * _kMinuteHeight -
         MediaQuery.of(context).size.height * _kDayFocusAnchor;
-
     _scrollController.animateTo(
-      dayBaseOffset + timeOffset.clamp(0.0, _kDayBlockHeight),
+      (dayBaseOffset + timeOffset).clamp(0.0, double.infinity),
       duration: const Duration(milliseconds: 600),
       curve: Curves.easeOutCubic,
     );
@@ -126,7 +112,6 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   Widget build(BuildContext context) {
     final selectedDate = ref.watch(selectedStackDateProvider);
     final isToday = _isToday(selectedDate);
-    final now = DateTime.now();
 
     return Scaffold(
       appBar: AppBar(
@@ -143,17 +128,7 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
           ),
           if (!isToday)
             TextButton.icon(
-              onPressed: () {
-                final today = DateTime.now();
-                ref.read(selectedStackDateProvider.notifier).state = DateTime(
-                  today.year,
-                  today.month,
-                  today.day,
-                );
-                WidgetsBinding.instance.addPostFrameCallback(
-                  (_) => _scrollToNow(),
-                );
-              },
+              onPressed: _onJumpToToday,
               icon: const Icon(Icons.today_outlined, size: 18),
               label: const Text('Today'),
             ),
@@ -161,49 +136,23 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
       ),
       body: Column(
         children: [
-          // Date navigation bar
           _DateNavBar(
             selectedDate: selectedDate,
-            onPrev: () {
-              final previousOffset =
-                  _scrollController.offset - _kDayBlockHeight;
-              _scrollController.animateTo(
-                previousOffset,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
-            onNext: () {
-              final nextOffset = _scrollController.offset + _kDayBlockHeight;
-              _scrollController.animateTo(
-                nextOffset,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
+            onPrev: () => _scrollController.animateTo(
+              _scrollController.offset - _kDayBlockHeight,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            ),
+            onNext: () => _scrollController.animateTo(
+              _scrollController.offset + _kDayBlockHeight,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            ),
           ),
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              itemExtent: _kDayBlockHeight,
-              itemBuilder: (context, index) {
-                // Initialize _initialDate on first build if needed
-                _initialDate ??= ref.read(selectedStackDateProvider);
-
-                final daysOffset = index - 10000;
-                final pageDate = DateTime(
-                  _initialDate!.year,
-                  _initialDate!.month,
-                  _initialDate!.day + daysOffset,
-                );
-                final isPageToday = _isToday(pageDate);
-
-                return _DayViewBlock(
-                  pageDate: pageDate,
-                  now: now,
-                  isPageToday: isPageToday,
-                );
-              },
+            child: _InfiniteDayList(
+              scrollController: _scrollController,
+              onInitialDate: (d) => _initialDate ??= d,
             ),
           ),
         ],
@@ -216,17 +165,26 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
     );
   }
 
+  void _onJumpToToday() {
+    final today = DateTime.now();
+    ref.read(selectedStackDateProvider.notifier).state = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToNow());
+  }
+
   DateTime _composeDate() {
     if (!_scrollController.hasClients || _initialDate == null) {
       final now = DateTime.now();
       return DateTime(now.year, now.month, now.day);
     }
-
     final focusOffset =
         _scrollController.offset +
         _scrollController.position.viewportDimension * _kDayFocusAnchor;
     final visibleIndex = (focusOffset / _kDayBlockHeight).floor();
-    final daysOffset = visibleIndex - 10000;
+    final daysOffset = visibleIndex - _kCenterIndex;
     final date = DateTime(
       _initialDate!.year,
       _initialDate!.month,
@@ -241,43 +199,115 @@ class _TaskStackScreenState extends ConsumerState<TaskStackScreen> {
   }
 }
 
+/// ListView wrapper. Owns the goal lookup ONCE per visible page so that
+/// individual cards do not re-watch the goals provider.
+class _InfiniteDayList extends ConsumerStatefulWidget {
+  const _InfiniteDayList({
+    required this.scrollController,
+    required this.onInitialDate,
+  });
+
+  final ScrollController scrollController;
+  final ValueChanged<DateTime> onInitialDate;
+
+  @override
+  ConsumerState<_InfiniteDayList> createState() => _InfiniteDayListState();
+}
+
+class _InfiniteDayListState extends ConsumerState<_InfiniteDayList> {
+  late final DateTime _initialDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialDate = ref.read(selectedStackDateProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onInitialDate(_initialDate);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Goals map for the visible window — listen once here so individual
+    // cards never re-watch the goals provider.
+    final goalsAsync = ref.watch(goalsProvider);
+    final goalById = <String, String>{};
+    goalsAsync.whenData((goals) {
+      for (final g in goals) {
+        goalById[g.id] = g.title;
+      }
+    });
+
+    return ListView.builder(
+      controller: widget.scrollController,
+      itemExtent: _kDayBlockHeight,
+      itemBuilder: (context, index) {
+        final pageDate = DateTime(
+          _initialDate.year,
+          _initialDate.month,
+          _initialDate.day + (index - _kCenterIndex),
+        );
+        final isPageToday = _isToday(pageDate);
+        return _DayViewBlock(
+          pageDate: pageDate,
+          isPageToday: isPageToday,
+          goalById: goalById,
+        );
+      },
+    );
+  }
+
+  static bool _isToday(DateTime d) {
+    final now = DateTime.now();
+    return d.year == now.year && d.month == now.month && d.day == now.day;
+  }
+}
+
 class _DayViewBlock extends ConsumerWidget {
   const _DayViewBlock({
     required this.pageDate,
-    required this.now,
     required this.isPageToday,
+    required this.goalById,
   });
 
   final DateTime pageDate;
-  final DateTime now;
   final bool isPageToday;
+  final Map<String, String> goalById;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
     final sortedTasks = ref.watch(sortedTasksForDateProvider(pageDate));
-    final scheduled = sortedTasks.where((t) => t.startMinutes != null).toList();
-    final unscheduled =
-        sortedTasks.where((t) => t.startMinutes == null).toList();
+    final scheduled = <Task>[];
+    final unscheduled = <Task>[];
+    for (final t in sortedTasks) {
+      if (t.startMinutes != null) {
+        scheduled.add(t);
+      } else {
+        unscheduled.add(t);
+      }
+    }
 
     return SizedBox(
+      width: double.infinity,
       height: _kDayBlockHeight,
       child: Stack(
         children: [
-          // Hour slots
-          ...List.generate(24, (h) => _HourSlotWidget(hour: h)),
-
+          // Hour grid: a single Column of 24 rows. One render object
+          // instead of 24 Positioned widgets.
+          Positioned.fill(
+            child: _HourGrid(outline: cs.outlineVariant),
+          ),
           // Task cards
-          ...scheduled.map(
-            (task) => _PositionedTaskCard(
+          for (final task in scheduled)
+            _PositionedTaskCard(
               task: task,
-              now: now,
               isToday: isPageToday,
               pageDate: pageDate,
+              goalTitle: task.goalId == null
+                  ? null
+                  : goalById[task.goalId!],
             ),
-          ),
-
-          // Unscheduled section below timeline
-          // Only show unscheduled if they exist for this specific day
           if (unscheduled.isNotEmpty)
             Positioned(
               top: 24 * _kPixelsPerHour + 16,
@@ -285,50 +315,12 @@ class _DayViewBlock extends ConsumerWidget {
               right: 0,
               child: _UnscheduledSection(tasks: unscheduled),
             ),
-
-          // Current time indicator (only for today)
-          if (isPageToday) TimeIndicatorWidget(now: now),
-
-          // Date Divider (floats exactly centered in the 50px space before 12 AM)
+          if (isPageToday) const TimeIndicatorWidget(),
           Positioned(
             bottom: 40,
             left: 0,
             right: 0,
-            child: Center(
-              child: Text(
-                (() {
-                  final nextDate = pageDate.add(const Duration(days: 1));
-                  const days = [
-                    'Mon',
-                    'Tue',
-                    'Wed',
-                    'Thu',
-                    'Fri',
-                    'Sat',
-                    'Sun',
-                  ];
-                  const months = [
-                    'Jan',
-                    'Feb',
-                    'Mar',
-                    'Apr',
-                    'May',
-                    'Jun',
-                    'Jul',
-                    'Aug',
-                    'Sep',
-                    'Oct',
-                    'Nov',
-                    'Dec',
-                  ];
-                  return '${days[nextDate.weekday - 1]}, ${months[nextDate.month - 1]} ${nextDate.day}';
-                })(),
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            child: Center(child: _DayDividerLabel(pageDate: pageDate, cs: cs)),
           ),
         ],
       ),
@@ -349,8 +341,23 @@ class _DateNavBar extends StatelessWidget {
   final VoidCallback onPrev;
   final VoidCallback onNext;
 
-  @override
-  Widget build(BuildContext context) {
+  static const _months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  static const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  String _labelFor(DateTime selectedDate) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final current = DateTime(
@@ -359,35 +366,19 @@ class _DateNavBar extends StatelessWidget {
       selectedDate.day,
     );
     final daysDiff = current.difference(today).inDays;
+    if (daysDiff == 0) return 'Today';
+    if (daysDiff == 1) return 'Tomorrow';
+    if (daysDiff == -1) return 'Yesterday';
+    return '${_weekdays[selectedDate.weekday - 1]}, '
+        '${_months[selectedDate.month - 1]} ${selectedDate.day}';
+  }
 
-    late String label;
-    if (daysDiff == 0) {
-      label = 'Today';
-    } else if (daysDiff == 1) {
-      label = 'Tomorrow';
-    } else if (daysDiff == -1) {
-      label = 'Yesterday';
-    } else {
-      final months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
-      label =
-          '${_weekday(selectedDate)}, ${months[selectedDate.month - 1]} ${selectedDate.day}';
-    }
-
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final label = _labelFor(selectedDate);
     return Container(
-      color: Theme.of(context).colorScheme.surface,
+      color: cs.surface,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
         vertical: 4,
@@ -405,7 +396,7 @@ class _DateNavBar extends StatelessWidget {
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurface,
+                color: cs.onSurface,
               ),
             ),
           ),
@@ -418,59 +409,81 @@ class _DateNavBar extends StatelessWidget {
       ),
     );
   }
-
-  String _weekday(DateTime d) {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days[d.weekday - 1];
-  }
 }
 
-// ── Hour Slot ─────────────────────────────────────────────────────────────
+// ── Hour Grid (single render object) ──────────────────────────────────────
 
-class _HourSlotWidget extends StatelessWidget {
-  const _HourSlotWidget({required this.hour});
-  final int hour;
+class _HourGrid extends StatelessWidget {
+  const _HourGrid({required this.outline});
+  final Color outline;
 
   @override
   Widget build(BuildContext context) {
-    final label =
-        hour == 0
-            ? '12 AM'
-            : hour < 12
-            ? '$hour AM'
-            : hour == 12
-            ? '12 PM'
-            : '${hour - 12} PM';
+    return Column(
+      children: [
+        for (var h = 0; h < 24; h++)
+          _HourRow(hour: h, outline: outline),
+      ],
+    );
+  }
+}
 
-    return Positioned(
-      top: hour * _kPixelsPerHour,
-      left: 0,
-      right: 0,
+class _HourRow extends StatelessWidget {
+  const _HourRow({required this.hour, required this.outline});
+  final int hour;
+  final Color outline;
+
+  static const _kLabels = <String>[
+    '12 AM',
+    '1 AM',
+    '2 AM',
+    '3 AM',
+    '4 AM',
+    '5 AM',
+    '6 AM',
+    '7 AM',
+    '8 AM',
+    '9 AM',
+    '10 AM',
+    '11 AM',
+    '12 PM',
+    '1 PM',
+    '2 PM',
+    '3 PM',
+    '4 PM',
+    '5 PM',
+    '6 PM',
+    '7 PM',
+    '8 PM',
+    '9 PM',
+    '10 PM',
+    '11 PM',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final labelStyle = Theme.of(context).textTheme.labelSmall;
+    return SizedBox(
       height: _kPixelsPerHour,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 60,
+            width: _kHourLabelWidth,
             child: Padding(
               padding: const EdgeInsets.only(top: 4, right: 8),
               child: Text(
-                label,
+                _kLabels[hour],
                 textAlign: TextAlign.right,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
+                style: labelStyle?.copyWith(color: outline),
               ),
             ),
           ),
           Expanded(
-            child: Container(
+            child: DecoratedBox(
               decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                    width: 0.5,
-                  ),
+                  top: BorderSide(color: outline, width: 0.5),
                 ),
               ),
             ),
@@ -481,20 +494,56 @@ class _HourSlotWidget extends StatelessWidget {
   }
 }
 
+// ── Day Divider Label ─────────────────────────────────────────────────────
+
+class _DayDividerLabel extends StatelessWidget {
+  const _DayDividerLabel({required this.pageDate, required this.cs});
+  final DateTime pageDate;
+  final ColorScheme cs;
+
+  static const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  static const _months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final next = pageDate.add(const Duration(days: 1));
+    return Text(
+      '${_weekdays[next.weekday - 1]}, ${_months[next.month - 1]} ${next.day}',
+      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+        color: cs.outline,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+}
+
 // ── Positioned Task Card ──────────────────────────────────────────────────
 
 class _PositionedTaskCard extends ConsumerWidget {
   const _PositionedTaskCard({
     required this.task,
-    required this.now,
     required this.isToday,
     required this.pageDate,
+    required this.goalTitle,
   });
 
   final Task task;
-  final DateTime now;
   final bool isToday;
   final DateTime pageDate;
+  final String? goalTitle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -508,7 +557,6 @@ class _PositionedTaskCard extends ConsumerWidget {
 
     double top;
     double height;
-
     if (isYesterdayTask) {
       top = 0;
       final overflowMins =
@@ -517,7 +565,7 @@ class _PositionedTaskCard extends ConsumerWidget {
     } else {
       top = task.startMinutes! * _kMinuteHeight;
       final endMins = task.startMinutes! + (task.durationMinutes ?? 30);
-      double rawHeightMins = (task.durationMinutes ?? 30).toDouble();
+      var rawHeightMins = (task.durationMinutes ?? 30).toDouble();
       if (endMins > 1440) {
         rawHeightMins = (1440 - task.startMinutes!).toDouble();
       }
@@ -531,97 +579,104 @@ class _PositionedTaskCard extends ConsumerWidget {
       height: height,
       child: TaskCardWidget(
         task: task,
-        isInProgress: isToday && task.isInProgress(now),
+        isInProgress: isToday && task.isInProgress(DateTime.now()),
+        goalTitle: goalTitle,
         onTap: () => context.push('/task/${task.id}'),
-        onDone: () async {
-          try {
-            await ref.read(completeTaskUseCaseProvider).execute(task);
-          } on StateError catch (e) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(e.message),
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
-          }
-        },
+        onDone: () => _onDone(context, ref, task),
         onEdit: () => context.push('/task/${task.id}/edit'),
-        onDelete: () async {
-          final isRecurring =
-              task.recurrenceType != RecurrenceType.none ||
-              task.parentTaskId != null;
-          if (isRecurring) {
-            final scope = await _confirmRecurringDelete(context);
-            if (scope != null) {
-              await ref
-                  .read(deleteTaskUseCaseProvider)
-                  .execute(task, scope: scope);
-            }
-          } else {
-            final confirm = await _confirmDelete(context);
-            if (confirm) {
-              await ref.read(deleteTaskUseCaseProvider).execute(task);
-            }
-          }
-        },
-        onDuplicate: () async {
-          await ref.read(duplicateTaskUseCaseProvider).execute(task);
-        },
+        onDelete: () => _onDelete(context, ref, task),
+        onDuplicate: () => ref.read(duplicateTaskUseCaseProvider).execute(task),
       ),
     );
   }
 
+  Future<void> _onDone(
+    BuildContext context,
+    WidgetRef ref,
+    Task task,
+  ) async {
+    try {
+      await ref.read(completeTaskUseCaseProvider).execute(task);
+    } on StateError catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _onDelete(
+    BuildContext context,
+    WidgetRef ref,
+    Task task,
+  ) async {
+    final isRecurring =
+        task.recurrenceType != RecurrenceType.none ||
+        task.parentTaskId != null;
+    if (isRecurring) {
+      final scope = await _confirmRecurringDelete(context);
+      if (scope != null) {
+        await ref
+            .read(deleteTaskUseCaseProvider)
+            .execute(task, scope: scope);
+      }
+    } else {
+      final confirm = await _confirmDelete(context);
+      if (confirm) {
+        await ref.read(deleteTaskUseCaseProvider).execute(task);
+      }
+    }
+  }
+
   Future<bool> _confirmDelete(BuildContext context) async {
-    return await showDialog<bool>(
+    return (await showDialog<bool>(
           context: context,
-          builder:
-              (ctx) => AlertDialog(
-                title: const Text('Delete Task'),
-                content: const Text('This task will be permanently deleted.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Cancel'),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Delete'),
-                  ),
-                ],
+          builder: (ctx) => AlertDialog(
+            title: const Text('Delete Task'),
+            content: const Text('This task will be permanently deleted.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
               ),
-        ) ??
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        )) ??
         false;
   }
 
   Future<RecurringScope?> _confirmRecurringDelete(BuildContext context) async {
-    return await showDialog<RecurringScope>(
+    return showDialog<RecurringScope>(
       context: context,
-      builder:
-          (ctx) => AlertDialog(
-            title: const Text('Delete Recurring Task'),
-            content: const Text(
-              'Do you want to delete this instance only, or all upcoming instances as well?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed:
-                    () => Navigator.pop(ctx, RecurringScope.thisInstance),
-                child: const Text('This instance only'),
-              ),
-              FilledButton(
-                onPressed:
-                    () => Navigator.pop(ctx, RecurringScope.futureInstances),
-                child: const Text('All upcoming'),
-              ),
-            ],
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Recurring Task'),
+        content: const Text(
+          'Do you want to delete this instance only, or all upcoming instances as well?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
           ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, RecurringScope.thisInstance),
+            child: const Text('This instance only'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, RecurringScope.futureInstances),
+            child: const Text('All upcoming'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -641,28 +696,40 @@ class _UnscheduledSectionState extends State<_UnscheduledSection> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tasks = widget.tasks;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ListTile(
           leading: Icon(
             _expanded ? Icons.expand_less : Icons.expand_more,
-            color: Theme.of(context).colorScheme.primary,
+            color: cs.primary,
           ),
           title: Text(
-            'Unscheduled (${widget.tasks.length})',
+            'Unscheduled (${tasks.length})',
             style: Theme.of(context).textTheme.titleSmall,
           ),
           onTap: () => setState(() => _expanded = !_expanded),
         ),
-        if (_expanded)
-          ...widget.tasks.map(
-            (t) => ListTile(
-              leading: const Icon(Icons.schedule_outlined),
-              title: Text(t.title),
-              onTap: () => context.push('/task/${t.id}'),
-            ),
-          ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          child:
+              _expanded
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final t in tasks)
+                      ListTile(
+                        leading: const Icon(Icons.schedule_outlined),
+                        title: Text(t.title),
+                        onTap: () => context.push('/task/${t.id}'),
+                      ),
+                  ],
+                )
+              : const SizedBox(width: double.infinity, height: 0),
+        ),
       ],
     );
   }
