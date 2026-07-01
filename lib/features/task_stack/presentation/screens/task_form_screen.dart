@@ -484,6 +484,30 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       }
     }
 
+    // Time overlap check — prevent scheduling two tasks at the same time.
+    if (form.startMinutes != null) {
+      final existingTasks =
+          await ref.read(tasksForDateProvider(date).future);
+      final aStart = form.startMinutes!;
+      final aEnd = (aStart + form.durationMinutes) > 1440
+          ? 1440
+          : aStart + form.durationMinutes;
+      for (final t in existingTasks) {
+        if (t.id == widget.taskId || t.startMinutes == null) continue;
+        final bStart = t.startMinutes!;
+        final bEnd = (bStart + (t.durationMinutes ?? 30)) > 1440
+            ? 1440
+            : bStart + (t.durationMinutes ?? 30);
+        if (aStart < bEnd && bStart < aEnd) {
+          ref.read(taskFormProvider.notifier).setError(
+            'Time conflict: "${t.title}" is already scheduled from '
+            '${_minutesToLabel(t.startMinutes!)} in this time slot.',
+          );
+          return;
+        }
+      }
+    }
+
     final success = await ref
         .read(taskFormProvider.notifier)
         .save(date, scope: scope);

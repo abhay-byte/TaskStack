@@ -4,6 +4,7 @@ import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/features/task_stack/data/repositories/task_repository_impl.dart';
 import 'package:taskstack/features/task_stack/domain/usecases/task_usecases.dart';
 import 'package:taskstack/features/notifications/notification_scheduler.dart';
+import 'package:taskstack/features/task_stack/presentation/providers/goal_providers.dart';
 
 // ── Date Providers ────────────────────────────────────────────────────────
 
@@ -11,6 +12,14 @@ import 'package:taskstack/features/notifications/notification_scheduler.dart';
 final selectedStackDateProvider = StateProvider<DateTime>((ref) {
   final now = DateTime.now();
   return DateTime(now.year, now.month, now.day);
+});
+
+/// Memoized goal lookup map — only rebuilds when goals actually change.
+/// Prevents cascading rebuilds in the infinite scroll list where every
+/// visible day block would otherwise rebuild its goal map on every scroll.
+final goalTitleMapProvider = Provider<Map<String, String>>((ref) {
+  final goals = ref.watch(goalsProvider).value ?? [];
+  return {for (final g in goals) g.id: g.title};
 });
 
 // ── Task Stream ───────────────────────────────────────────────────────────
@@ -284,6 +293,7 @@ class TaskFormNotifier extends Notifier<TaskFormState> {
   void updateNotificationOffset(int v) =>
       state = state.copyWith(notificationOffsetMinutes: v);
   void updateGoalId(String? v) => state = state.copyWith(goalId: v);
+  void setError(String e) => state = state.copyWith(error: e, isSaving: false);
 
   Future<bool> save(
     DateTime taskDate, {
