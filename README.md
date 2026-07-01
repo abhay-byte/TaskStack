@@ -18,8 +18,13 @@
 </p>
 
 <p align="center">
+  <img src="docs/storelisting/feature_graphic_16_9.png" alt="TaskStack Banner" width="100%">
+</p>
+
+<p align="center">
   <a href="#overview">Overview</a> •
   <a href="#features">Features</a> •
+  <a href="#screenshots">Screenshots</a> •
   <a href="#architecture">Architecture</a> •
   <a href="#getting-started">Getting Started</a> •
   <a href="#documentation">Documentation</a> •
@@ -68,6 +73,17 @@
 - Custom accent colour
 - 12h / 24h time format, configurable week start
 - JSON data export & import
+
+---
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Intro](docs/storelisting/photo_1_intro.png) | ![Stack – Morning](docs/storelisting/photo_2_stack_morning.png) |
+| ![Stack – Afternoon](docs/storelisting/photo_3_stack_afternoon.png) | ![Stack – Evening](docs/storelisting/photo_4_stack_evening.png) |
+| ![Todo Sheet](docs/storelisting/photo_5_todo_sheet.png) | ![Goals](docs/storelisting/photo_6_goals.png) |
+| ![Settings](docs/storelisting/photo_7_settings.png) | ![Outro](docs/storelisting/photo_8_outro.png) |
 
 ---
 
