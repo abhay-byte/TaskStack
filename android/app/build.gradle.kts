@@ -16,7 +16,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.taskstack.taskstack"
-    compileSdk = 37
+    compileSdk = 36
     buildToolsVersion = "37.0.0"
     ndkVersion = "29.0.14206865"
 
@@ -45,7 +45,7 @@ android {
     defaultConfig {
         applicationId = "com.taskstack.taskstack"
         minSdk = flutter.minSdkVersion
-        targetSdk = 37
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
