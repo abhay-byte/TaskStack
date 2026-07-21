@@ -17,7 +17,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.taskstack.taskstack"
     compileSdk = 36
-    buildToolsVersion = "37.0.0"
+    buildToolsVersion = "35.0.0"
     ndkVersion = "29.0.14206865"
 
     compileOptions {
