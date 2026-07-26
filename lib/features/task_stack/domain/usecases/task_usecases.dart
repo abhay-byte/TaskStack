@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/features/task_stack/domain/repositories/task_repository.dart';
@@ -12,7 +13,7 @@ class CreateTaskUseCase {
   final TaskRepository _repository;
   final NotificationScheduler _scheduler;
 
-  Future<void> execute(Task task) async {
+  Future<NotificationScheduleResult?> execute(Task task) async {
     final now = DateTime.now();
     final newTask = task.copyWith(
       id: task.id.isEmpty ? _uuid.v4() : task.id,
@@ -20,8 +21,15 @@ class CreateTaskUseCase {
       updatedAt: now,
     );
     await _repository.insertTask(newTask);
+    NotificationScheduleResult? notifResult;
     if (newTask.notificationEnabled) {
-      await _scheduler.scheduleFor(newTask);
+      try {
+        notifResult = await _scheduler.scheduleFor(newTask);
+      } catch (e, s) {
+        debugPrint('CreateTaskUseCase: scheduleFor failed for ${newTask.id}: $e');
+        debugPrint('CreateTaskUseCase: stack trace: $s');
+        notifResult = NotificationScheduleResult.failedPluginError;
+      }
     }
 
     // Generate intra-day repeat instances if repeatToday
@@ -36,6 +44,7 @@ class CreateTaskUseCase {
         }
       }
     }
+    return notifResult;
     // NOTE: daily/weekly/custom NO LONGER generate 365 rows here.
     // A rolling 2-week window is maintained separately by
     // MaintainRecurringWindowUseCase.
@@ -269,15 +278,16 @@ class UpdateTaskUseCase {
   final TaskRepository _repository;
   final NotificationScheduler _scheduler;
 
-  Future<void> execute(
+  Future<NotificationScheduleResult?> execute(
     Task task, {
     RecurringScope scope = RecurringScope.thisInstance,
   }) async {
     final updated = task.copyWith(updatedAt: DateTime.now());
     await _repository.updateTask(updated);
     await _scheduler.cancelFor(task.id);
+    NotificationScheduleResult? notifResult;
     if (updated.notificationEnabled) {
-      await _scheduler.scheduleFor(updated);
+      notifResult = await _scheduler.scheduleFor(updated);
     }
 
     if (scope == RecurringScope.futureInstances &&
@@ -293,6 +303,7 @@ class UpdateTaskUseCase {
       // Rolling window maintenance will repopulate on next run.
       // We intentionally do NOT regenerate 365 rows here anymore.
     }
+    return notifResult;
   }
 }
 

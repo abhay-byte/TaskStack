@@ -25,6 +25,7 @@ final goalTitleMapProvider = Provider<Map<String, String>>((ref) {
 // ── Task Stream ───────────────────────────────────────────────────────────
 
 /// Stream of tasks for a given calendar date.
+/// Used by non-stack screens (analytics, detail, form, todo sheet).
 final tasksForDateProvider = StreamProvider.family<List<Task>, DateTime>((
   ref,
   date,
@@ -231,6 +232,13 @@ class TaskFormState {
   }
 }
 
+class TaskSaveResult {
+  final bool success;
+  final NotificationScheduleResult? notificationResult;
+
+  const TaskSaveResult({required this.success, this.notificationResult});
+}
+
 class TaskFormNotifier extends Notifier<TaskFormState> {
   @override
   TaskFormState build() {
@@ -295,11 +303,11 @@ class TaskFormNotifier extends Notifier<TaskFormState> {
   void updateGoalId(String? v) => state = state.copyWith(goalId: v);
   void setError(String e) => state = state.copyWith(error: e, isSaving: false);
 
-  Future<bool> save(
+  Future<TaskSaveResult> save(
     DateTime taskDate, {
     RecurringScope scope = RecurringScope.thisInstance,
   }) async {
-    if (!state.isValid) return false;
+    if (!state.isValid) return const TaskSaveResult(success: false);
 
     // Validate repeatToday overlap: repeat interval must be >= task duration
     if (state.recurrenceType == RecurrenceType.repeatToday &&
@@ -308,7 +316,7 @@ class TaskFormNotifier extends Notifier<TaskFormState> {
         error:
             'Repeat interval (${state.repeatIntervalMinutes} min) is less than task duration (${state.durationMinutes} min) — tasks would overlap. Please increase the interval or reduce the duration.',
       );
-      return false;
+      return const TaskSaveResult(success: false);
     }
 
     state = state.copyWith(isSaving: true, error: null);
@@ -338,15 +346,16 @@ class TaskFormNotifier extends Notifier<TaskFormState> {
         parentTaskId: state.parentTaskId,
         goalId: state.goalId,
       );
+      NotificationScheduleResult? notifResult;
       if (state.id.isEmpty) {
-        await _create.execute(task);
+        notifResult = await _create.execute(task);
       } else {
-        await _update.execute(task, scope: scope);
+        notifResult = await _update.execute(task, scope: scope);
       }
-      return true;
+      return TaskSaveResult(success: true, notificationResult: notifResult);
     } catch (e) {
       state = state.copyWith(isSaving: false, error: e.toString());
-      return false;
+      return const TaskSaveResult(success: false);
     }
   }
 }

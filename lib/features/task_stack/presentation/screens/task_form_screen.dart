@@ -10,6 +10,9 @@ import 'package:taskstack/core/constants/task_graphics.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:taskstack/core/widgets/animated_graphic.dart';
 import 'package:taskstack/features/task_stack/presentation/providers/goal_providers.dart';
+import 'package:taskstack/features/notifications/notification_service.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:taskstack/features/notifications/notification_scheduler.dart';
 
 class TaskFormScreen extends ConsumerStatefulWidget {
   const TaskFormScreen({super.key, this.taskId, this.prefilledDate});
@@ -421,7 +424,17 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                   title: const Text('Notification'),
                   subtitle: const Text('Get reminded before this task'),
                   value: form.notificationEnabled,
-                  onChanged: notifier.updateNotificationEnabled,
+                  onChanged: (v) async {
+                    if (v) {
+                      await NotificationService.ensureExactAlarmPermission(context);
+                      if (!context.mounted) return;
+                      final stillHasExact = await NotificationService.canScheduleExact();
+                      if (!stillHasExact) {
+                        return;
+                      }
+                    }
+                    notifier.updateNotificationEnabled(v);
+                  },
                   secondary: const Icon(Icons.notifications_outlined),
                   contentPadding: EdgeInsets.zero,
                 ),
@@ -459,14 +472,13 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       date = ref.read(selectedStackDateProvider);
     }
     
-    // Auto-advance to tomorrow if creating a new task, task date is today, 
-    // and picked time is clearly meant for the next morning (target is AM, currently PM).
+    // Auto-advance to tomorrow if creating a new task, task date is today,
+    // and the picked start time has already passed (so it must be tomorrow).
     if (widget.taskId == null && form.startMinutes != null) {
       final now = DateTime.now();
       if (date.year == now.year && date.month == now.month && date.day == now.day) {
-        final currentHour = now.hour;
-        final targetHour = form.startMinutes! ~/ 60;
-        if (currentHour >= 12 && targetHour < 12) {
+        final currentMinutes = now.hour * 60 + now.minute;
+        if (form.startMinutes! < currentMinutes) {
           date = DateTime(date.year, date.month, date.day + 1);
         }
       }
@@ -508,13 +520,54 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       }
     }
 
-    final success = await ref
+    final saveResult = await ref
         .read(taskFormProvider.notifier)
         .save(date, scope: scope);
-    if (success) {
+    if (saveResult.success) {
       // Keep recurring window in sync after creating / editing a recurring task
       await ref.read(maintainRecurringWindowUseCaseProvider).execute();
-      if (context.mounted) context.pop();
+      if (context.mounted) {
+        final messenger = ScaffoldMessenger.of(context);
+        if (saveResult.notificationResult != null) {
+          switch (saveResult.notificationResult!) {
+            case NotificationScheduleResult.scheduledImmediate:
+              messenger.showSnackBar(
+                const SnackBar(
+                  content: Text('Reminder time already passed — notifying now.'),
+                  duration: Duration(seconds: 4),
+                ),
+              );
+            case NotificationScheduleResult.skippedPastTask:
+              messenger.showSnackBar(
+                const SnackBar(
+                  content: Text('Task start time has already passed.'),
+                  duration: Duration(seconds: 4),
+                ),
+              );
+            case NotificationScheduleResult.failedNoPermission:
+              messenger.showSnackBar(
+                const SnackBar(
+                  content: Text('Exact alarm permission not granted. Reminder not scheduled.'),
+                  duration: Duration(seconds: 4),
+                ),
+              );
+            case NotificationScheduleResult.failedPluginError:
+              messenger.showSnackBar(
+                const SnackBar(
+                  content: Text('Failed to schedule notification reminder.'),
+                  duration: Duration(seconds: 4),
+                ),
+              );
+            default:
+              break;
+          }
+        }
+        Future.delayed(const Duration(milliseconds: 50), () {
+          if (context.mounted) {
+            context.pop();
+          }
+        });
+      }
     }
   }
 
