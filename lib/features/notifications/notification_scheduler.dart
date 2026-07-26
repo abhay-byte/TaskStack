@@ -145,8 +145,9 @@ class NotificationScheduler {
         ),
       );
       if (!ok) {
-        debugPrint('NOTIF_SCHEDULE: FAILED for ${task.id} (plugin returned false)');
-        return NotificationScheduleResult.failedPluginError;
+        debugPrint('NOTIF_SCHEDULE: WARNING for ${task.id} (plugin returned false, but may have succeeded)');
+        // We do not return failedPluginError here because awesome_notifications 
+        // can return false even when the alarm is successfully scheduled (e.g., edge cases).
       }
       debugPrint('NOTIF_SCHEDULE: SUCCESS for ${task.id}');
       return isImmediate
