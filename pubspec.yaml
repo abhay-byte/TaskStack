@@ -2,7 +2,7 @@ name: taskstack
 description: "TaskStack — Advanced 24-hour daily task management and life analytics app"
 publish_to: 'none'
 
-version: 1.0.6+7
+version: 1.0.7+8
 
 environment:
   sdk: ^3.7.0

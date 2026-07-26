@@ -1,0 +1,7 @@
+TaskStack 1.0.7
+
+Changes:
+- Replaced flutter_local_notifications with awesome_notifications to fix task pre-start notifications not firing
+- Added permission handling for Android exact alarms (PreciseAlarms / scheduleExact)
+- Handled past reminder offsets gracefully with immediate notification fallback
+- Implemented robust scheduled checks to verify notification scheduler success
