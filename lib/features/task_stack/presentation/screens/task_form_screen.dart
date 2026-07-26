@@ -529,30 +529,31 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       if (context.mounted) {
         final messenger = ScaffoldMessenger.of(context);
         if (saveResult.notificationResult != null) {
+          ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? ctrl;
           switch (saveResult.notificationResult!) {
             case NotificationScheduleResult.scheduledImmediate:
-              messenger.showSnackBar(
+              ctrl = messenger.showSnackBar(
                 const SnackBar(
                   content: Text('Reminder time already passed — notifying now.'),
                   duration: Duration(seconds: 4),
                 ),
               );
             case NotificationScheduleResult.skippedPastTask:
-              messenger.showSnackBar(
+              ctrl = messenger.showSnackBar(
                 const SnackBar(
                   content: Text('Task start time has already passed.'),
                   duration: Duration(seconds: 4),
                 ),
               );
             case NotificationScheduleResult.failedNoPermission:
-              messenger.showSnackBar(
+              ctrl = messenger.showSnackBar(
                 const SnackBar(
                   content: Text('Exact alarm permission not granted. Reminder not scheduled.'),
                   duration: Duration(seconds: 4),
                 ),
               );
             case NotificationScheduleResult.failedPluginError:
-              messenger.showSnackBar(
+              ctrl = messenger.showSnackBar(
                 const SnackBar(
                   content: Text('Failed to schedule notification reminder.'),
                   duration: Duration(seconds: 4),
@@ -561,12 +562,15 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             default:
               break;
           }
-        }
-        Future.delayed(const Duration(milliseconds: 50), () {
-          if (context.mounted) {
-            context.pop();
+          // Await the snackbar before popping so ScaffoldMessenger isn't
+          // orphaned by the route removal. This replaces the 50 ms hack.
+          if (ctrl != null) {
+            await ctrl.closed;
           }
-        });
+        }
+        if (context.mounted) {
+          context.pop();
+        }
       }
     }
   }

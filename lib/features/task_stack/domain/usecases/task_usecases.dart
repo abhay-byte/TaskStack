@@ -287,7 +287,13 @@ class UpdateTaskUseCase {
     await _scheduler.cancelFor(task.id);
     NotificationScheduleResult? notifResult;
     if (updated.notificationEnabled) {
-      notifResult = await _scheduler.scheduleFor(updated);
+      try {
+        notifResult = await _scheduler.scheduleFor(updated);
+      } catch (e, s) {
+        debugPrint('UpdateTaskUseCase: scheduleFor failed for ${updated.id}: $e');
+        debugPrint('UpdateTaskUseCase: stack trace: $s');
+        notifResult = NotificationScheduleResult.failedPluginError;
+      }
     }
 
     if (scope == RecurringScope.futureInstances &&

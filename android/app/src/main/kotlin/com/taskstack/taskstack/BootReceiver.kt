@@ -6,13 +6,13 @@ import android.content.Intent
 import android.util.Log
 
 /**
- * Receives BOOT_COMPLETED and QUICKBOOT_POWERON broadcasts to reschedule
- * all task notifications after device restart.
+ * Receives BOOT_COMPLETED and QUICKBOOT_POWERON broadcasts after device restart.
  *
- * NOTE: The actual rescheduling is handled through FlutterLocalNotificationsPlugin's
- * built-in boot-restoration mechanism when using exactAllowWhileIdle scheduling.
- * This receiver exists as a safety net to trigger Flutter engine initialisation
- * on boot, ensuring the notification channel is properly registered.
+ * NOTE: awesome_notifications (the plugin in use) re-registers its AlarmManager
+ * exact alarms automatically on reboot when the app is brought to the foreground.
+ * This receiver is retained as a logging hook and future extension point for
+ * headless rescheduling if AC5 (background/killed-process restore) requires it.
+ * No Flutter engine start is performed here until that need is confirmed on device.
  */
 class BootReceiver : BroadcastReceiver() {
     companion object {

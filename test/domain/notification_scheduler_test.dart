@@ -31,12 +31,12 @@ void main() {
   });
 
   group('calculateScheduleTime', () {
-    // We need timezone location. 'UTC' is safe for testing pure logic.
+    // tz.UTC is a built-in constant — always available without initializeTimeZones.
     late tz.Location location;
 
     setUpAll(() {
       tz_data.initializeTimeZones();
-      location = tz.getLocation('UTC');
+      location = tz.UTC;
     });
 
     test('returns future when notification time is in the future', () {
@@ -72,6 +72,27 @@ void main() {
       
       expect(calc.type, ScheduleType.skippedPast);
       expect(calc.time, isNull);
+    });
+
+    test('cross-midnight: offset > startMinutes wraps notifyStart negative — treated as past/immediate', () {
+      // Start at 00:10 (10 min after midnight), offset 30 min → notifyStart = -20.
+      // TZDateTime with minute=-20 rolls back to the previous day at 23:40.
+      // That is before any reasonable "now", so the result must be either
+      // immediate (if task start 00:10 is still future) or skippedPast (if past).
+      final now = tz.TZDateTime(location, 2026, 7, 26, 0, 5); // 00:05 AM
+      final taskDate = DateTime(2026, 7, 26);
+      // start=10 min, offset=30 → notifyStart=-20 → previous-day 23:40 (before now)
+      // task start 00:10 is after now → immediate
+      final calc = calculateScheduleTime(now, taskDate, 10, 30, location);
+      expect(
+        calc.type,
+        anyOf(ScheduleType.immediate, ScheduleType.skippedPast),
+        reason: 'Negative notifyStart must not produce a day-minus-1 future alarm',
+      );
+      // If immediate, the time must be ≥ now (within a few seconds)
+      if (calc.type == ScheduleType.immediate) {
+        expect(calc.time!.isAfter(now) || calc.time!.isAtSameMomentAs(now), isTrue);
+      }
     });
   });
 }

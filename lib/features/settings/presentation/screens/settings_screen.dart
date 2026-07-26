@@ -12,7 +12,7 @@ import 'package:taskstack/core/constants/app_colors.dart';
 import 'package:taskstack/features/task_stack/data/repositories/task_repository_impl.dart';
 import 'package:taskstack/features/settings/data/json_import_service.dart';
 import 'package:taskstack/features/notifications/notification_service.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -313,8 +313,11 @@ class SettingsScreen extends ConsumerWidget {
     } else if (count == -1) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Import failed — invalid JSON file'),
-          backgroundColor: Theme.of(context).colorScheme.error,
+          content: const Text(
+            'Import failed — invalid JSON file',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Theme.of(context).colorScheme.errorContainer,
         ),
       );
     } else {
@@ -386,25 +389,15 @@ class SettingsScreen extends ConsumerWidget {
   };
 
   Future<void> _testNotification(BuildContext context) async {
-    const androidDetails = AndroidNotificationDetails(
-      'taskstack_test',
-      'Test Notifications',
-      channelDescription: 'Used for testing notifications',
-      importance: Importance.max,
-      priority: Priority.max,
-    );
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentSound: true,
-    );
     try {
-      await NotificationService.plugin.show(
-        id: 9999,
-        title: 'Test Notification',
-        body: 'This is a test notification from TaskStack!',
-        notificationDetails: const NotificationDetails(
-          android: androidDetails,
-          iOS: iosDetails,
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: 9999,
+          channelKey: 'taskstack_tasks',
+          title: 'Test Notification',
+          body: 'This is a test notification from TaskStack!',
+          wakeUpScreen: true,
+          category: NotificationCategory.Alarm,
         ),
       );
       if (context.mounted) {

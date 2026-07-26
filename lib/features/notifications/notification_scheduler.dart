@@ -145,9 +145,23 @@ class NotificationScheduler {
         ),
       );
       if (!ok) {
-        debugPrint('NOTIF_SCHEDULE: WARNING for ${task.id} (plugin returned false, but may have succeeded)');
-        // We do not return failedPluginError here because awesome_notifications 
-        // can return false even when the alarm is successfully scheduled (e.g., edge cases).
+        debugPrint('NOTIF_SCHEDULE: plugin returned false for ${task.id} — verifying via listScheduledNotifications');
+        // awesome_notifications can return false even when the alarm is actually
+        // scheduled (known edge case). Verify by checking the scheduled list.
+        try {
+          final schedules = await NotificationService.plugin.listScheduledNotifications();
+          final notifId = task.id.hashCode.abs() & 0x7FFFFFFF;
+          final isScheduled = schedules.any((n) => n.content?.id == notifId);
+          if (!isScheduled) {
+            debugPrint('NOTIF_SCHEDULE: FAILED — not found in listScheduledNotifications for ${task.id}');
+            return NotificationScheduleResult.failedPluginError;
+          }
+          debugPrint('NOTIF_SCHEDULE: verified via listScheduledNotifications — alarm is present for ${task.id}');
+        } catch (listErr) {
+          // listScheduledNotifications itself failed; fall through to success to
+          // avoid false-negative UI alert when the alarm may still be queued.
+          debugPrint('NOTIF_SCHEDULE: listScheduledNotifications failed ($listErr) — assuming scheduled for ${task.id}');
+        }
       }
       debugPrint('NOTIF_SCHEDULE: SUCCESS for ${task.id}');
       return isImmediate
