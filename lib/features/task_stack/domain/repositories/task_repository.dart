@@ -2,6 +2,7 @@ import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 
 abstract class TaskRepository {
   Stream<List<Task>> watchTasksForDate(DateTime date);
+  Stream<Map<String, List<Task>>> watchTasksInRange(DateTime from, DateTime to);
   Future<Task?> getTaskById(String id);
   Future<void> insertTask(Task task);
   Future<void> insertTasks(List<Task> tasks);

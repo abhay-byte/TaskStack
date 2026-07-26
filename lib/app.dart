@@ -25,6 +25,7 @@ class _TaskStackAppState extends ConsumerState<TaskStackApp> {
     return MaterialApp.router(
       title: 'TaskStack',
       debugShowCheckedModeBanner: false,
+      showPerformanceOverlay: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,

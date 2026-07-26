@@ -425,7 +425,6 @@ class _DayViewBlock extends ConsumerWidget {
           // Task cards
           for (final task in scheduled)
             _PositionedTaskCard(
-              ref: ref,
               task: task,
               isToday: isPageToday,
               pageDate: pageDate,
@@ -470,6 +469,29 @@ class _HourGridPainter extends CustomPainter {
     '6 PM', '7 PM', '8 PM', '9 PM', '10 PM', '11 PM',
   ];
 
+  // Cache laid-out TextPainters keyed by style hash to avoid re-layout
+  // on every repaint. This is the single biggest UI-thread win for
+  // the stack page (~24 text layouts → 0 after first paint).
+  static final Map<int, List<TextPainter>> _textCache = {};
+
+  List<TextPainter> _getCachedPainters(TextStyle style) {
+    final key = style.hashCode ^ _kLabels.length;
+    final cached = _textCache[key];
+    if (cached != null) return cached;
+
+    final painters = <TextPainter>[];
+    for (final label in _kLabels) {
+      final tp = TextPainter(
+        text: TextSpan(text: label, style: style),
+        textDirection: TextDirection.ltr,
+        textAlign: TextAlign.right,
+      )..layout(maxWidth: _kHourLabelWidth - 8);
+      painters.add(tp);
+    }
+    _textCache[key] = painters;
+    return painters;
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
@@ -477,19 +499,15 @@ class _HourGridPainter extends CustomPainter {
       ..strokeWidth = 0.5;
 
     final hourHeight = size.height / 24;
+    final painters = _getCachedPainters(labelStyle);
 
     for (var h = 0; h < 24; h++) {
       final y = h * hourHeight;
       // Grid line from label edge to right edge
       canvas.drawLine(Offset(_kHourLabelWidth, y), Offset(size.width, y), paint);
 
-      // Hour label
-      final tp = TextPainter(
-        text: TextSpan(text: _kLabels[h], style: labelStyle),
-        textDirection: TextDirection.ltr,
-        textAlign: TextAlign.right,
-      )..layout(maxWidth: _kHourLabelWidth - 8);
-      tp.paint(canvas, Offset(0, y + 4));
+      // Hour label — uses pre-cached TextPainter
+      painters[h].paint(canvas, Offset(0, y + 4));
     }
   }
 
@@ -588,23 +606,21 @@ class _DayDividerLabel extends StatelessWidget {
 
 // ── Positioned Task Card ──────────────────────────────────────────────────
 
-class _PositionedTaskCard extends StatelessWidget {
+class _PositionedTaskCard extends ConsumerWidget {
   const _PositionedTaskCard({
-    required this.ref,
     required this.task,
     required this.isToday,
     required this.pageDate,
     required this.goalTitle,
   });
 
-  final WidgetRef ref;
   final Task task;
   final bool isToday;
   final DateTime pageDate;
   final String? goalTitle;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tzPageDate = DateTime(pageDate.year, pageDate.month, pageDate.day);
     final tzTaskDate = DateTime(
       task.taskDate.year,
@@ -655,8 +671,13 @@ class _PositionedTaskCard extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.message),
-            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Text(
+              e.message,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+            ),
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
             behavior: SnackBarBehavior.floating,
           ),
         );

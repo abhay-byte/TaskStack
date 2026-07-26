@@ -1,11 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 
 const double _kPixelsPerHour = 120.0;
 const double _kMinuteHeight = _kPixelsPerHour / 60;
 
-/// Live time-of-day indicator. Owns its own ticker so the rest of the
-/// stack page does not rebuild every minute — only this small widget.
+/// Live time-of-day indicator. Uses a 1-second timer instead of a Ticker
+/// so the callback fires at 1 Hz instead of 120 Hz, eliminating
+/// per-frame overhead on high-refresh-rate displays.
 class TimeIndicatorWidget extends StatefulWidget {
   const TimeIndicatorWidget({super.key});
 
@@ -13,29 +14,28 @@ class TimeIndicatorWidget extends StatefulWidget {
   State<TimeIndicatorWidget> createState() => _TimeIndicatorWidgetState();
 }
 
-class _TimeIndicatorWidgetState extends State<TimeIndicatorWidget>
-    with SingleTickerProviderStateMixin {
-  late final Ticker _ticker;
+class _TimeIndicatorWidgetState extends State<TimeIndicatorWidget> {
+  Timer? _timer;
   DateTime _now = DateTime.now();
   int _lastMinute = -1;
 
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker(_onTick)..start();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _onTick());
   }
 
-  void _onTick(Duration _) {
+  void _onTick() {
     final now = DateTime.now();
     final minute = now.hour * 60 + now.minute;
     if (minute == _lastMinute) return;
     _lastMinute = minute;
-    setState(() => _now = now);
+    if (mounted) setState(() => _now = now);
   }
 
   @override
   void dispose() {
-    _ticker.dispose();
+    _timer?.cancel();
     super.dispose();
   }
 

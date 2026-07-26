@@ -270,9 +270,17 @@ class _TaskDetailView extends ConsumerWidget {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(e.message),
-                                    backgroundColor:
-                                        Theme.of(context).colorScheme.error,
+                                    content: Text(
+                                      e.message,
+                                      style: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onErrorContainer,
+                                      ),
+                                    ),
+                                    backgroundColor: Theme.of(context)
+                                        .colorScheme
+                                        .errorContainer,
                                     behavior: SnackBarBehavior.floating,
                                   ),
                                 );

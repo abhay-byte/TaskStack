@@ -25,7 +25,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -76,6 +76,15 @@ class AppDatabase extends _$AppDatabase {
         );
         // Rolling window: clean up old generated recurring instances
         await _cleanupOldRecurringInstances();
+      }
+      if (from < 7) {
+        // Performance: indexes for task stack screen queries
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_tasks_task_date ON tasks(task_date)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_tasks_task_date_start ON tasks(task_date, start_minutes)',
+        );
       }
     },
     beforeOpen: (details) async {

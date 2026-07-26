@@ -184,6 +184,16 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     });
   }
 
+  /// Watch all tasks for a date range (inclusive), ordered by startMinutes.
+  /// Used by the task stack screen to serve all visible days from a single
+  /// stream instead of opening one stream per day.
+  Stream<List<TasksTableData>> watchTasksInRange(String from, String to) {
+    return (select(tasksTable)
+          ..where((t) => t.taskDate.isBetweenValues(from, to))
+          ..orderBy([(t) => OrderingTerm.asc(t.startMinutes)]))
+        .watch();
+  }
+
   /// Get all tasks for a date range (for analytics).
   Future<List<TasksTableData>> getTasksInRange(String from, String to) {
     return (select(tasksTable)

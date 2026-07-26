@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskstack/features/notifications/notification_scheduler.dart';
-import 'package:taskstack/features/sync/domain/repositories/sync_repository.dart';
 import 'package:taskstack/features/task_stack/domain/entities/task.dart';
 import 'package:taskstack/features/task_stack/domain/repositories/task_repository.dart';
 import 'package:taskstack/features/task_stack/domain/usecases/task_usecases.dart';
@@ -55,6 +54,14 @@ class _FakeTaskRepository implements TaskRepository {
   }
 
   @override
+  Stream<Map<String, List<Task>>> watchTasksInRange(
+    DateTime from,
+    DateTime to,
+  ) async* {
+    yield {};
+  }
+
+  @override
   Future<void> updateStatus(
     String id, {
     required String status,
@@ -85,25 +92,14 @@ class _FakeNotificationScheduler extends NotificationScheduler {
   final List<String> cancelledTaskIds = [];
 
   @override
-  Future<void> scheduleFor(Task task) async {
+  Future<NotificationScheduleResult> scheduleFor(Task task) async {
     scheduledTaskIds.add(task.id);
+    return NotificationScheduleResult.scheduled;
   }
 
   @override
   Future<void> cancelFor(String taskId) async {
     cancelledTaskIds.add(taskId);
-  }
-}
-
-class _FakeSyncRepository implements SyncRepository {
-  var pushCalls = 0;
-
-  @override
-  Future<void> pullCloudToLocal() async {}
-
-  @override
-  Future<void> pushLocalToCloud() async {
-    pushCalls += 1;
   }
 }
 

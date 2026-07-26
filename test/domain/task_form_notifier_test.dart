@@ -74,8 +74,9 @@ class _FakeNotificationScheduler extends NotificationScheduler {
   final List<String> scheduledTaskIds = [];
 
   @override
-  Future<void> scheduleFor(Task task) async {
+  Future<NotificationScheduleResult> scheduleFor(Task task) async {
     scheduledTaskIds.add(task.id);
+    return NotificationScheduleResult.scheduled;
   }
 }
 

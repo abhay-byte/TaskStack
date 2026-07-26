@@ -49,12 +49,11 @@ class TaskCardWidget extends StatelessWidget {
         onDone();
         return false;
       },
-      background: _SwipeBackground(cs: cs),
+      background: const _SwipeBackground(),
       child: GestureDetector(
         onTap: onTap,
         onLongPress: () => _showContextMenu(context),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
+        child: Container(
           margin: const EdgeInsets.symmetric(
             vertical: 2,
             horizontal: AppSpacing.sm,
@@ -84,10 +83,8 @@ class TaskCardWidget extends StatelessWidget {
                 Positioned.fill(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: RepaintBoundary(
-                      child: AnimatedGraphic(
-                        assetPath: task.graphicImage!,
-                      ),
+                    child: AnimatedGraphic(
+                      assetPath: task.graphicImage!,
                     ),
                   ),
                 ),
@@ -137,11 +134,11 @@ class TaskCardWidget extends StatelessWidget {
 }
 
 class _SwipeBackground extends StatelessWidget {
-  const _SwipeBackground({required this.cs});
-  final ColorScheme cs;
+  const _SwipeBackground();
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.only(left: AppSpacing.lg),
@@ -270,7 +267,7 @@ class _CardContent extends StatelessWidget {
                     runSpacing: 4,
                     children: [
                       for (final tag in task.tags.take(3))
-                        _TagChip(label: tag, hasGraphic: hasGraphic, cs: cs),
+                        _TagChip(label: tag, hasGraphic: hasGraphic),
                     ],
                   ),
                 ],
@@ -281,7 +278,6 @@ class _CardContent extends StatelessWidget {
             _DurationChip(
               minutes: task.durationMinutes!,
               hasGraphic: hasGraphic,
-              cs: cs,
             ),
         ],
       ),
@@ -293,15 +289,14 @@ class _TagChip extends StatelessWidget {
   const _TagChip({
     required this.label,
     required this.hasGraphic,
-    required this.cs,
   });
 
   final String label;
   final bool hasGraphic;
-  final ColorScheme cs;
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
@@ -323,15 +318,14 @@ class _DurationChip extends StatelessWidget {
   const _DurationChip({
     required this.minutes,
     required this.hasGraphic,
-    required this.cs,
   });
 
   final int minutes;
   final bool hasGraphic;
-  final ColorScheme cs;
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(

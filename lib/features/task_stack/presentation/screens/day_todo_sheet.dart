@@ -78,9 +78,14 @@ class _DayTodoSheetState extends ConsumerState<DayTodoSheet> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.message),
+          content: Text(
+            e.message,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onErrorContainer,
+            ),
+          ),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: Theme.of(context).colorScheme.error,
+          backgroundColor: Theme.of(context).colorScheme.errorContainer,
         ),
       );
     }

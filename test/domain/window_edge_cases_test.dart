@@ -97,7 +97,10 @@ class _FakeRepo implements TaskRepository {
 class _FakeScheduler extends NotificationScheduler {
   final List<String> scheduledIds = [];
   @override
-  Future<void> scheduleFor(Task task) async => scheduledIds.add(task.id);
+  Future<NotificationScheduleResult> scheduleFor(Task task) async {
+    scheduledIds.add(task.id);
+    return NotificationScheduleResult.scheduled;
+  }
   @override
   Future<void> cancelFor(String taskId) async {}
 }

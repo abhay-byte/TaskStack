@@ -70,6 +70,23 @@ class TaskRepositoryImpl implements TaskRepository {
   }
 
   @override
+  Stream<Map<String, List<Task>>> watchTasksInRange(DateTime from, DateTime to) {
+    final fromStr = _dateString(from);
+    final toStr = _dateString(to);
+    return _dao
+        .watchTasksInRange(fromStr, toStr)
+        .map((rows) {
+      final map = <String, List<Task>>{};
+      for (final row in rows) {
+        final task = _rowToTask(row);
+        final key = _dateString(task.taskDate);
+        map.putIfAbsent(key, () => []).add(task);
+      }
+      return map;
+    });
+  }
+
+  @override
   Future<List<Task>> getTasksInRange(DateTime from, DateTime to) async {
     final rows = await _dao.getTasksInRange(_dateString(from), _dateString(to));
     return rows.map(_rowToTask).toList();
